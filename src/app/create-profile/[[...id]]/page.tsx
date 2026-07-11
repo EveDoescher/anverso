@@ -1,2395 +1,913 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { fetchApi } from '@/lib/api';
 import Link from 'next/link';
+import { fetchApi } from '@/lib/api';
+import {
+  BuilderState,
+  ComponentState,
+  ComponentRuleType,
+  StyleRule,
+  PageState,
+  PostProcessingState,
+  defaultBuilderState,
+  defaultBodyContentState,
+  defaultStyleRule,
+  serializeState,
+  deserializeContract,
+} from '@/lib/profileSerializer';
 import { AlertModal, AlertModalType } from '@/components/ui/AlertModal';
+import { BuilderSidebar } from '@/components/profile-builder/BuilderSidebar';
+import { ComponentList } from '@/components/profile-builder/ComponentList';
+import { ComponentVisualPanel } from '@/components/profile-builder/ComponentVisualPanel';
+import { InspectorPanel } from '@/components/profile-builder/InspectorPanel';
+import { TextualElementsGallery } from '@/components/profile-builder/TextualElementsGallery';
+import * as Switch from '@radix-ui/react-switch';
+import * as Select from '@radix-ui/react-select';
 
-interface ProfileSummary {
-  id: string;
-  name: string;
-  description: string;
+export type BuilderSection = 'profile' | 'page' | 'components' | 'textual' | 'postprocessing';
+
+// ──────────────────────────────────────────
+// Validation
+// ──────────────────────────────────────────
+
+function validate(state: BuilderState): Partial<Record<BuilderSection, string[]>> {
+  const errors: Partial<Record<BuilderSection, string[]>> = {};
+
+  function add(section: BuilderSection, msg: string) {
+    if (!errors[section]) errors[section] = [];
+    errors[section]!.push(msg);
+  }
+
+  if (!state.name.trim()) add('profile', 'Nome do perfil é obrigatório.');
+
+  const bodyCount = state.components.filter(c => c.ruleType === 'BODY_CONTENT').length;
+  if (state.components.length > 0 && bodyCount === 0) {
+    add('components', 'Nenhum componente de Corpo do Texto. Adicione um BODY_CONTENT.');
+  }
+  if (bodyCount > 1) {
+    add('components', 'Apenas um componente BODY_CONTENT é permitido.');
+  }
+
+  for (const comp of state.components) {
+    if (comp.ruleType === 'BIBLIOGRAPHY') {
+      const formats = comp.entryFormats ?? {};
+      if (Object.keys(formats).length === 0) {
+        add('components', `Componente "${comp.id}": configure ao menos um formato de entrada.`);
+      }
+    }
+    if (comp.ruleType === 'ELEMENT_INDEX' || comp.ruleType === 'SECTION_INDEX') {
+      if (!comp.headingText?.trim()) {
+        add('components', `Componente "${comp.id}": título não pode estar vazio.`);
+      }
+    }
+    if (comp.ruleType === 'SINGLE_PAGE') {
+      for (const slot of comp.slots ?? []) {
+        if (slot.required && !slot.styleId) {
+          add('components', `Slot obrigatório "${slot.id}" (${comp.id}) sem estilo definido.`);
+        }
+      }
+    }
+  }
+
+  return errors;
 }
+
+function componentErrors(state: BuilderState): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  for (const comp of state.components) {
+    const errs: string[] = [];
+    if (comp.ruleType === 'BIBLIOGRAPHY' && Object.keys(comp.entryFormats ?? {}).length === 0) {
+      errs.push('Sem formatos de entrada configurados.');
+    }
+    if ((comp.ruleType === 'ELEMENT_INDEX' || comp.ruleType === 'SECTION_INDEX') && !comp.headingText?.trim()) {
+      errs.push('Título vazio.');
+    }
+    if (comp.ruleType === 'SINGLE_PAGE') {
+      for (const slot of comp.slots ?? []) {
+        if (slot.required && !slot.styleId) errs.push(`Slot "${slot.id}" obrigatório sem estilo.`);
+      }
+    }
+    if (errs.length > 0) out[comp.id] = errs;
+  }
+  return out;
+}
+
+// ──────────────────────────────────────────
+// Small UI helpers
+// ──────────────────────────────────────────
+
+function FormField({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
+  return (
+    <div>
+      <label className="block text-sm font-semibold text-slate-700 mb-1">{label}</label>
+      {children}
+      {hint && <p className="text-xs text-slate-400 mt-0.5">{hint}</p>}
+    </div>
+  );
+}
+
+function NumberInput({ label, value, onChange, step = 0.1, min, hint }: {
+  label: string; value: number; onChange: (v: number) => void; step?: number; min?: number; hint?: string;
+}) {
+  return (
+    <FormField label={label} hint={hint}>
+      <input
+        type="number"
+        step={step}
+        min={min}
+        className="w-full border border-slate-300 rounded-lg p-2.5 text-sm text-slate-800 focus:ring-2 focus:ring-blue-500"
+        value={value}
+        onChange={e => onChange(Number(e.target.value))}
+      />
+    </FormField>
+  );
+}
+
+const RULE_TYPE_LABELS: Record<ComponentRuleType, string> = {
+  SINGLE_PAGE: 'Página Única (Capa, Folha de Rosto...)',
+  FLOW_TEXTUAL: 'Texto Livre (Agradecimentos, Epígrafe...)',
+  BIBLIOGRAPHY: 'Lista de Referências',
+  BODY_CONTENT: 'Corpo do Texto (Capítulos)',
+  SECTIONED: 'Secionado (Apêndices, Anexos)',
+  ELEMENT_INDEX: 'Índice de Elementos (Lista de Figuras...)',
+  SECTION_INDEX: 'Sumário',
+};
+
+// ──────────────────────────────────────────
+// Page
+// ──────────────────────────────────────────
 
 export default function CreateProfile() {
   const params = useParams();
-  const profileId = params?.id ? params.id[0] : null;
+  const profileId = params?.id ? (params.id as string[])[0] : null;
   const isEditMode = !!profileId;
-
-  const [step, setStep] = useState<0 | 1 | 2 | 3 | 4 | 5>(isEditMode ? 1 : 0);
   const router = useRouter();
 
-  const [profiles, setProfiles] = useState<ProfileSummary[]>([]);
-  const [loadingProfiles, setLoadingProfiles] = useState(true);
+  const [state, setState] = useState<BuilderState>(defaultBuilderState());
+  const [activeSection, setActiveSection] = useState<BuilderSection>('profile');
+  const [selectedComponentId, setSelectedComponentId] = useState<string | null>(null);
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showVersionModal, setShowVersionModal] = useState(false);
+  const [keepOldVersion, setKeepOldVersion] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newCompName, setNewCompName] = useState('');
+  const [newCompType, setNewCompType] = useState<ComponentRuleType>('SINGLE_PAGE');
 
-  // Custom Modal state
-  const [modalConfig, setModalConfig] = useState<{show: boolean, title: string, message: string, type: AlertModalType, onConfirm?: () => void, redirectUrl?: string}>({
-    show: false,
-    title: '',
-    message: '',
-    type: 'info'
-  });
+  // Tela inicial — só aparece no modo criação
+  const [showStartScreen, setShowStartScreen] = useState(!isEditMode);
+  const [startProfiles, setStartProfiles] = useState<{ id: string; name: string; description: string }[]>([]);
+  const [loadingStartProfiles, setLoadingStartProfiles] = useState(false);
 
-  const showAlert = (title: string, message: string, type: AlertModalType, redirectUrl?: string) => {
+  const [modalConfig, setModalConfig] = useState<{
+    show: boolean; title: string; message: string; type: AlertModalType; redirectUrl?: string;
+  }>({ show: false, title: '', message: '', type: 'info' });
+
+  function showAlert(title: string, message: string, type: AlertModalType, redirectUrl?: string) {
     setModalConfig({ show: true, title, message, type, redirectUrl });
-  };
-
-  const closeModal = () => {
+  }
+  function closeModal() {
     const url = modalConfig.redirectUrl;
     setModalConfig(prev => ({ ...prev, show: false }));
-    if (url) {
-      router.push(url);
-    }
-  };
+    if (url) router.push(url);
+  }
 
-  // --- VERSIONING MODAL STATE ---
-  const [showVersionModal, setShowVersionModal] = useState(false);
-  const [oldVersionName, setOldVersionName] = useState('Versão Original');
-  const [keepOldVersion, setKeepOldVersion] = useState(false);
-  const [pendingPayload, setPendingPayload] = useState<any>(null);
+  const errors = validate(state);
+  const compErrors = componentErrors(state);
+  const hasErrors = Object.keys(errors).length > 0;
+  const bodyContent = state.components.find(c => c.ruleType === 'BODY_CONTENT');
 
-  // --- META ---
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [isPublic, setIsPublic] = useState(true);
-
-  // --- PAGE RULE ---
-  const [paperFormat, setPaperFormat] = useState('A4');
-  const [widthCm, setWidthCm] = useState(21);
-  const [heightCm, setHeightCm] = useState(29.7);
-  const [orientation, setOrientation] = useState('PORTRAIT');
-  const [marginTopCm, setMarginTopCm] = useState(3);
-  const [marginRightCm, setMarginRightCm] = useState(2);
-  const [marginBottomCm, setMarginBottomCm] = useState(2);
-  const [marginLeftCm, setMarginLeftCm] = useState(3);
-
-  // --- COMPONENT BUILDER (3-COLUMN) ---
-  const [components, setComponents] = useState<any[]>([]);
-  const [selectedComponentIndex, setSelectedComponentIndex] = useState<number | null>(null);
-  const [selectedElementIndex, setSelectedElementIndex] = useState<number | null>(null);
-  const [draggedComponentIndex, setDraggedComponentIndex] = useState<number | null>(null);
-  const [draggedElementIndex, setDraggedElementIndex] = useState<number | null>(null);
-
-  // --- TEXTUAL ELEMENTS ---
-  const [textualTab, setTextualTab] = useState<'CITATIONS' | 'FIGURES' | 'TABLES' | 'CODE' | 'EQUATIONS' | 'CHARTS'>('CITATIONS');
-  // Figures
-  const [figCaptionTemplate, setFigCaptionTemplate] = useState('Figura {num} – {title}');
-  const [figSourceTemplate, setFigSourceTemplate] = useState('Fonte: {source}');
-  const [figAlignment, setFigAlignment] = useState('CENTER');
-  const [figFontSizePt, setFigFontSizePt] = useState(10);
-  const [figNumberingStrategy, setFigNumberingStrategy] = useState('GLOBAL_SEQUENTIAL');
-  const [figMaxWidthCm, setFigMaxWidthCm] = useState(16);
-  // Tables
-  const [tableCaptionTemplate, setTableCaptionTemplate] = useState('Tabela {num} – {title}');
-  const [tableSourceTemplate, setTableSourceTemplate] = useState('Fonte: {source}');
-  const [tableAlignment, setTableAlignment] = useState('CENTER');
-  const [tableFontSizePt, setTableFontSizePt] = useState(10);
-  const [tableNumberingStrategy, setTableNumberingStrategy] = useState('GLOBAL_SEQUENTIAL');
-  const [tableRepeatHeader, setTableRepeatHeader] = useState(true);
-  // Frames (Quadros)
-  const [frameCaptionTemplate, setFrameCaptionTemplate] = useState('Quadro {num} – {title}');
-  const [frameSourceTemplate, setFrameSourceTemplate] = useState('Fonte: {source}');
-  const [frameAlignment, setFrameAlignment] = useState('CENTER');
-  const [frameFontSizePt, setFrameFontSizePt] = useState(10);
-  const [frameNumberingStrategy, setFrameNumberingStrategy] = useState('GLOBAL_SEQUENTIAL');
-  // Citations
-  const [longCitationIndentCm, setLongCitationIndentCm] = useState(4);
-  const [longCitationFontSizePt, setLongCitationFontSizePt] = useState(10);
-  const [citPagePrefix, setCitPagePrefix] = useState('p.');
-  const [citMultiAuthorJoiner, setCitMultiAuthorJoiner] = useState('; ');
-  const [citEtAl, setCitEtAl] = useState(' et al.');
-  const [citApudConnector, setCitApudConnector] = useState(' apud ');
-  const [citSuppressionMarker, setCitSuppressionMarker] = useState('[...]');
-  const [citEmphasisOursLabel, setCitEmphasisOursLabel] = useState('grifo nosso');
-  const [citEmphasisAuthorLabel, setCitEmphasisAuthorLabel] = useState('grifo do autor');
-  const [citVerbalCitationLabel, setCitVerbalCitationLabel] = useState('informação verbal');
-  // Code
-  const [codeCaptionTemplate, setCodeCaptionTemplate] = useState('Listagem {num} – {title}');
-  const [codeFontFamily, setCodeFontFamily] = useState('Courier New');
-  const [codeFontSizePt, setCodeFontSizePt] = useState(10);
-  const [codeNumberingStrategy, setCodeNumberingStrategy] = useState('GLOBAL_SEQUENTIAL');
-  // Equations
-  const [eqCaptionTemplate, setEqCaptionTemplate] = useState('({num})');
-  const [eqAlignment, setEqAlignment] = useState('CENTER');
-  const [eqNumberingStrategy, setEqNumberingStrategy] = useState('GLOBAL_SEQUENTIAL');
-  // Charts
-  const [chartCaptionTemplate, setChartCaptionTemplate] = useState('Gráfico {num} – {title}');
-  const [chartSourceTemplate, setChartSourceTemplate] = useState('Fonte: {source}');
-  const [chartAlignment, setChartAlignment] = useState('CENTER');
-  const [chartFontSizePt, setChartFontSizePt] = useState(10);
-  const [chartNumberingStrategy, setChartNumberingStrategy] = useState('GLOBAL_SEQUENTIAL');
-
-  // --- PAGE NUMBERING ---
-  const [pageNumberingEnabled, setPageNumberingEnabled] = useState(true);
-  const [countFromComponentId, setCountFromComponentId] = useState('');
-  const [visibleFromComponentId, setVisibleFromComponentId] = useState('');
-  const [pageNumberingPlacement, setPageNumberingPlacement] = useState('HEADER_RIGHT');
-  const [vertDistCm, setVertDistCm] = useState(2);
-  const [horizDistCm, setHorizDistCm] = useState(2);
-
-  // --- STYLE RULES (Basic) ---
-  const [fontFamily, setFontFamily] = useState('Times New Roman');
-  const [fontSizePt, setFontSizePt] = useState(12);
-  const [lineSpacing, setLineSpacing] = useState(1.5);
-  const [alignment, setAlignment] = useState('JUSTIFIED');
-  const [firstLineIndentCm, setFirstLineIndentCm] = useState(1.25);
-
-  // --- POST PROCESSING ---
-  const [orphanTitleEnabled, setOrphanTitleEnabled] = useState(true);
-  const [integrityEnabled, setIntegrityEnabled] = useState(true);
-  const [marginOverflowCheck, setMarginOverflowCheck] = useState(true);
-  const [fontSubCheck, setFontSubCheck] = useState(true);
-  const [maxPages, setMaxPages] = useState(500);
-  const [pdfOutputEnabled, setPdfOutputEnabled] = useState(false);
-  
-  const [tableContLabelsEnabled, setTableContLabelsEnabled] = useState(true);
-  const [continuesLabel, setContinuesLabel] = useState('continua');
-  const [continuationLabel, setContinuationLabel] = useState('continuação');
-  const [conclusionLabel, setConclusionLabel] = useState('conclusão');
-
+  // ── Load profiles for start screen ──
   useEffect(() => {
-    loadProfiles();
-    if (isEditMode) {
-      loadEditingProfile();
-    }
+    if (isEditMode) return;
+    setLoadingStartProfiles(true);
+    fetchApi('/api/v1/profiles')
+      .then(r => r.json())
+      .then(data => setStartProfiles(Array.isArray(data) ? data : []))
+      .catch(() => {})
+      .finally(() => setLoadingStartProfiles(false));
   }, [isEditMode]);
-  
-  // Update numbering dropdown defaults when components change
-  useEffect(() => {
-    if (components.length > 0) {
-      const ids = components.map(c => c.name);
-      if (!ids.includes(countFromComponentId)) setCountFromComponentId(ids[0]);
-      if (!ids.includes(visibleFromComponentId)) setVisibleFromComponentId(ids[0]);
-    } else {
-      setCountFromComponentId('');
-      setVisibleFromComponentId('');
-    }
-  }, [components]);
 
-  const loadEditingProfile = async () => {
-    try {
-      const res = await fetchApi(`/api/v1/profiles/${profileId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setName(data.name);
-        setDescription(data.description);
-        setIsPublic(data.isPublic);
-        
-        // Load the profileData into states
-        if (data.profileData) {
-          const pd = typeof data.profileData === 'string' ? JSON.parse(data.profileData) : data.profileData;
-          
-          if (pd.pageLayout?.paperSize?.format) setPaperFormat(pd.pageLayout.paperSize.format);
-          if (pd.pageLayout?.paperSize?.widthCm) setWidthCm(pd.pageLayout.paperSize.widthCm);
-          if (pd.pageLayout?.paperSize?.heightCm) setHeightCm(pd.pageLayout.paperSize.heightCm);
-          if (pd.pageLayout?.orientation) setOrientation(pd.pageLayout.orientation);
-          
-          if (pd.pageLayout?.margins) {
-            setMarginTopCm(pd.pageLayout.margins.topCm);
-            setMarginRightCm(pd.pageLayout.margins.rightCm);
-            setMarginBottomCm(pd.pageLayout.margins.bottomCm);
-            setMarginLeftCm(pd.pageLayout.margins.leftCm);
-          }
-          
-          if (pd.pageNumbering) {
-            setPageNumberingPlacement(pd.pageNumbering.placement || 'HEADER_RIGHT');
-            setCountFromComponentId(pd.pageNumbering.countFromComponentId || '');
-            setVisibleFromComponentId(pd.pageNumbering.visibleFromComponentId || '');
-            setVertDistCm(pd.pageNumbering.verticalDistanceFromEdgeCm || 2);
-            setHorizDistCm(pd.pageNumbering.horizontalDistanceFromEdgeCm || 2);
-          }
-          
-          if (pd._builderState) {
-            if (pd._builderState.components) setComponents(pd._builderState.components);
-          } else {
-            // Fallback to legacy structure if present
-            if (pd.components) setComponents(pd.components);
-          }
-          
-          if (pd.styleRules && pd.styleRules.length > 0) {
-            const body = pd.styleRules.find((r: any) => r.id === 'bodyContent.paragraph');
-            if (body) {
-              setFontFamily(body.fontFamily);
-              setFontSizePt(body.fontSizePt);
-              setLineSpacing(body.lineSpacing);
-              setAlignment(body.alignment);
-              setFirstLineIndentCm(body.firstLineIndentCm);
-            }
-          }
-
-          if (pd.postProcessing) {
-            if (pd.postProcessing.orphanTitle !== undefined) setOrphanTitleEnabled(pd.postProcessing.orphanTitle.enabled);
-            if (pd.postProcessing.integrityCheck) {
-              setIntegrityEnabled(pd.postProcessing.integrityCheck.enabled);
-              setMarginOverflowCheck(pd.postProcessing.integrityCheck.checkMarginOverflow);
-              setFontSubCheck(pd.postProcessing.integrityCheck.checkFontSubstitution);
-              if (pd.postProcessing.integrityCheck.maxPages) setMaxPages(pd.postProcessing.integrityCheck.maxPages);
-            }
-            if (pd.postProcessing.pdfOutput !== undefined) setPdfOutputEnabled(pd.postProcessing.pdfOutput.enabled);
-          }
-        }
-      }
-    } catch (e) {
-      console.error(e);
-      showAlert('Erro', 'Não foi possível carregar o perfil para edição', 'error');
-    }
-  };
-
-  const loadProfiles = async () => {
-    try {
-      const res = await fetchApi('/api/v1/profiles');
-      if (res.ok) {
-        const data = await res.json();
-        setProfiles(data);
-      }
-    } catch (err) {
-      console.error('Erro ao carregar perfis', err);
-    } finally {
-      setLoadingProfiles(false);
-    }
-  };
-
-  const handleLoadBaseProfile = async (id: string) => {
+  async function loadAsBase(id: string) {
     try {
       const res = await fetchApi(`/api/v1/profiles/${id}`);
-      if (res.ok) {
-        let data = await res.json();
-        let pData = typeof data === 'string' ? JSON.parse(data) : (data.profileData ? (typeof data.profileData === 'string' ? JSON.parse(data.profileData) : data.profileData) : data);
-        
-        setName(data.name || pData.displayName || '');
-        setDescription(data.description || '');
-        
-        // Page Rules
-        if (pData.pageRule) {
-          setPaperFormat('Custom');
-          setWidthCm(pData.pageRule.widthCm || 21);
-          setHeightCm(pData.pageRule.heightCm || 29.7);
-          setMarginTopCm(pData.pageRule.marginTopCm || 3);
-          setMarginRightCm(pData.pageRule.marginRightCm || 2);
-          setMarginBottomCm(pData.pageRule.marginBottomCm || 2);
-          setMarginLeftCm(pData.pageRule.marginLeftCm || 3);
-          setOrientation(pData.pageRule.orientation || 'PORTRAIT');
-        }
-        
-        // Page Numbering
-        if (pData.pageNumbering) {
-          setPageNumberingEnabled(pData.pageNumbering.enabled);
-          setCountFromComponentId(pData.pageNumbering.countFromComponentId || '');
-          setVisibleFromComponentId(pData.pageNumbering.visibleFromComponentId || '');
-          setPageNumberingPlacement(pData.pageNumbering.placement || 'HEADER_RIGHT');
-          setVertDistCm(pData.pageNumbering.verticalDistanceFromPageEdgeCm || 2);
-          setHorizDistCm(pData.pageNumbering.horizontalDistanceFromPageEdgeCm || 2);
-        } else {
-          setPageNumberingEnabled(false);
-        }
-        
-        // Textual Elements Mapping (simplified to references and lists if needed, default to ABNT usually)
-        
-        // Components Mapping
-        if (pData.componentOrder) {
-          const newComps: any[] = [];
-          pData.componentOrder.forEach((compId: string) => {
-            const pComp = pData.componentRules?.[compId] || pData[compId];
-            if (!pComp) return;
-            
-            let layoutMode = 'FLOW_TEXTUAL';
-            if (pComp.slots) layoutMode = 'SINGLE_PAGE';
-            else if (pComp.useTocField) layoutMode = 'SECTION_INDEX';
-            else if (pComp.headingStyleId && (pComp.headingStyleId.includes('list') || pComp.entryTemplate)) layoutMode = 'ELEMENT_INDEX';
-            else if (pComp.sectionTitleStyleIdsByLevel) layoutMode = 'SECTIONED';
-            else if (pComp.formattingRule) layoutMode = 'REFERENCE_LIST';
-            const comp: any = { name: compId, layoutMode, elements: [], _nativeRule: pComp };
-            
-            if (layoutMode === 'SINGLE_PAGE') {
-              if (pComp.layoutRule && pComp.layoutRule.policy) {
-                comp.policy = { ...pComp.layoutRule.policy };
-              } else {
-                comp.policy = { anchorStrategy: "LAST_GROUP_AT_SAFE_AREA_END", lineHeightStrategy: "MAX_EXACT_LINE_HEIGHT", spacerStylePolicy: "NEXT_GROUP_STYLE", safetyPolicy: "MARGIN_BASED" };
-              }
-
-              // Extract elements ordered by groups to maintain original flow and extract layout details
-              if (pComp.layoutRule && pComp.layoutRule.groups) {
-                pComp.layoutRule.groups.forEach((group: any, groupIndex: number) => {
-                  group.items.forEach((item: any, itemIndex: number) => {
-                    const slotName = item.id;
-                    const slot = pComp.slots[slotName];
-                    if (!slot) return;
-                    
-                    let typeStr = 'text';
-                    if (slot.type === 'TEXT_LIST') typeStr = 'multiline';
-                    else if (slot.type === 'COMPOSED_TEXT') typeStr = 'composed';
-                    else if (slot.type === 'SIGNATURE_BLOCK_LIST') typeStr = 'signature';
-                    
-                    // Find gap weight to the next group (assigned to the last item of the current group)
-                    let gapWeight = 10;
-                    if (itemIndex === group.items.length - 1 && pComp.layoutRule.gapRules) {
-                      const gapRule = pComp.layoutRule.gapRules.find((g: any) => g.fromGroupId === group.id);
-                      if (gapRule) gapWeight = gapRule.weight;
-                    }
-
-                    let hp = 'FULL_CONTENT_WIDTH';
-                    let clm, crm;
-                    if (item.horizontalPlacement) {
-                      if (item.horizontalPlacement.strategy === 'CUSTOM_MARGINS') {
-                        hp = 'CUSTOM';
-                        clm = item.horizontalPlacement.leftMarginCm;
-                        crm = item.horizontalPlacement.rightMarginCm;
-                      } else {
-                        hp = item.horizontalPlacement.strategy;
-                      }
-                    }
-
-                    comp.elements.push({ 
-                      name: slotName, 
-                      required: slot.required || false, 
-                      type: typeStr,
-                      template: slot.template,
-                      fieldNames: slot.fieldNames ? slot.fieldNames.join(', ') : undefined,
-                      gapWeight,
-                      horizontalPlacement: hp,
-                      customLeftMarginCm: clm,
-                      customRightMarginCm: crm
-                    });
-                  });
-                });
-              } else {
-                // Fallback if no layoutRule is present
-                Object.keys(pComp.slots).forEach(slotName => {
-                  const slot = pComp.slots[slotName];
-                  let typeStr = 'text';
-                  if (slot.type === 'TEXT_LIST') typeStr = 'multiline';
-                  else if (slot.type === 'COMPOSED_TEXT') typeStr = 'composed';
-                  else if (slot.type === 'SIGNATURE_BLOCK_LIST') typeStr = 'signature';
-                  
-                  comp.elements.push({ 
-                    name: slotName, 
-                    required: slot.required || false, 
-                    type: typeStr,
-                    template: slot.template,
-                    fieldNames: slot.fieldNames ? slot.fieldNames.join(', ') : undefined,
-                    gapWeight: 10,
-                    horizontalPlacement: 'FULL_CONTENT_WIDTH'
-                  });
-                });
-              }
-            } else if (layoutMode === 'ELEMENT_INDEX' || layoutMode === 'SECTION_INDEX') {
-              comp.indexHeading = pComp.headingText;
-              if (layoutMode === 'ELEMENT_INDEX') comp.entryTemplate = pComp.entryTemplate;
-              comp.elements.push({ name: 'titulo', required: true, type: 'text' });
-            } else if (layoutMode === 'REFERENCE_LIST') {
-               comp.headingText = pComp.headingText;
-               comp.blankLinesAfterHeading = pComp.blankLinesAfterHeading;
-               comp.blankLinesBetweenEntries = pComp.blankLinesBetweenEntries;
-               if (pComp.formattingRule) {
-                 comp.surnameGivenSeparator = pComp.formattingRule.surnameGivenSeparator;
-                 comp.multiAuthorJoiner = pComp.formattingRule.multiAuthorJoiner;
-                 comp.surnameUppercase = pComp.formattingRule.surnameUppercase;
-                 comp.etAlThreshold = pComp.formattingRule.etAlThreshold;
-               }
-               comp.elements.push({ name: 'entries', required: true, type: 'array' });
-            } else if (layoutMode === 'SECTIONED') {
-               comp.headingTemplate = pComp.headingTemplate;
-               comp.elements.push({ name: 'text', required: true, type: 'text' });
-            } else {
-               // FLOW_TEXTUAL fallbacks
-               if (compId === 'resumo' || compId === 'abstract') {
-                 comp.elements.push({ name: 'text', required: true, type: 'text' }, { name: 'keywords', required: true, type: 'array' });
-               } else if (compId === 'errata') {
-                 comp.elements.push({ name: 'rows', required: true, type: 'array' });
-               } else if (compId === 'epigraph') {
-                 comp.elements.push({ name: 'text', required: true, type: 'text' }, { name: 'author', required: true, type: 'text' }, { name: 'source', required: true, type: 'text' });
-               } else if (compId === 'dedication' || compId === 'acknowledgments' || compId === 'bodyContent') {
-                 comp.elements.push({ name: 'text', required: true, type: 'text' });
-               } else if (compId === 'glossary' || compId.startsWith('listOf')) {
-                 comp.elements.push({ name: 'terms', required: true, type: 'array' }, { name: 'definitions', required: true, type: 'array' });
-               } else {
-                 comp.elements.push({ name: 'conteudo', required: true, type: 'text' });
-               }
-            }
-            
-            newComps.push(comp);
-          });
-          setComponents(newComps);
-        }
-        
-        setStep(1);
-      }
-    } catch (err) {
-      console.error('Erro ao carregar perfil base', err);
-      showAlert('Erro', 'Erro ao carregar perfil base', 'error');
+      const data = await res.json();
+      const raw = typeof data.profileData === 'string' ? JSON.parse(data.profileData) : data.profileData;
+      const loaded = deserializeContract(raw ?? {});
+      // Limpa nome e descrição para o usuário preencher o novo perfil
+      loaded.name = '';
+      loaded.description = '';
+      setState(loaded);
+      setShowStartScreen(false);
+    } catch {
+      showAlert('Erro', 'Não foi possível carregar o perfil selecionado.', 'error');
     }
-  };
+  }
 
-  const handlePaperFormatChange = (format: string) => {
-    setPaperFormat(format);
-    if (format === 'A4') { setWidthCm(21); setHeightCm(29.7); }
-    if (format === 'Letter') { setWidthCm(21.59); setHeightCm(27.94); }
-  };
+  // ── Load for edit mode ──
+  useEffect(() => {
+    if (!isEditMode) return;
+    fetchApi(`/api/v1/profiles/${profileId}`)
+      .then(r => r.json())
+      .then(data => {
+        const raw = typeof data.profileData === 'string' ? JSON.parse(data.profileData) : data.profileData;
+        const loaded = deserializeContract(raw ?? {});
+        loaded.name = data.name ?? loaded.name;
+        loaded.description = data.description ?? '';
+        loaded.isPublic = data.isPublic ?? true;
+        setState(loaded);
+      })
+      .catch(() => showAlert('Erro', 'Não foi possível carregar o perfil.', 'error'));
+  }, [isEditMode, profileId]);
 
-  const handleAddComponent = () => {
-    const newComponent = { 
-      name: `componente${components.length + 1}`, 
-      layoutMode: 'SINGLE_PAGE',
-      elements: [] 
+  // ── Helpers ──
+  function updatePage<K extends keyof PageState>(key: K, value: PageState[K]) {
+    setState(s => ({ ...s, page: { ...s.page, [key]: value } }));
+  }
+  function updatePageNumbering<K extends keyof PageState['pageNumbering']>(key: K, value: PageState['pageNumbering'][K]) {
+    setState(s => ({ ...s, page: { ...s.page, pageNumbering: { ...s.page.pageNumbering, [key]: value } } }));
+  }
+  function updatePostProcessing<K extends keyof PostProcessingState>(key: K, value: PostProcessingState[K]) {
+    setState(s => ({ ...s, postProcessing: { ...s.postProcessing, [key]: value } }));
+  }
+  function updateComponent(updated: ComponentState) {
+    setState(s => ({ ...s, components: s.components.map(c => c.id === updated.id ? updated : c) }));
+  }
+  function addStyleRule(rule: StyleRule) {
+    setState(s => ({
+      ...s,
+      styleRules: s.styleRules.some(r => r.id === rule.id)
+        ? s.styleRules.map(r => r.id === rule.id ? rule : r)
+        : [...s.styleRules, rule],
+    }));
+  }
+
+  const selectedComponent = state.components.find(c => c.id === selectedComponentId) ?? null;
+
+  function nameToId(name: string): string {
+    return name
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_|_$/g, '')
+      || 'componente';
+  }
+
+  function addComponent() {
+    if (!newCompName.trim()) return;
+    const baseId = nameToId(newCompName.trim());
+    const id = state.components.find(c => c.id === baseId)
+      ? `${baseId}_${state.components.length}`
+      : baseId;
+    const comp: ComponentState = {
+      id,
+      displayName: newCompName.trim(),
+      ruleType: newCompType,
+      enabled: true,
+      ...(newCompType === 'SINGLE_PAGE' && { slots: [], policy: undefined }),
+      ...(newCompType === 'FLOW_TEXTUAL' && { flowItems: [] }),
+      ...(newCompType === 'BODY_CONTENT' && { bodyContent: defaultBodyContentState() }),
     };
-    setComponents([...components, newComponent]);
-  };
+    setState(s => ({ ...s, components: [...s.components, comp] }));
+    setSelectedComponentId(id);
+    setSelectedSlotId(null);
+    setActiveSection('components');
+    setShowAddModal(false);
+    setNewCompName('');
+    setNewCompType('SINGLE_PAGE');
+  }
 
-  const handleAddElement = () => {
-    if (selectedComponentIndex === null) return;
-    const newComponents = [...components];
-    newComponents[selectedComponentIndex].elements.push({ 
-      name: `elemento${newComponents[selectedComponentIndex].elements.length + 1}`, 
-      type: 'text', 
-      required: false,
-      uppercase: false,
-      bold: false,
-      italic: false,
-      alignment: 'inherit',
-      fontSize: 'inherit',
-      marginTop: '0',
-      marginBottom: '1'
-    });
-    setComponents(newComponents);
-  };
+  function deleteComponent(id: string) {
+    setState(s => ({ ...s, components: s.components.filter(c => c.id !== id) }));
+    if (selectedComponentId === id) {
+      setSelectedComponentId(null);
+      setSelectedSlotId(null);
+    }
+  }
 
-  const handleDropComponent = (targetIndex: number) => {
-    if (draggedComponentIndex === null || draggedComponentIndex === targetIndex) return;
-    const newComps = [...components];
-    const [draggedItem] = newComps.splice(draggedComponentIndex, 1);
-    newComps.splice(targetIndex, 0, draggedItem);
-    setComponents(newComps);
-    setDraggedComponentIndex(null);
-    if (selectedComponentIndex === draggedComponentIndex) setSelectedComponentIndex(targetIndex);
-    else if (selectedComponentIndex === targetIndex) setSelectedComponentIndex(draggedComponentIndex);
-  };
-
-  const handleDropElement = (targetIndex: number) => {
-    if (selectedComponentIndex === null || draggedElementIndex === null || draggedElementIndex === targetIndex) return;
-    const newComps = [...components];
-    const elements = newComps[selectedComponentIndex].elements;
-    const [draggedItem] = elements.splice(draggedElementIndex, 1);
-    elements.splice(targetIndex, 0, draggedItem);
-    setComponents(newComps);
-    setDraggedElementIndex(null);
-    if (selectedElementIndex === draggedElementIndex) setSelectedElementIndex(targetIndex);
-    else if (selectedElementIndex === targetIndex) setSelectedElementIndex(draggedElementIndex);
-  };
-
-  const handleSaveProfile = async () => {
-    const generatedId = name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Math.random().toString(36).substring(2, 8);
-    
-    // Convert visually built components to contract structures
-    const componentOrder = components.map(c => c.name);
-    
-    const componentRules: any = {};
-    const extraStyleRules: any[] = [];
-    
-    components.forEach(c => {
-      const rule: any = c._nativeRule ? { ...c._nativeRule, componentId: c.name } : { componentId: c.name };
-      
-      if (c.layoutMode === 'SINGLE_PAGE') {
-        rule.slots = {};
-        rule.styleMapping = c._nativeRule?.styleMapping || {};
-        rule.layoutRule = { groups: [], gapRules: [], policy: c.policy || { anchorStrategy: "LAST_GROUP_AT_SAFE_AREA_END", lineHeightStrategy: "MAX_EXACT_LINE_HEIGHT", spacerStylePolicy: "NEXT_GROUP_STYLE", safetyPolicy: "MARGIN_BASED" } };
-        
-        c.elements.forEach((el: any, index: number) => {
-          const typeMap: Record<string, string> = { 'multiline': 'TEXT_LIST', 'composed': 'COMPOSED_TEXT', 'signature': 'SIGNATURE_BLOCK_LIST', 'text': 'TEXT' };
-          rule.slots[el.name] = { type: typeMap[el.type] || 'TEXT', required: el.required };
-          if (el.type === 'composed') {
-            rule.slots[el.name].template = el.template;
-            rule.slots[el.name].fieldNames = el.fieldNames ? el.fieldNames.split(',').map((s: string) => s.trim()) : [];
-          }
-          if (el.type === 'signature') {
-            rule.slots[el.name].signatureLineEnabled = true;
-            rule.slots[el.name].signatureLineText = "________________________________________";
-            rule.slots[el.name].lineTemplates = ["{title} {name}", "{institutionName}", "{role}"];
-            rule.slots[el.name].knownFieldNames = ["name", "title", "institutionName", "role"];
-          }
-          
-          const styleId = `${c.name}.${el.name}`;
-          rule.styleMapping[el.name] = styleId;
-          
-          rule.layoutRule.groups.push({
-            id: `${c.name}.${el.name}Block`,
-            required: el.required,
-            items: [{
-              id: el.name,
-              required: el.required,
-              horizontalPlacement: el.horizontalPlacement === 'CUSTOM' ? {
-                strategy: 'CUSTOM_MARGINS',
-                leftMarginCm: el.customLeftMarginCm,
-                rightMarginCm: el.customRightMarginCm
-              } : { strategy: el.horizontalPlacement || 'FULL_CONTENT_WIDTH' },
-              blankLinesAfter: el.gapWeight ? 1 : 0
-            }]
-          });
-          
-          if (index > 0) {
-            rule.layoutRule.gapRules.push({
-              fromGroupId: `${c.name}.${c.elements[index - 1].name}Block`,
-              toGroupId: `${c.name}.${el.name}Block`,
-              weight: el.gapWeight || 10
-            });
-          }
-          
-          extraStyleRules.push({
-            id: styleId,
-            type: "PARAGRAPH",
-            fontFamily,
-            fontSizePt: el.fontSize === 'inherit' ? fontSizePt : Number(el.fontSize),
-            alignment: (!el.alignment || el.alignment === 'inherit') ? alignment : el.alignment.toUpperCase(),
-            lineSpacing,
-            firstLineIndentCm: 0,
-            leftIndentCm: 0,
-            rightIndentCm: 0,
-            spacingBeforePt: 0,
-            spacingAfterPt: 0,
-            bold: el.bold,
-            italic: el.italic,
-            uppercase: el.uppercase
-          });
-        });
-      } else if (c.layoutMode === 'FLOW_TEXTUAL') {
-        if (!c._nativeRule) {
-          const firstHeading = c.elements.find((el: any) => el.type === 'HEADING');
-          if (firstHeading) {
-            rule.headingStyleId = `${c.name}.heading`;
-            rule.headingText = firstHeading.headingText;
-            extraStyleRules.push({ id: rule.headingStyleId, type: "PARAGRAPH", fontFamily, fontSizePt, alignment: "CENTER", lineSpacing, bold: true, uppercase: true });
-          }
-          
-          const firstKeywords = c.elements.find((el: any) => el.type === 'BOLD_LABELED_KEYWORDS');
-          if (firstKeywords) {
-            rule.textStyleId = `${c.name}.text`;
-            rule.keywordsStyleId = `${c.name}.keywords`;
-            rule.keywordsLabel = firstKeywords.keywordsLabel;
-            rule.keywordsSeparator = firstKeywords.keywordsSeparator;
-            rule.keywordsTerminator = firstKeywords.keywordsTerminator;
-            extraStyleRules.push({ id: rule.textStyleId, type: "PARAGRAPH", fontFamily, fontSizePt, alignment: "JUSTIFY", lineSpacing, firstLineIndentCm: 0 });
-            extraStyleRules.push({ id: rule.keywordsStyleId, type: "PARAGRAPH", fontFamily, fontSizePt, alignment: "JUSTIFY", lineSpacing, firstLineIndentCm: 0 });
-          }
-          
-          const firstTable = c.elements.find((el: any) => el.type === 'TABLE_BLOCK');
-          if (firstTable && firstTable.tableHeaders) {
-            rule.tableHeaderStyleId = `${c.name}.tableHeader`;
-            rule.tableCellStyleId = `${c.name}.tableCell`;
-            rule.tableHeaders = firstTable.tableHeaders.split(',').map((s: string) => s.trim());
-          }
-
-          const firstTemplated = c.elements.find((el: any) => el.type === 'TEMPLATED_TEXT' || el.type === 'composed');
-          if (firstTemplated) {
-            rule.textStyleId = `${c.name}.text`;
-            rule.authorStyleId = `${c.name}.author`;
-            rule.authorTemplate = firstTemplated.template;
-          }
-
-          const firstBlank = c.elements.find((el: any) => el.type === 'BLANK_LINES');
-          if (firstBlank) rule.blankLinesAfterHeading = firstBlank.blankLinesCount;
-          
-          // Se for um glossary simulado
-          const firstPairList = c.elements.find((el: any) => el.type === 'PAIR_LIST');
-          if (firstPairList) {
-            rule.entryStyleId = `${c.name}.entry`;
-            rule.termSeparator = " — ";
-          }
-        }
-      } else if (c.layoutMode === 'REFERENCE_LIST') {
-        rule.headingStyleId = `${c.name}.heading`;
-        rule.headingText = c.headingText ?? 'REFERÊNCIAS';
-        rule.entryStyleId = `${c.name}.entry`;
-        rule.blankLinesBetweenEntries = c.blankLinesBetweenEntries ?? 1;
-        rule.blankLinesAfterHeading = c.blankLinesAfterHeading ?? 2;
-        rule.formattingRule = {
-          ...(c._nativeRule?.formattingRule || {}),
-          authorFormat: {
-            ...(c._nativeRule?.formattingRule?.authorFormat || {}),
-            surnameUppercase: c.surnameUppercase ?? true,
-            surnameGivenSeparator: c.surnameGivenSeparator ?? ', ',
-            nameTerminator: '.',
-            multiAuthorJoiner: c.multiAuthorJoiner ?? '; ',
-            etAlLabel: 'et al.',
-            etAlThreshold: c.etAlThreshold ?? 3
-          },
-          entryFormats: {
-            ...(c._nativeRule?.formattingRule?.entryFormats || {}),
-            BOOK: [
-              { source: "authors", bold: false, prefix: "", suffix: "", optional: false },
-              { source: "title", bold: true, prefix: "", suffix: "", optional: false },
-              { source: "subtitle", bold: false, prefix: ": ", suffix: "", optional: true },
-              { source: "edition", bold: false, prefix: ". ", suffix: ". ed.", optional: true },
-              { source: "city", bold: false, prefix: ". ", suffix: ": ", optional: true },
-              { source: "publisher", bold: false, prefix: "", suffix: ", ", optional: true },
-              { source: "year", bold: false, prefix: "", suffix: ".", optional: false }
-            ],
-            BOOK_CHAPTER: [
-              { source: "authors", bold: false, prefix: "", suffix: "", optional: false },
-              { source: "title", bold: true, prefix: "", suffix: "", optional: false },
-              { source: "literal:In: ", bold: false, prefix: "", suffix: "", optional: false },
-              { source: "bookAuthors", bold: false, prefix: "", suffix: "", optional: true },
-              { source: "bookTitle", bold: true, prefix: "", suffix: ". ", optional: true },
-              { source: "edition", bold: false, prefix: "", suffix: ". ed. ", optional: true },
-              { source: "city", bold: false, prefix: "", suffix: ": ", optional: true },
-              { source: "publisher", bold: false, prefix: "", suffix: ", ", optional: true },
-              { source: "year", bold: false, prefix: "", suffix: ".", optional: false },
-              { source: "pages", bold: false, prefix: " p. ", suffix: ".", optional: true }
-            ]
-          }
-        };
-      } else if (c.layoutMode === 'BODY_CONTENT') {
-        rule.styleMapping = {
-          sectionTitleStyleIdsByLevel: ["bodyContent.heading1", "bodyContent.heading2", "bodyContent.heading3", "bodyContent.heading4"],
-          paragraphStyleId: "bodyContent.paragraph",
-          directShortQuoteStyleId: "bodyContent.paragraph",
-          directLongQuoteStyleId: "bodyContent.longQuote",
-          indirectCitationStyleId: "bodyContent.paragraph",
-          citationOfCitationStyleId: "bodyContent.paragraph",
-          listOrderedStyleId: "bodyContent.list.ordered",
-          listUnorderedStyleId: "bodyContent.list.unordered",
-          equationStyleId: "bodyContent.paragraph",
-          footnoteCallStyleId: "bodyContent.footnoteCall",
-          footnoteTextStyleId: "bodyContent.footnoteText"
-        };
-        rule.numbering = { enabled: c.numberingEnabled ?? true, separator: c.numberingSeparator ?? '.', primarySuffix: c.primarySuffix ?? '' };
-        rule.layout = { blankLinesBeforeSectionTitleWhenPrecededByContent: c.blankLinesBeforeSection ?? 1, blankLinesAfterSectionTitle: c.blankLinesAfterSection ?? 1, pageBreakBeforePrimarySection: c.pageBreakBeforePrimary ?? true, blankLineStyleId: "bodyContent.paragraph" };
-        rule.figure = { captionStyleId: "bodyContent.figure.caption", sourceStyleId: "bodyContent.figure.source", captionTemplate: figCaptionTemplate, sourceTemplate: figSourceTemplate, continuationLabels: { first: "continua", middle: "continuação", last: "conclusão" }, sourcePlacement: "LAST_PART_ONLY", imageAlignment: figAlign, maxWidthCm: figMaxWidth, maxHeightCm: figMaxHeight, defaultDpi: 96, maxImageBytes: 2000000, urlFetchTimeoutSeconds: 10, fitPolicy: "SCALE_DOWN_PRESERVE_ASPECT_RATIO", numberingStrategy: figNumberingStrategy, label: "Figura" };
-        rule.table = { captionStyleId: "bodyContent.table.caption", sourceStyleId: "bodyContent.table.source", headerStyleId: "bodyContent.table.header", cellStyleId: "bodyContent.table.cell", captionTemplate: tableCaptionTemplate, sourceTemplate: tableSourceTemplate, continuationLabels: { first: "continua", middle: "continuação", last: "conclusão" }, sourcePlacement: "LAST_PART_ONLY", tableAlignment: tableAlign, widthPercent: tableWidthPercent, repeatHeaderOnPageBreak: tableRepeatHeaders, numberingStrategy: tableNumberingStrategy, label: "Tabela" };
-        rule.frame = { captionStyleId: "bodyContent.frame.caption", sourceStyleId: "bodyContent.frame.source", headerStyleId: "bodyContent.frame.header", cellStyleId: "bodyContent.frame.cell", captionTemplate: frameCaptionTemplate, sourceTemplate: frameSourceTemplate, continuationLabels: { first: "continua", middle: "continuação", last: "conclusão" }, sourcePlacement: "LAST_PART_ONLY", tableAlignment: frameAlign, widthPercent: frameWidthPercent, repeatHeaderOnPageBreak: frameRepeatHeaders, numberingStrategy: frameNumberingStrategy, label: "Quadro" };
-        rule.codeListing = { captionStyleId: "bodyContent.figure.caption", sourceStyleId: "bodyContent.figure.source", codeStyleId: "bodyContent.codeListing.code", captionTemplate: codeCaptionTemplate, sourceTemplate: codeSourceTemplate, continuationLabels: { first: "continua", middle: "continuação", last: "conclusão" }, sourcePlacement: "LAST_PART_ONLY", codeAlignment: codeAlign, widthPercent: codeWidthPercent, repeatHeaderOnPageBreak: codeRepeatHeaders, numberingStrategy: codeNumberingStrategy, label: "Código-fonte" };
-        rule.chart = { captionStyleId: "bodyContent.figure.caption", sourceStyleId: "bodyContent.figure.source", captionTemplate: chartCaptionTemplate, sourceTemplate: chartSourceTemplate, continuationLabels: { first: "continua", middle: "continuação", last: "conclusão" }, sourcePlacement: "LAST_PART_ONLY", imageAlignment: chartAlign, maxWidthCm: chartMaxWidth, maxHeightCm: chartMaxHeight, numberingStrategy: chartNumberingStrategy, label: "Gráfico" };
-        rule.equation = { captionStyleId: "bodyContent.figure.caption", sourceStyleId: "bodyContent.figure.source", numberingTemplate: equationCaptionTemplate, numberingAlignment: "RIGHT", equationAlignment: equationAlign, numberingStrategy: equationNumberingStrategy, label: "Equação" };
-        rule.crossReferenceLabels = { sectionLabel: "Seção", figureLabel: "Figura", tableLabel: "Tabela", frameLabel: "Quadro", chartLabel: "Gráfico", codeListingLabel: "Listagem", equationLabel: "Equação" };
-      } else if (c.layoutMode === 'SECTIONED') {
-        rule.headingTemplate = c.headingTemplate ?? '{letter} — {title}';
-        rule.headingStyleId = `${c.name}.heading`;
-        rule.paragraphStyleId = "bodyContent.paragraph";
-        rule.sectionTitleStyleIdsByLevel = ["bodyContent.heading1", "bodyContent.heading2"];
-      } else if (c.layoutMode === 'ELEMENT_INDEX') {
-        rule.headingStyleId = "list.heading";
-        rule.headingText = c.indexHeading ?? 'LISTA';
-        rule.entryStyleId = "list.entry";
-        rule.blankLinesAfterHeading = 1;
-        
-        // Match specific ABNT profile list formats
-        if (c.name.toLowerCase().includes("abbreviation") || c.name.toLowerCase().includes("symbol")) {
-          rule.termSeparator = " — ";
-          if (c.name.toLowerCase().includes("abbreviation")) rule.sortAlphabetically = true;
-        } else {
-          rule.entryTemplate = c.entryTemplate ?? "{number} — {caption}";
-        }
-      } else if (c.layoutMode === 'SECTION_INDEX') {
-        rule.headingStyleId = "list.heading";
-        rule.headingText = c.indexHeading ?? 'SUMÁRIO';
-        rule.entryStyleIdsByLevel = ["list.entry", "list.entry", "list.entry", "list.entry", "list.entry", "list.entry"];
-        rule.useTocField = true;
-      }
-      
-      componentRules[c.name] = rule;
-    });
-
-    const profileData = {
-      id: generatedId,
-      displayName: name,
-      componentOrder,
-      pageRule: { widthCm, heightCm, marginTopCm, marginRightCm, marginBottomCm, marginLeftCm, orientation },
-      ...(pageNumberingEnabled && countFromComponentId && visibleFromComponentId && {
-        pageNumbering: { enabled: true, countFromComponentId, visibleFromComponentId, styleId: "pageNumber", placement: pageNumberingPlacement, verticalDistanceFromPageEdgeCm: vertDistCm, horizontalDistanceFromPageEdgeCm: horizDistCm }
-      }),
-      postProcessing: {
-        tableContinuationLabels: { enabled: tableContLabelsEnabled, continuesLabel, continuationLabel, conclusionLabel, labelStyleId: "bodyContent.paragraph" },
-        orphanTitleCorrection: { enabled: orphanTitleEnabled },
-        integrityCheck: { enabled: integrityEnabled, checkMarginOverflow: marginOverflowCheck, checkFontSubstitution: fontSubCheck, maxPages },
-        pdfOutput: { enabled: pdfOutputEnabled }
-      },
-      styleRules: [
-        { id: "bodyContent.paragraph", type: "PARAGRAPH", fontFamily, fontSizePt, alignment, lineSpacing, firstLineIndentCm, leftIndentCm: 0, rightIndentCm: 0, spacingBeforePt: 0, spacingAfterPt: 0, bold: false, italic: false, uppercase: false },
-        { id: "pageNumber", type: "CHARACTER", fontFamily, fontSizePt: 10, alignment: "RIGHT", lineSpacing: 1.0, firstLineIndentCm: 0, leftIndentCm: 0, rightIndentCm: 0, spacingBeforePt: 0, spacingAfterPt: 0, bold: false, italic: false, uppercase: false },
-        ...extraStyleRules
-      ],
-      _builderState: { components },
-      ...componentRules
-    };
-
-    const payload = {
-      id: generatedId,
-      name,
-      description,
-      isPublic,
-      profileData: JSON.stringify(profileData),
-    };
+  // ── Save ──
+  async function handleSave() {
+    if (hasErrors) {
+      const firstSection = Object.keys(errors)[0] as BuilderSection;
+      showAlert('Validação', Object.values(errors).flat().join('\n'), 'error');
+      setActiveSection(firstSection);
+      return;
+    }
 
     if (isEditMode) {
-      // Instead of submitting right away, open the versioning modal
-      setPendingPayload(payload);
       setShowVersionModal(true);
       return;
     }
 
+    await doSave();
+  }
+
+  async function doSave(keepOld?: boolean) {
+    setIsSaving(true);
     try {
-      const res = await fetchApi('/api/v1/profiles', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(txt || 'Erro ao salvar o perfil.');
-      }
-      showAlert('Sucesso', 'Perfil criado com sucesso!', 'success', '/dashboard');
-    } catch (err: any) {
-      console.error(err);
-      showAlert('Erro', err.message || 'Erro ao criar perfil', 'error');
+      const contract = serializeState(state, isEditMode ? undefined : undefined);
+      const payload = {
+        name: state.name,
+        description: state.description,
+        isPublic: state.isPublic,
+        profileData: JSON.stringify(contract),
+        ...(isEditMode && {
+          keepOldVersion: keepOld ?? keepOldVersion,
+          oldVersionName: `v${Date.now()}`,
+        }),
+      };
+
+      const res = await fetchApi(
+        isEditMode ? `/api/v1/profiles/${profileId}` : '/api/v1/profiles',
+        { method: isEditMode ? 'PUT' : 'POST', body: JSON.stringify(payload) }
+      );
+      if (!res.ok) throw new Error(await res.text());
+      showAlert('Sucesso', isEditMode ? 'Perfil atualizado!' : 'Perfil criado!', 'success', '/dashboard');
+    } catch (e: unknown) {
+      showAlert('Erro', (e instanceof Error ? e.message : String(e)) || 'Erro ao salvar.', 'error');
+    } finally {
+      setIsSaving(false);
+      setShowVersionModal(false);
     }
-  };
+  }
 
-  const submitEdit = async () => {
-    setShowVersionModal(false);
-    
-    if (!pendingPayload) {
-      showAlert('Erro', 'Dados do perfil não encontrados.', 'error');
-      return;
-    }
+  // ──────────────────────────────────────────
+  // Section renderers
+  // ──────────────────────────────────────────
 
-    let autoVersionName = "v1.0";
-    try {
-      const verRes = await fetchApi(`/api/v1/profiles/${profileId}/versions`);
-      if (verRes.ok) {
-        const versions = await verRes.json();
-        autoVersionName = `v${versions.length + 1}.0`;
-      }
-    } catch (e) {}
-
-    const payload = {
-      name,
-      description,
-      isPublic,
-      profileData: pendingPayload.profileData,
-      keepOldVersion,
-      oldVersionName: autoVersionName
-    };
-
-    try {
-      const res = await fetchApi(`/api/v1/profiles/${profileId}`, {
-        method: 'PUT',
-        body: JSON.stringify(payload)
-      });
-      if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(txt || 'Erro ao editar o perfil.');
-      }
-      showAlert('Sucesso', 'Perfil atualizado com sucesso!', 'success', `/explore/${profileId}`);
-    } catch (err: any) {
-      console.error(err);
-      showAlert('Erro', err.message || 'Erro ao editar perfil', 'error');
-    }
-  };
-
-  const renderStepper = () => (
-    <div className="flex justify-center mb-8">
-      <div className="flex space-x-2 overflow-x-auto pb-2">
-        {['Início', 'Info. Básicas', 'Construtor', 'Elementos Textuais', 'Numeração', 'Validações'].map((label, idx) => (
-          <div key={idx} className="flex items-center whitespace-nowrap">
-            <div className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${step === idx ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-200 text-gray-600 cursor-pointer hover:bg-gray-300'} ${isEditMode && idx === 0 ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`} onClick={() => { if(step !== 0 && !(isEditMode && idx === 0)) setStep(idx as any) }}>
-              {idx + 1}. {label}
-            </div>
-            {idx < 5 && <div className="w-4 lg:w-8 h-px bg-gray-300 mx-2"></div>}
+  function renderProfile() {
+    return (
+      <div className="max-w-2xl mx-auto space-y-6 py-6 px-4">
+        <FormField label="Nome do Perfil">
+          <input
+            type="text"
+            className="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500"
+            value={state.name}
+            onChange={e => setState(s => ({ ...s, name: e.target.value }))}
+            placeholder="Ex: ABNT 2023"
+          />
+        </FormField>
+        <FormField label="Descrição">
+          <textarea
+            className="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500"
+            rows={3}
+            value={state.description}
+            onChange={e => setState(s => ({ ...s, description: e.target.value }))}
+            placeholder="Descreva as regras e o uso recomendado..."
+          />
+        </FormField>
+        <label className="flex items-center gap-3 cursor-pointer p-3 border border-slate-200 rounded-lg hover:bg-slate-50">
+          <Switch.Root
+            checked={state.isPublic}
+            onCheckedChange={v => setState(s => ({ ...s, isPublic: v }))}
+            className={`w-10 h-6 rounded-full transition-colors ${state.isPublic ? 'bg-blue-600' : 'bg-slate-300'}`}
+          >
+            <Switch.Thumb className="block w-4 h-4 bg-white rounded-full shadow transition-transform translate-x-1 data-[state=checked]:translate-x-5" />
+          </Switch.Root>
+          <div>
+            <p className="text-sm font-medium text-slate-700">Perfil público</p>
+            <p className="text-xs text-slate-400">Outros usuários poderão visualizar e usar este perfil.</p>
           </div>
-        ))}
+        </label>
       </div>
-    </div>
-  );
+    );
+  }
+
+  function renderPage() {
+    const page = state.page;
+    const pn = page.pageNumbering;
+    const componentIds = state.components.map(c => c.id);
+
+    return (
+      <div className="max-w-3xl mx-auto space-y-8 py-6 px-4">
+        <section>
+          <h2 className="text-base font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">Dimensões e orientação</h2>
+          <div className="grid grid-cols-2 gap-4">
+            <FormField label="Formato de papel">
+              <select
+                className="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                value={page.paperFormat}
+                onChange={e => {
+                  const fmt = e.target.value as PageState['paperFormat'];
+                  const presets: Record<string, [number, number]> = {
+                    A3: [29.7, 42],
+                    A4: [21, 29.7],
+                    A5: [14.8, 21],
+                    Letter: [21.59, 27.94],
+                    Legal: [21.59, 35.56],
+                    Tabloid: [27.94, 43.18],
+                  };
+                  if (presets[fmt]) {
+                    updatePage('widthCm', presets[fmt][0]);
+                    updatePage('heightCm', presets[fmt][1]);
+                  }
+                  updatePage('paperFormat', fmt);
+                }}
+              >
+                <option value="A3">A3 (29.7 × 42 cm)</option>
+                <option value="A4">A4 (21 × 29.7 cm)</option>
+                <option value="A5">A5 (14.8 × 21 cm)</option>
+                <option value="Letter">Carta / Letter (21.59 × 27.94 cm)</option>
+                <option value="Legal">Legal (21.59 × 35.56 cm)</option>
+                <option value="Tabloid">Tabloid (27.94 × 43.18 cm)</option>
+                <option value="Custom">Personalizado</option>
+              </select>
+            </FormField>
+            <FormField label="Orientação">
+              <select
+                className="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                value={page.orientation}
+                onChange={e => updatePage('orientation', e.target.value as 'PORTRAIT' | 'LANDSCAPE')}
+              >
+                <option value="PORTRAIT">Retrato</option>
+                <option value="LANDSCAPE">Paisagem</option>
+              </select>
+            </FormField>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Largura (cm)</label>
+              <input
+                type="number"
+                step="0.1"
+                min="1"
+                disabled={page.paperFormat !== 'Custom'}
+                className="w-full border border-slate-300 rounded-lg p-2.5 text-sm text-slate-800 focus:ring-2 focus:ring-blue-500 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+                value={page.widthCm}
+                onChange={e => updatePage('widthCm', Number(e.target.value))}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Altura (cm)</label>
+              <input
+                type="number"
+                step="0.1"
+                min="1"
+                disabled={page.paperFormat !== 'Custom'}
+                className="w-full border border-slate-300 rounded-lg p-2.5 text-sm text-slate-800 focus:ring-2 focus:ring-blue-500 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+                value={page.heightCm}
+                onChange={e => updatePage('heightCm', Number(e.target.value))}
+              />
+              {page.paperFormat !== 'Custom' && (
+                <p className="text-[10px] text-slate-400 mt-0.5">Selecione "Personalizado" para editar</p>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-base font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">Margens (cm)</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <NumberInput label="Superior" value={page.marginTopCm} onChange={v => updatePage('marginTopCm', v)} />
+            <NumberInput label="Inferior" value={page.marginBottomCm} onChange={v => updatePage('marginBottomCm', v)} />
+            <NumberInput label="Esquerda" value={page.marginLeftCm} onChange={v => updatePage('marginLeftCm', v)} />
+            <NumberInput label="Direita" value={page.marginRightCm} onChange={v => updatePage('marginRightCm', v)} />
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-base font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">Fonte base</h2>
+          <div className="grid grid-cols-2 gap-4">
+            <FormField label="Família padrão">
+              <select
+                className="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                value={page.fontRoles.defaultFamily}
+                onChange={e => updatePage('fontRoles', { ...page.fontRoles, defaultFamily: e.target.value })}
+              >
+                {['Times New Roman', 'Arial', 'Calibri', 'Georgia', 'Verdana'].map(f => <option key={f} value={f}>{f}</option>)}
+              </select>
+            </FormField>
+          </div>
+        </section>
+
+        <section>
+          <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-2">
+            <h2 className="text-base font-bold text-slate-800">Numeração de páginas</h2>
+            <Switch.Root
+              checked={pn.enabled}
+              onCheckedChange={v => updatePageNumbering('enabled', v)}
+              className={`w-10 h-6 rounded-full transition-colors ${pn.enabled ? 'bg-blue-600' : 'bg-slate-300'}`}
+            >
+              <Switch.Thumb className="block w-4 h-4 bg-white rounded-full shadow transition-transform translate-x-1 data-[state=checked]:translate-x-5" />
+            </Switch.Root>
+          </div>
+          {pn.enabled && componentIds.length === 0 && (
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700">
+              <p className="font-semibold mb-1">Ainda sem seções criadas</p>
+              <p>Crie as seções do documento na aba <strong>Componentes</strong> primeiro. Depois volte aqui para definir a partir de qual seção a contagem e a exibição do número de página começam.</p>
+            </div>
+          )}
+          {pn.enabled && componentIds.length > 0 && (
+            <div className="grid grid-cols-2 gap-4">
+              <FormField label="Começar a contar a partir de" hint="A página desta seção será a número 1, mas o número pode não aparecer ainda">
+                <select className="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                  value={pn.countFromComponentId}
+                  onChange={e => updatePageNumbering('countFromComponentId', e.target.value)}>
+                  <option value="">— Selecione uma seção —</option>
+                  {state.components.map(c => <option key={c.id} value={c.id}>{c.displayName || c.id}</option>)}
+                </select>
+              </FormField>
+              <FormField label="Mostrar número a partir de" hint="A partir desta seção o número aparece impresso na folha">
+                <select className="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                  value={pn.visibleFromComponentId}
+                  onChange={e => updatePageNumbering('visibleFromComponentId', e.target.value)}>
+                  <option value="">— Selecione uma seção —</option>
+                  {state.components.map(c => <option key={c.id} value={c.id}>{c.displayName || c.id}</option>)}
+                </select>
+              </FormField>
+              <FormField label="Posição na página">
+                <select className="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                  value={pn.placement}
+                  onChange={e => updatePageNumbering('placement', e.target.value as PageState['pageNumbering']['placement'])}>
+                  <option value="HEADER_RIGHT">Cabeçalho direito</option>
+                  <option value="HEADER_CENTER">Cabeçalho centralizado</option>
+                  <option value="FOOTER_RIGHT">Rodapé direito</option>
+                  <option value="FOOTER_CENTER">Rodapé centralizado</option>
+                </select>
+              </FormField>
+              <div className="grid grid-cols-2 gap-2">
+                <NumberInput label="Dist. da borda vertical (cm)" value={pn.verticalDistanceFromEdgeCm} onChange={v => updatePageNumbering('verticalDistanceFromEdgeCm', v)} />
+                <NumberInput label="Dist. da borda horizontal (cm)" value={pn.horizontalDistanceFromEdgeCm} onChange={v => updatePageNumbering('horizontalDistanceFromEdgeCm', v)} />
+              </div>
+            </div>
+          )}
+          {!pn.enabled && (
+            <p className="text-sm text-slate-400 italic">Numeração de páginas desabilitada.</p>
+          )}
+        </section>
+      </div>
+    );
+  }
+
+  function renderComponents() {
+    return (
+      <div className="flex flex-1 min-h-0 h-full">
+        <ComponentList
+          components={state.components}
+          selectedId={selectedComponentId}
+          onSelect={id => { setSelectedComponentId(id); setSelectedSlotId(null); }}
+          onChange={components => setState(s => ({ ...s, components }))}
+          onAdd={() => setShowAddModal(true)}
+          validationErrors={compErrors}
+        />
+        <ComponentVisualPanel
+          component={selectedComponent}
+          selectedSlotId={selectedSlotId}
+          onSelectSlot={id => setSelectedSlotId(id)}
+          onUpdateComponent={updateComponent}
+          styleRules={state.styleRules}
+          onAddStyleRule={addStyleRule}
+        />
+        <InspectorPanel
+          component={selectedComponent}
+          selectedSlotId={selectedSlotId}
+          styleRules={state.styleRules}
+          allComponents={state.components}
+          onUpdateComponent={updated => { updateComponent(updated); }}
+          onAddStyleRule={addStyleRule}
+        />
+      </div>
+    );
+  }
+
+  function renderTextualElements() {
+    const bc = bodyContent?.bodyContent ?? defaultBodyContentState();
+    const onChange = (updated: typeof bc) => {
+      if (bodyContent) {
+        updateComponent({ ...bodyContent, bodyContent: updated });
+      }
+    };
+    return (
+      <div className="max-w-3xl mx-auto py-6 px-4">
+        {!bodyContent && (
+          <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
+            Adicione um componente <strong>Corpo do Texto</strong> na seção Componentes para salvar essas configurações.
+          </div>
+        )}
+        <TextualElementsGallery state={bc} onChange={onChange} />
+      </div>
+    );
+  }
+
+  function renderPostProcessing() {
+    const pp = state.postProcessing;
+    return (
+      <div className="max-w-2xl mx-auto space-y-6 py-6 px-4">
+        <div className="border border-slate-200 rounded-lg p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-slate-700">Correção de títulos órfãos</p>
+              <p className="text-xs text-slate-400">Move títulos isolados no fim da página para a próxima.</p>
+            </div>
+            <Switch.Root
+              checked={pp.orphanTitleEnabled}
+              onCheckedChange={v => updatePostProcessing('orphanTitleEnabled', v)}
+              className={`w-10 h-6 rounded-full transition-colors ${pp.orphanTitleEnabled ? 'bg-blue-600' : 'bg-slate-300'}`}
+            >
+              <Switch.Thumb className="block w-4 h-4 bg-white rounded-full shadow transition-transform translate-x-1 data-[state=checked]:translate-x-5" />
+            </Switch.Root>
+          </div>
+        </div>
+
+        <div className="border border-slate-200 rounded-lg p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-slate-700">Rótulos de tabelas longas</p>
+              <p className="text-xs text-slate-400">Injeta rótulos em tabelas que quebram de página.</p>
+            </div>
+            <Switch.Root
+              checked={pp.tableContinuationLabels.enabled}
+              onCheckedChange={v => updatePostProcessing('tableContinuationLabels', { ...pp.tableContinuationLabels, enabled: v })}
+              className={`w-10 h-6 rounded-full transition-colors ${pp.tableContinuationLabels.enabled ? 'bg-blue-600' : 'bg-slate-300'}`}
+            >
+              <Switch.Thumb className="block w-4 h-4 bg-white rounded-full shadow transition-transform translate-x-1 data-[state=checked]:translate-x-5" />
+            </Switch.Root>
+          </div>
+          {pp.tableContinuationLabels.enabled && (
+            <div className="grid grid-cols-3 gap-3">
+              {([
+                { key: 'continuesLabel', label: 'Início (continua)' },
+                { key: 'continuationLabel', label: 'Meio (continuação)' },
+                { key: 'conclusionLabel', label: 'Fim (conclusão)' },
+              ] as const).map(({ key, label }) => (
+                <div key={key}>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">{label}</label>
+                  <input type="text" className="w-full border border-slate-300 rounded p-2 text-xs focus:ring-2 focus:ring-blue-500"
+                    value={pp.tableContinuationLabels[key]}
+                    onChange={e => updatePostProcessing('tableContinuationLabels', { ...pp.tableContinuationLabels, [key]: e.target.value })} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="border border-slate-200 rounded-lg p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-slate-700">Verificação de integridade</p>
+              <p className="text-xs text-slate-400">Avisos via header HTTP ao formatar.</p>
+            </div>
+            <Switch.Root
+              checked={pp.integrityCheck.enabled}
+              onCheckedChange={v => updatePostProcessing('integrityCheck', { ...pp.integrityCheck, enabled: v })}
+              className={`w-10 h-6 rounded-full transition-colors ${pp.integrityCheck.enabled ? 'bg-blue-600' : 'bg-slate-300'}`}
+            >
+              <Switch.Thumb className="block w-4 h-4 bg-white rounded-full shadow transition-transform translate-x-1 data-[state=checked]:translate-x-5" />
+            </Switch.Root>
+          </div>
+          {pp.integrityCheck.enabled && (
+            <div className="space-y-2 ml-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" className="w-4 h-4 text-blue-600 rounded border-slate-300"
+                  checked={pp.integrityCheck.checkMarginOverflow}
+                  onChange={e => updatePostProcessing('integrityCheck', { ...pp.integrityCheck, checkMarginOverflow: e.target.checked })} />
+                <span className="text-sm text-slate-600">Verificar overflow de margens</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" className="w-4 h-4 text-blue-600 rounded border-slate-300"
+                  checked={pp.integrityCheck.checkFontSubstitution}
+                  onChange={e => updatePostProcessing('integrityCheck', { ...pp.integrityCheck, checkFontSubstitution: e.target.checked })} />
+                <span className="text-sm text-slate-600">Verificar substituição de fontes</span>
+              </label>
+              <div className="flex items-center gap-3">
+                <label className="text-sm text-slate-600">Máx. de páginas:</label>
+                <input type="number" min="1" className="border border-slate-300 rounded p-1.5 w-20 text-sm"
+                  value={pp.integrityCheck.maxPages}
+                  onChange={e => updatePostProcessing('integrityCheck', { ...pp.integrityCheck, maxPages: parseInt(e.target.value) })} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="border border-slate-200 rounded-lg p-4 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold text-slate-700">Exportar PDF simultâneo</p>
+            <p className="text-xs text-slate-400">Gera PDF além do DOCX padrão.</p>
+          </div>
+          <Switch.Root
+            checked={pp.pdfOutputEnabled}
+            onCheckedChange={v => updatePostProcessing('pdfOutputEnabled', v)}
+            className={`w-10 h-6 rounded-full transition-colors ${pp.pdfOutputEnabled ? 'bg-blue-600' : 'bg-slate-300'}`}
+          >
+            <Switch.Thumb className="block w-4 h-4 bg-white rounded-full shadow transition-transform translate-x-1 data-[state=checked]:translate-x-5" />
+          </Switch.Root>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Tela inicial (só criação) ──
+  if (showStartScreen) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+        <header className="bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-4 shadow-sm">
+          <Link href="/dashboard" className="text-sm text-slate-500 hover:text-slate-800 transition">
+            ← Voltar
+          </Link>
+          <div className="h-5 w-px bg-slate-200" />
+          <h1 className="text-lg font-bold text-slate-800">Novo Perfil de Formatação</h1>
+        </header>
+
+        <main className="flex-1 p-8 max-w-5xl mx-auto w-full space-y-8">
+          {/* Opção 1: do zero */}
+          <div
+            onClick={() => setShowStartScreen(false)}
+            className="bg-white border-2 border-slate-200 hover:border-blue-400 hover:shadow-md rounded-xl p-8 cursor-pointer transition group"
+          >
+            <div className="flex items-start gap-5">
+              <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center text-2xl shrink-0 group-hover:bg-blue-600 group-hover:text-white transition">
+                +
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-slate-800 mb-1 group-hover:text-blue-700 transition">Criar do zero</h2>
+                <p className="text-slate-500 text-sm">Comece com uma página em branco e defina todas as regras manualmente.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Opção 2: usar como base */}
+          <div>
+            <h2 className="text-base font-bold text-slate-700 mb-1">Ou usar um perfil existente como ponto de partida</h2>
+            <p className="text-sm text-slate-400 mb-4">Todas as configurações serão copiadas. Você pode alterar o que quiser antes de salvar.</p>
+
+            {loadingStartProfiles && (
+              <div className="text-sm text-slate-400 animate-pulse p-6 text-center border border-slate-200 rounded-xl bg-white">
+                Carregando perfis disponíveis...
+              </div>
+            )}
+
+            {!loadingStartProfiles && startProfiles.length === 0 && (
+              <div className="text-sm text-slate-400 p-6 text-center border-2 border-dashed border-slate-200 rounded-xl bg-white">
+                Nenhum perfil disponível ainda.
+              </div>
+            )}
+
+            {!loadingStartProfiles && startProfiles.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {startProfiles.map(p => (
+                  <div
+                    key={p.id}
+                    onClick={() => loadAsBase(p.id)}
+                    className="bg-white border border-slate-200 hover:border-blue-400 hover:shadow-md rounded-xl p-5 cursor-pointer transition group flex flex-col justify-between"
+                  >
+                    <div>
+                      <h3 className="font-bold text-slate-800 mb-1 group-hover:text-blue-700 transition">{p.name}</h3>
+                      <p className="text-sm text-slate-500 line-clamp-3 leading-relaxed">{p.description || 'Sem descrição.'}</p>
+                    </div>
+                    <p className="text-blue-600 text-sm font-medium mt-4">Usar como base →</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  const isComponentsSection = activeSection === 'components';
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
-      <header className="bg-white shadow-sm border-b p-4 flex items-center justify-between sticky top-0 z-10">
+      {/* Header */}
+      <header className="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-20 shadow-sm">
         <div className="flex items-center gap-4">
-          <Link href="/dashboard" className="text-sm text-gray-600 hover:text-gray-900 font-medium flex items-center gap-1 transition-colors">
-            &larr; Voltar
+          <Link href="/dashboard" className="text-sm text-slate-500 hover:text-slate-800 transition flex items-center gap-1">
+            ← Voltar
           </Link>
-          <div className="h-6 w-px bg-gray-300"></div>
-          <h1 className="text-xl font-bold text-slate-800 tracking-tight">Profile Builder</h1>
+          <div className="h-5 w-px bg-slate-200" />
+          <input
+            type="text"
+            className="text-lg font-bold text-slate-800 bg-transparent border-none outline-none focus:ring-0 placeholder-slate-300"
+            value={state.name}
+            onChange={e => setState(s => ({ ...s, name: e.target.value }))}
+            placeholder="Nome do perfil..."
+          />
+          {hasErrors && (
+            <span className="text-xs text-orange-500 font-medium bg-orange-50 border border-orange-200 px-2 py-0.5 rounded-full">
+              ⚠ {Object.values(errors).flat().length} problema(s)
+            </span>
+          )}
         </div>
-        {step > 0 && (
-          <button onClick={handleSaveProfile} className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-2 rounded-lg font-medium hover:from-blue-700 hover:to-indigo-700 transition shadow-sm hover:shadow">
-            Salvar Perfil
-          </button>
-        )}
+        <button
+          onClick={handleSave}
+          disabled={isSaving}
+          className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-60"
+        >
+          {isSaving ? 'Salvando...' : isEditMode ? 'Atualizar Perfil' : 'Salvar Perfil'}
+        </button>
       </header>
 
-      <main className="flex-1 p-8 max-w-7xl mx-auto w-full">
-        {step > 0 && renderStepper()}
+      {/* Body */}
+      <div className={`flex flex-1 min-h-0 ${isComponentsSection ? 'overflow-hidden h-[calc(100vh-57px)]' : ''}`}>
+        <BuilderSidebar
+          activeSection={activeSection}
+          onSectionChange={s => { setActiveSection(s); setSelectedSlotId(null); }}
+          errors={errors}
+          onSave={handleSave}
+          isSaving={isSaving}
+        />
 
-        {step === 0 && (
-          <div className="space-y-6 max-w-4xl mx-auto">
-            <div className="bg-white p-8 rounded-xl shadow-sm border hover:shadow-md transition-shadow">
-              <h2 className="text-2xl font-bold text-slate-800 mb-2">Começar um novo Perfil</h2>
-              <p className="text-slate-600 mb-6">Crie um perfil definindo regras de página, margens, numeração e componentes do zero.</p>
-              <button onClick={() => setStep(1)} className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition shadow">
-                Criar Perfil do Zero
-              </button>
-            </div>
+        <main className={`flex-1 min-w-0 ${isComponentsSection ? 'flex overflow-hidden' : 'overflow-auto'}`}>
+          {activeSection === 'profile' && renderProfile()}
+          {activeSection === 'page' && renderPage()}
+          {activeSection === 'components' && renderComponents()}
+          {activeSection === 'textual' && renderTextualElements()}
+          {activeSection === 'postprocessing' && renderPostProcessing()}
+        </main>
+      </div>
 
-            <div className="bg-white p-8 rounded-xl shadow-sm border">
-              <h2 className="text-xl font-bold text-slate-800 mb-4 border-b pb-4">Ou use um perfil existente como base</h2>
-              {loadingProfiles ? (
-                <div className="text-center p-8 text-slate-500 animate-pulse">Carregando perfis...</div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {profiles.map(p => (
-                    <div key={p.id} className="border border-slate-200 p-5 rounded-lg hover:border-blue-400 hover:shadow-md transition bg-slate-50 flex flex-col justify-between group cursor-pointer" onClick={() => handleLoadBaseProfile(p.id)}>
-                      <div>
-                        <h3 className="font-bold text-slate-800 mb-1 group-hover:text-blue-600 transition-colors">{p.name}</h3>
-                        <p className="text-xs text-slate-400 mb-3 font-mono">{p.id}</p>
-                        <p className="text-sm text-slate-600 mb-4 line-clamp-3 leading-relaxed">{p.description}</p>
-                      </div>
-                      <div className="text-blue-600 text-sm font-medium">Usar como Base &rarr;</div>
-                    </div>
-                  ))}
-                  {profiles.length === 0 && (
-                    <div className="col-span-full text-center text-slate-500 p-8 border-2 border-dashed border-slate-200 rounded-lg">
-                      Nenhum perfil encontrado no sistema.
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {step === 1 && (
-          <div className="bg-white p-8 rounded-xl shadow-sm border space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-4xl mx-auto">
+      {/* Add component modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
+            <h3 className="text-lg font-bold text-slate-800">Adicionar seção ao documento</h3>
+            <p className="text-sm text-slate-500">Cada seção representa uma parte do trabalho acadêmico.</p>
             <div>
-              <h2 className="text-xl font-bold text-slate-800 mb-6 border-b pb-2">Informações Básicas</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="col-span-full">
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Nome do Perfil</label>
-                  <input type="text" className="w-full border-slate-300 border p-3 rounded-lg text-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" value={name} onChange={e => setName(e.target.value)} placeholder="Ex: ABNT Padrão" />
-                </div>
-                <div className="col-span-full">
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Descrição</label>
-                  <textarea className="w-full border-slate-300 border p-3 rounded-lg text-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" value={description} onChange={e => setDescription(e.target.value)} rows={3} placeholder="Descreva as regras deste perfil..."/>
-                </div>
-                <div className="col-span-full flex items-center gap-3 bg-slate-50 p-4 rounded-lg border border-slate-100">
-                  <input type="checkbox" id="isPublic" checked={isPublic} onChange={e => setIsPublic(e.target.checked)} className="w-5 h-5 text-blue-600 rounded border-slate-300 focus:ring-blue-500"/>
-                  <label htmlFor="isPublic" className="font-medium text-slate-700 cursor-pointer">Tornar este perfil público para outros usuários</label>
-                </div>
-              </div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Nome da seção</label>
+              <input
+                type="text"
+                autoFocus
+                className="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500"
+                value={newCompName}
+                onChange={e => setNewCompName(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') addComponent(); if (e.key === 'Escape') setShowAddModal(false); }}
+                placeholder="Ex: Capa, Folha de Rosto, Resumo..."
+              />
             </div>
-
             <div>
-              <h2 className="text-xl font-bold text-slate-800 mb-6 border-b pb-2">Regras e Dimensões de Página</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Formato</label>
-                  <select className="w-full border-slate-300 border p-3 rounded-lg text-slate-800 focus:ring-2 focus:ring-blue-500 bg-white" value={paperFormat} onChange={e => handlePaperFormatChange(e.target.value)}>
-                    <option value="A4">A4 (21 x 29.7 cm)</option>
-                    <option value="Letter">Carta (21.59 x 27.94 cm)</option>
-                    <option value="Custom">Personalizado</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Orientação</label>
-                  <select className="w-full border-slate-300 border p-3 rounded-lg text-slate-800 focus:ring-2 focus:ring-blue-500 bg-white" value={orientation} onChange={e => setOrientation(e.target.value)}>
-                    <option value="PORTRAIT">Retrato</option>
-                    <option value="LANDSCAPE">Paisagem</option>
-                  </select>
-                </div>
-                {paperFormat === 'Custom' && (
-                  <>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-1">Largura (cm)</label>
-                      <input type="number" step="0.1" className="w-full border-slate-300 border p-3 rounded-lg text-slate-800" value={widthCm} onChange={e => setWidthCm(Number(e.target.value))} />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-1">Altura (cm)</label>
-                      <input type="number" step="0.1" className="w-full border-slate-300 border p-3 rounded-lg text-slate-800" value={heightCm} onChange={e => setHeightCm(Number(e.target.value))} />
-                    </div>
-                  </>
-                )}
-              </div>
-              <h3 className="text-sm font-semibold text-slate-700 mb-3 uppercase tracking-wider">Margens (cm)</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-lg border border-slate-100">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">Superior</label>
-                  <input type="number" step="0.1" className="w-full border-slate-300 border p-2 rounded text-slate-800" value={marginTopCm} onChange={e => setMarginTopCm(Number(e.target.value))} />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">Inferior</label>
-                  <input type="number" step="0.1" className="w-full border-slate-300 border p-2 rounded text-slate-800" value={marginBottomCm} onChange={e => setMarginBottomCm(Number(e.target.value))} />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">Esquerda</label>
-                  <input type="number" step="0.1" className="w-full border-slate-300 border p-2 rounded text-slate-800" value={marginLeftCm} onChange={e => setMarginLeftCm(Number(e.target.value))} />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">Direita</label>
-                  <input type="number" step="0.1" className="w-full border-slate-300 border p-2 rounded text-slate-800" value={marginRightCm} onChange={e => setMarginRightCm(Number(e.target.value))} />
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-4 border-t border-slate-100">
-              <h2 className="text-xl font-bold text-slate-800 mb-6 pb-2 border-b">Tipografia e Estilo Base</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-6 rounded-lg border border-slate-100">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Família de Fonte</label>
-                  <select className="w-full border-slate-300 border p-3 rounded-lg text-slate-800 bg-white" value={fontFamily} onChange={e => setFontFamily(e.target.value)}>
-                    <option value="Times New Roman">Times New Roman</option>
-                    <option value="Arial">Arial</option>
-                    <option value="Calibri">Calibri</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Tamanho Base (pt)</label>
-                  <input type="number" step="0.5" className="w-full border-slate-300 border p-3 rounded-lg text-slate-800" value={fontSizePt} onChange={e => setFontSizePt(Number(e.target.value))} />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Espaçamento de Linhas Base</label>
-                  <select className="w-full border-slate-300 border p-3 rounded-lg text-slate-800 bg-white" value={lineSpacing} onChange={e => setLineSpacing(Number(e.target.value))}>
-                    <option value={1.0}>Simples (1.0)</option>
-                    <option value={1.15}>1.15</option>
-                    <option value={1.5}>1.5</option>
-                    <option value={2.0}>Duplo (2.0)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Alinhamento Base</label>
-                  <select className="w-full border-slate-300 border p-3 rounded-lg text-slate-800 bg-white" value={alignment} onChange={e => setAlignment(e.target.value)}>
-                    <option value="JUSTIFIED">Justificado</option>
-                    <option value="LEFT">Esquerda</option>
-                    <option value="CENTER">Centralizado</option>
-                    <option value="RIGHT">Direita</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Recuo Primeira Linha (cm)</label>
-                  <input type="number" step="0.1" className="w-full border-slate-300 border p-3 rounded-lg text-slate-800" value={firstLineIndentCm} onChange={e => setFirstLineIndentCm(Number(e.target.value))} />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-between mt-8 pt-4 border-t border-slate-200">
-              <div />
-              <button onClick={() => setStep(2)} className="bg-slate-800 text-white px-8 py-3 rounded-lg font-medium hover:bg-slate-900 transition">Próximo Passo &rarr;</button>
-            </div>
-          </div>
-        )}
-
-        {step === 2 && (
-          <div className="bg-white p-6 rounded-xl shadow-sm border flex flex-col animate-in fade-in slide-in-from-right-4 duration-500 h-[85vh] min-h-[800px]">
-            <div className="flex justify-between items-center mb-4">
-              <div>
-                <h2 className="text-xl font-bold text-slate-800 mb-1">Construtor de Componentes</h2>
-                <p className="text-sm text-slate-600">Crie a estrutura do seu documento, arrastando para reordenar.</p>
-              </div>
-            </div>
-
-            <div className="flex-1 grid grid-cols-3 gap-6 h-full min-h-0">
-              {/* Coluna 1: Componentes */}
-              <div className="border border-slate-200 rounded-lg overflow-hidden flex flex-col shadow-sm">
-                <div className="p-3 border-b bg-slate-50 flex justify-between items-center">
-                  <h3 className="font-semibold text-sm text-slate-800">1. Componentes</h3>
-                  <button onClick={handleAddComponent} className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-md hover:bg-blue-700 font-medium transition shadow-sm">+ Adicionar</button>
-                </div>
-                <div className="flex-1 overflow-auto p-3 space-y-2 bg-white">
-                  {components.map((comp, idx) => (
-                    <div 
-                      key={idx} 
-                      draggable
-                      onDragStart={() => setDraggedComponentIndex(idx)}
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={() => handleDropComponent(idx)}
-                      onClick={() => { setSelectedComponentIndex(idx); setSelectedElementIndex(null); }}
-                      className={`p-3 border rounded-lg cursor-grab active:cursor-grabbing text-sm font-medium transition flex justify-between items-center group ${selectedComponentIndex === idx ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm' : 'border-slate-200 text-slate-700 hover:border-blue-300 hover:bg-slate-50'} ${draggedComponentIndex === idx ? 'opacity-50' : ''}`}
-                    >
-                      <span className="truncate">{comp.name}</span>
-                      <span className="text-slate-400 group-hover:text-blue-400">≡</span>
-                    </div>
-                  ))}
-                  {components.length === 0 && <div className="text-sm text-slate-400 p-6 text-center border-2 border-dashed border-slate-100 rounded-lg mt-4">Nenhum componente. Adicione o primeiro!</div>}
-                </div>
-              </div>
-
-              {/* Coluna 2: Elementos */}
-              <div className="border border-slate-200 rounded-lg overflow-hidden flex flex-col shadow-sm">
-                <div className="p-3 border-b bg-slate-50 flex justify-between items-center">
-                  <h3 className="font-semibold text-sm text-slate-800">2. Elementos (Slots)</h3>
-                  {selectedComponentIndex !== null && (
-                    <button onClick={handleAddElement} className="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-md hover:bg-indigo-700 font-medium transition shadow-sm">+ Adicionar</button>
-                  )}
-                </div>
-                <div className="flex-1 overflow-auto p-3 space-y-2 bg-white">
-                  {selectedComponentIndex === null ? (
-                    <div className="text-sm text-slate-400 p-6 text-center mt-4">Selecione um componente na coluna anterior para ver seus elementos.</div>
-                  ) : (
-                    components[selectedComponentIndex].elements.map((el: any, elIdx: number) => (
-                      <div 
-                        key={elIdx}
-                        draggable
-                        onDragStart={() => setDraggedElementIndex(elIdx)}
-                        onDragOver={(e) => e.preventDefault()}
-                        onDrop={() => handleDropElement(elIdx)}
-                        onClick={() => setSelectedElementIndex(elIdx)}
-                        className={`p-3 border rounded-lg cursor-grab active:cursor-grabbing text-sm transition flex justify-between items-center group ${selectedElementIndex === elIdx ? 'border-indigo-500 bg-indigo-50 text-indigo-800 shadow-sm' : 'border-slate-200 text-slate-700 hover:border-indigo-300 hover:bg-slate-50'} ${draggedElementIndex === elIdx ? 'opacity-50' : ''}`}
-                      >
-                        <div className="flex flex-col truncate pr-2">
-                          <span className="font-medium truncate">{el.name}</span>
-                          <span className={`text-[11px] uppercase tracking-wider font-semibold ${selectedElementIndex === elIdx ? 'text-indigo-400' : 'text-slate-400'}`}>{el.type}</span>
-                        </div>
-                        <span className="text-slate-400 group-hover:text-indigo-400 flex-shrink-0">≡</span>
-                      </div>
-                    ))
-                  )}
-                  {selectedComponentIndex !== null && components[selectedComponentIndex].elements.length === 0 && (
-                    <div className="text-sm text-slate-400 p-6 text-center border-2 border-dashed border-slate-100 rounded-lg mt-4">Sem elementos internos. Adicione slots para este componente.</div>
-                  )}
-                </div>
-              </div>
-
-              {/* Coluna 3: Inspetor */}
-              <div className="border border-slate-200 rounded-lg overflow-hidden flex flex-col shadow-sm">
-                <div className="p-3 border-b bg-slate-50">
-                  <h3 className="font-semibold text-sm text-slate-800">3. Inspetor de Propriedades</h3>
-                </div>
-                <div className="flex-1 overflow-auto p-5 bg-white">
-                  {selectedComponentIndex !== null && selectedElementIndex === null && (
-                    <div className="space-y-5 animate-in fade-in duration-300">
-                      <div className="flex items-center gap-2 mb-4 border-b border-slate-100 pb-2">
-                        <span className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded font-bold uppercase tracking-wider">Componente</span>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold mb-1 text-slate-600">ID / Nome do Componente</label>
-                        <input 
-                          type="text" 
-                          className="w-full border border-slate-300 p-2.5 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-blue-500 transition"
-                          value={components[selectedComponentIndex].name || ''}
-                          onChange={e => {
-                            const newComps = [...components];
-                            newComps[selectedComponentIndex].name = e.target.value.replace(/[^a-zA-Z0-9]/g, ''); // enforce valid IDs
-                            setComponents(newComps);
-                          }}
-                          placeholder="Ex: cover, abstract..."
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold mb-1 text-slate-600">Comportamento do Componente</label>
-                        <select 
-                          className="w-full border border-slate-300 p-2.5 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-blue-500 bg-white transition"
-                          value={components[selectedComponentIndex].layoutMode || 'SINGLE_PAGE'}
-                          onChange={e => {
-                            const newComps = [...components];
-                            newComps[selectedComponentIndex].layoutMode = e.target.value;
-                            setComponents(newComps);
-                          }}
-                        >
-                          <option value="SINGLE_PAGE">Página Única Estruturada (Ex: Capa, Folha de Rosto)</option>
-                          <option value="BODY_CONTENT">Capítulos / Desenvolvimento (Com paginação e seções)</option>
-                          <option value="REFERENCE_LIST">Lista de Referências Bibliográficas</option>
-                          <option value="FLOW_TEXTUAL">Página Corrida Simples (Sem divisão de capítulos)</option>
-                          <option value="SECTIONED">Seções Especiais (Ex: Apêndices, Anexos com Letras)</option>
-                          <option value="ELEMENT_INDEX">Lista de Elementos (Ex: Lista de Figuras, Tabelas)</option>
-                          <option value="SECTION_INDEX">Sumário (Índice de Seções)</option>
-                        </select>
-                      </div>
-
-                      {/* --- CAMPOS DINÂMICOS POR RULETYPE --- */}
-                      
-                      {components[selectedComponentIndex].layoutMode === 'BODY_CONTENT' && (
-                        <div className="flex flex-col gap-3 pt-4 border-t border-slate-100">
-                          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Regras de Texto e Numeração</h4>
-                          
-                          <label className="flex items-center gap-3 cursor-pointer">
-                            <input 
-                              type="checkbox" 
-                              checked={components[selectedComponentIndex].numberingEnabled ?? true}
-                              onChange={e => {
-                                const newComps = [...components];
-                                newComps[selectedComponentIndex].numberingEnabled = e.target.checked;
-                                setComponents(newComps);
-                              }}
-                              className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
-                            />
-                            <span className="text-sm font-medium text-slate-700">Habilitar numeração automática de seções (ex: 1.2)</span>
-                          </label>
-
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-xs font-semibold mb-1 text-slate-600">Separador (Numeração)</label>
-                              <input 
-                                type="text" 
-                                className="w-full border border-slate-300 p-2 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-blue-500"
-                                value={components[selectedComponentIndex].numberingSeparator ?? '.'}
-                                onChange={e => {
-                                  const newComps = [...components];
-                                  newComps[selectedComponentIndex].numberingSeparator = e.target.value;
-                                  setComponents(newComps);
-                                }}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-semibold mb-1 text-slate-600">Sufixo Primário</label>
-                              <input 
-                                type="text" 
-                                className="w-full border border-slate-300 p-2 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-blue-500"
-                                value={components[selectedComponentIndex].primarySuffix ?? ''}
-                                onChange={e => {
-                                  const newComps = [...components];
-                                  newComps[selectedComponentIndex].primarySuffix = e.target.value;
-                                  setComponents(newComps);
-                                }}
-                              />
-                            </div>
-                          </div>
-
-                          <label className="flex items-center gap-3 cursor-pointer mt-2">
-                            <input 
-                              type="checkbox" 
-                              checked={components[selectedComponentIndex].pageBreakBeforePrimary ?? true}
-                              onChange={e => {
-                                const newComps = [...components];
-                                newComps[selectedComponentIndex].pageBreakBeforePrimary = e.target.checked;
-                                setComponents(newComps);
-                              }}
-                              className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
-                            />
-                            <span className="text-sm font-medium text-slate-700">Quebra de página antes de seção nível 1</span>
-                          </label>
-
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-xs font-semibold mb-1 text-slate-600">Linhas em branco (Antes do Título)</label>
-                              <input 
-                                type="number" min="0"
-                                className="w-full border border-slate-300 p-2 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-blue-500"
-                                value={components[selectedComponentIndex].blankLinesBeforeSection ?? 1}
-                                onChange={e => {
-                                  const newComps = [...components];
-                                  newComps[selectedComponentIndex].blankLinesBeforeSection = parseInt(e.target.value);
-                                  setComponents(newComps);
-                                }}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-semibold mb-1 text-slate-600">Linhas em branco (Depois do Título)</label>
-                              <input 
-                                type="number" min="0"
-                                className="w-full border border-slate-300 p-2 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-blue-500"
-                                value={components[selectedComponentIndex].blankLinesAfterSection ?? 1}
-                                onChange={e => {
-                                  const newComps = [...components];
-                                  newComps[selectedComponentIndex].blankLinesAfterSection = parseInt(e.target.value);
-                                  setComponents(newComps);
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {components[selectedComponentIndex].layoutMode === 'REFERENCE_LIST' && (
-                        <div className="flex flex-col gap-3 pt-4 border-t border-slate-100">
-                          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Configuração da Bibliografia</h4>
-                          <div>
-                            <label className="block text-xs font-semibold mb-1 text-slate-600">Título da Página (ex: REFERÊNCIAS)</label>
-                            <input 
-                              type="text" 
-                              className="w-full border border-slate-300 p-2 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-blue-500"
-                              value={components[selectedComponentIndex].headingText ?? 'REFERÊNCIAS'}
-                              onChange={e => {
-                                const newComps = [...components];
-                                newComps[selectedComponentIndex].headingText = e.target.value;
-                                setComponents(newComps);
-                              }}
-                            />
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-xs font-semibold mb-1 text-slate-600">Linhas em branco após Título</label>
-                              <input 
-                                type="number" min="0"
-                                className="w-full border border-slate-300 p-2 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-blue-500"
-                                value={components[selectedComponentIndex].blankLinesAfterHeading ?? 2}
-                                onChange={e => {
-                                  const newComps = [...components];
-                                  newComps[selectedComponentIndex].blankLinesAfterHeading = parseInt(e.target.value);
-                                  setComponents(newComps);
-                                }}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-semibold mb-1 text-slate-600">Linhas em branco entre Entradas</label>
-                              <input 
-                                type="number" min="0"
-                                className="w-full border border-slate-300 p-2 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-blue-500"
-                                value={components[selectedComponentIndex].blankLinesBetweenEntries ?? 1}
-                                onChange={e => {
-                                  const newComps = [...components];
-                                  newComps[selectedComponentIndex].blankLinesBetweenEntries = parseInt(e.target.value);
-                                  setComponents(newComps);
-                                }}
-                              />
-                            </div>
-                          </div>
-                          <h5 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-2">Formatação de Autores (authorFormat)</h5>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-xs font-semibold mb-1 text-slate-600">Separador (Nome, Sobrenome)</label>
-                              <input 
-                                type="text" 
-                                className="w-full border border-slate-300 p-2 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-blue-500"
-                                value={components[selectedComponentIndex].surnameGivenSeparator ?? ', '}
-                                onChange={e => {
-                                  const newComps = [...components];
-                                  newComps[selectedComponentIndex].surnameGivenSeparator = e.target.value;
-                                  setComponents(newComps);
-                                }}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-semibold mb-1 text-slate-600">Junção Multi-Autor (ex: ; )</label>
-                              <input 
-                                type="text" 
-                                className="w-full border border-slate-300 p-2 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-blue-500"
-                                value={components[selectedComponentIndex].multiAuthorJoiner ?? '; '}
-                                onChange={e => {
-                                  const newComps = [...components];
-                                  newComps[selectedComponentIndex].multiAuthorJoiner = e.target.value;
-                                  setComponents(newComps);
-                                }}
-                              />
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <label className="flex items-center gap-2 cursor-pointer mt-2">
-                              <input 
-                                type="checkbox" 
-                                checked={components[selectedComponentIndex].surnameUppercase ?? true}
-                                onChange={e => {
-                                  const newComps = [...components];
-                                  newComps[selectedComponentIndex].surnameUppercase = e.target.checked;
-                                  setComponents(newComps);
-                                }}
-                                className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
-                              />
-                              <span className="text-xs font-medium text-slate-700">Sobrenome Maiúsculo</span>
-                            </label>
-                            <div>
-                              <label className="block text-xs font-semibold mb-1 text-slate-600">Limite Et Al. (Qtd. Autores)</label>
-                              <input 
-                                type="number" min="1"
-                                className="w-full border border-slate-300 p-2 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-blue-500"
-                                value={components[selectedComponentIndex].etAlThreshold ?? 3}
-                                onChange={e => {
-                                  const newComps = [...components];
-                                  newComps[selectedComponentIndex].etAlThreshold = parseInt(e.target.value);
-                                  setComponents(newComps);
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {components[selectedComponentIndex].layoutMode === 'SECTIONED' && (
-                        <div className="flex flex-col gap-3 pt-4 border-t border-slate-100">
-                          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Configuração de Seções (Anexos/Apêndices)</h4>
-                          <div>
-                            <label className="block text-xs font-semibold mb-1 text-slate-600">Template do Título (ex: &#123;letter&#125; — &#123;title&#125;)</label>
-                            <input 
-                              type="text" 
-                              className="w-full border border-slate-300 p-2 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-blue-500"
-                              value={components[selectedComponentIndex].headingTemplate ?? '{letter} — {title}'}
-                              onChange={e => {
-                                const newComps = [...components];
-                                newComps[selectedComponentIndex].headingTemplate = e.target.value;
-                                setComponents(newComps);
-                              }}
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      {(components[selectedComponentIndex].layoutMode === 'ELEMENT_INDEX' || components[selectedComponentIndex].layoutMode === 'SECTION_INDEX') && (
-                        <div className="flex flex-col gap-3 pt-4 border-t border-slate-100">
-                          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Configuração do Índice/Sumário</h4>
-                          
-                          <div>
-                            <label className="block text-xs font-semibold mb-1 text-slate-600">Título Principal da Página (ex: SUMÁRIO ou LISTA DE FIGURAS)</label>
-                            <input 
-                              type="text" 
-                              className="w-full border border-slate-300 p-2 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-blue-500"
-                              value={components[selectedComponentIndex].indexHeading ?? 'SUMÁRIO'}
-                              onChange={e => {
-                                const newComps = [...components];
-                                newComps[selectedComponentIndex].indexHeading = e.target.value;
-                                setComponents(newComps);
-                              }}
-                            />
-                          </div>
-                          
-                          {components[selectedComponentIndex].layoutMode === 'ELEMENT_INDEX' && 
-                           !components[selectedComponentIndex].name.toLowerCase().includes('abbreviation') && 
-                           !components[selectedComponentIndex].name.toLowerCase().includes('symbol') && (
-                            <div>
-                              <label className="block text-xs font-semibold mb-1 text-slate-600">Template da Linha (ex: &#123;number&#125; — &#123;caption&#125;)</label>
-                              <input 
-                                type="text" 
-                                className="w-full border border-slate-300 p-2 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-blue-500"
-                                value={components[selectedComponentIndex].entryTemplate ?? '{number} — {caption}'}
-                                onChange={e => {
-                                  const newComps = [...components];
-                                  newComps[selectedComponentIndex].entryTemplate = e.target.value;
-                                  setComponents(newComps);
-                                }}
-                              />
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {components[selectedComponentIndex].layoutMode === 'SINGLE_PAGE' && (
-                        <div className="pt-4 border-t border-slate-100">
-                          <p className="text-xs text-slate-500 italic bg-blue-50 p-3 rounded-lg border border-blue-100">
-                            <strong>Dica:</strong> Para uma Página Única (Capa, Folha de Rosto), utilize a coluna "Elementos (Slots)" ao lado para criar os campos textuais (Autor, Título, Ano, etc.) que o usuário deverá preencher.
-                          </p>
-                        </div>
-                      )}
-
-                      <div className="pt-4 mt-2 border-t border-slate-100">
-                        <button 
-                          onClick={() => {
-                            const newComps = [...components];
-                            newComps.splice(selectedComponentIndex, 1);
-                            setComponents(newComps);
-                            setSelectedComponentIndex(null);
-                          }}
-                          className="w-full py-2 border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition"
-                        >
-                          Excluir Componente
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedComponentIndex !== null && selectedElementIndex !== null && (
-                    <div className="space-y-5 animate-in fade-in duration-300">
-                      <div className="flex items-center gap-2 mb-4 border-b border-slate-100 pb-2">
-                        <span className="bg-indigo-100 text-indigo-700 text-xs px-2 py-1 rounded font-bold uppercase tracking-wider">Elemento / Slot</span>
-                      </div>
-                      
-                      {/* Básico */}
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-xs font-semibold mb-1 text-slate-600">Nome do Slot (ID interno)</label>
-                          <input 
-                            type="text" 
-                            className="w-full border border-slate-300 p-2.5 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500 transition"
-                            value={components[selectedComponentIndex].elements[selectedElementIndex].name || ''}
-                            onChange={e => {
-                              const newComps = [...components];
-                              newComps[selectedComponentIndex].elements[selectedElementIndex].name = e.target.value.replace(/[^a-zA-Z0-9]/g, '');
-                              setComponents(newComps);
-                            }}
-                          />
-                        </div>
-                        <div className="grid grid-cols-1 gap-4">
-                          <div>
-                            <label className="block text-xs font-semibold mb-1 text-slate-600">Tipo de Dado</label>
-                            {components[selectedComponentIndex].layoutMode === 'FLOW_TEXTUAL' ? (
-                              <select 
-                                className="w-full border border-slate-300 p-2.5 rounded-lg text-sm text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500 transition"
-                                value={components[selectedComponentIndex].elements[selectedElementIndex].type || 'PLAIN_TEXT'}
-                                onChange={e => {
-                                  const newComps = [...components];
-                                  newComps[selectedComponentIndex].elements[selectedElementIndex].type = e.target.value;
-                                  setComponents(newComps);
-                                }}
-                              >
-                                <option value="HEADING">Título Fixo (HEADING)</option>
-                                <option value="BLANK_LINES">Linhas em Branco (BLANK_LINES)</option>
-                                <option value="PLAIN_TEXT">Parágrafo Simples (PLAIN_TEXT)</option>
-                                <option value="TEMPLATED_TEXT">Texto com Template (TEMPLATED_TEXT)</option>
-                                <option value="BOLD_LABELED_KEYWORDS">Bloco de Palavras-chave (BOLD_LABELED_KEYWORDS)</option>
-                                <option value="PAIR_LIST">Lista de Pares (PAIR_LIST)</option>
-                                <option value="TABLE_BLOCK">Bloco de Tabela (TABLE_BLOCK)</option>
-                                <option value="REPEAT_GROUP">Grupo de Repetição (REPEAT_GROUP)</option>
-                              </select>
-                            ) : (
-                              <select 
-                                className="w-full border border-slate-300 p-2.5 rounded-lg text-sm text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500 transition"
-                                value={components[selectedComponentIndex].elements[selectedElementIndex].type || 'text'}
-                                onChange={e => {
-                                  const newComps = [...components];
-                                  newComps[selectedComponentIndex].elements[selectedElementIndex].type = e.target.value;
-                                  setComponents(newComps);
-                                }}
-                              >
-                                <option value="text">Texto Curto (Uma única linha)</option>
-                                <option value="multiline">Texto Longo (Vários parágrafos)</option>
-                                <option value="composed">Texto Composto (Gerado por template automático)</option>
-                                <option value="signature">Blocos de Assinatura (Múltiplas pessoas)</option>
-                              </select>
-                            )}
-                          </div>
-                          <div className="flex items-center">
-                            <label className="flex items-center gap-3 cursor-pointer p-2 bg-slate-50 border border-slate-100 rounded-lg w-full">
-                              <input 
-                                type="checkbox" 
-                                checked={components[selectedComponentIndex].elements[selectedElementIndex].required || false}
-                                onChange={e => {
-                                  const newComps = [...components];
-                                  newComps[selectedComponentIndex].elements[selectedElementIndex].required = e.target.checked;
-                                  setComponents(newComps);
-                                }}
-                                className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
-                              />
-                              <span className="text-sm font-medium text-slate-700">Preenchimento Obrigatório</span>
-                            </label>
-                          </div>
-                        </div>
-
-                        {/* Campos específicos por Tipo de Dado (Genéricos) */}
-                        {(components[selectedComponentIndex].elements[selectedElementIndex].type === 'composed' || components[selectedComponentIndex].elements[selectedElementIndex].type === 'TEMPLATED_TEXT') && (
-                          <div className="grid grid-cols-1 gap-4 p-4 bg-indigo-50 border border-indigo-100 rounded-lg mt-2">
-                            <div>
-                              <label className="block text-xs font-semibold mb-1 text-indigo-900">Template (ex: &#123;nome&#125; - &#123;ano&#125;)</label>
-                              <input 
-                                type="text" 
-                                className="w-full border border-indigo-200 p-2 rounded text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500"
-                                value={components[selectedComponentIndex].elements[selectedElementIndex].template || ''}
-                                onChange={e => {
-                                  const newComps = [...components];
-                                  newComps[selectedComponentIndex].elements[selectedElementIndex].template = e.target.value;
-                                  setComponents(newComps);
-                                }}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-semibold mb-1 text-indigo-900">Campos (separados por vírgula)</label>
-                              <input 
-                                type="text" 
-                                className="w-full border border-indigo-200 p-2 rounded text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500"
-                                value={components[selectedComponentIndex].elements[selectedElementIndex].fieldNames || ''}
-                                onChange={e => {
-                                  const newComps = [...components];
-                                  newComps[selectedComponentIndex].elements[selectedElementIndex].fieldNames = e.target.value;
-                                  setComponents(newComps);
-                                }}
-                              />
-                            </div>
-                          </div>
-                        )}
-
-                        {components[selectedComponentIndex].elements[selectedElementIndex].type === 'HEADING' && (
-                          <div className="grid grid-cols-1 gap-4 p-4 bg-indigo-50 border border-indigo-100 rounded-lg mt-2">
-                            <div>
-                              <label className="block text-xs font-semibold mb-1 text-indigo-900">Texto Fixo do Título (ex: ERRATA)</label>
-                              <input 
-                                type="text" 
-                                className="w-full border border-indigo-200 p-2 rounded text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500"
-                                value={components[selectedComponentIndex].elements[selectedElementIndex].headingText || ''}
-                                onChange={e => {
-                                  const newComps = [...components];
-                                  newComps[selectedComponentIndex].elements[selectedElementIndex].headingText = e.target.value;
-                                  setComponents(newComps);
-                                }}
-                              />
-                            </div>
-                          </div>
-                        )}
-
-                        {components[selectedComponentIndex].elements[selectedElementIndex].type === 'BLANK_LINES' && (
-                          <div className="grid grid-cols-1 gap-4 p-4 bg-indigo-50 border border-indigo-100 rounded-lg mt-2">
-                            <div>
-                              <label className="block text-xs font-semibold mb-1 text-indigo-900">Quantidade de Linhas em Branco</label>
-                              <input 
-                                type="number" min="1"
-                                className="w-full border border-indigo-200 p-2 rounded text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500"
-                                value={components[selectedComponentIndex].elements[selectedElementIndex].blankLinesCount || 1}
-                                onChange={e => {
-                                  const newComps = [...components];
-                                  newComps[selectedComponentIndex].elements[selectedElementIndex].blankLinesCount = parseInt(e.target.value);
-                                  setComponents(newComps);
-                                }}
-                              />
-                            </div>
-                          </div>
-                        )}
-
-                        {components[selectedComponentIndex].elements[selectedElementIndex].type === 'BOLD_LABELED_KEYWORDS' && (
-                          <div className="grid grid-cols-3 gap-4 p-4 bg-indigo-50 border border-indigo-100 rounded-lg mt-2">
-                            <div>
-                              <label className="block text-xs font-semibold mb-1 text-indigo-900">Label (ex: Palavras-chave:)</label>
-                              <input 
-                                type="text" 
-                                className="w-full border border-indigo-200 p-2 rounded text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500"
-                                value={components[selectedComponentIndex].elements[selectedElementIndex].keywordsLabel || 'Palavras-chave:'}
-                                onChange={e => {
-                                  const newComps = [...components];
-                                  newComps[selectedComponentIndex].elements[selectedElementIndex].keywordsLabel = e.target.value;
-                                  setComponents(newComps);
-                                }}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-semibold mb-1 text-indigo-900">Separador (ex: ; )</label>
-                              <input 
-                                type="text" 
-                                className="w-full border border-indigo-200 p-2 rounded text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500"
-                                value={components[selectedComponentIndex].elements[selectedElementIndex].keywordsSeparator || '; '}
-                                onChange={e => {
-                                  const newComps = [...components];
-                                  newComps[selectedComponentIndex].elements[selectedElementIndex].keywordsSeparator = e.target.value;
-                                  setComponents(newComps);
-                                }}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-semibold mb-1 text-indigo-900">Terminador (ex: .)</label>
-                              <input 
-                                type="text" 
-                                className="w-full border border-indigo-200 p-2 rounded text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500"
-                                value={components[selectedComponentIndex].elements[selectedElementIndex].keywordsTerminator || '.'}
-                                onChange={e => {
-                                  const newComps = [...components];
-                                  newComps[selectedComponentIndex].elements[selectedElementIndex].keywordsTerminator = e.target.value;
-                                  setComponents(newComps);
-                                }}
-                              />
-                            </div>
-                          </div>
-                        )}
-
-                        {components[selectedComponentIndex].elements[selectedElementIndex].type === 'TABLE_BLOCK' && (
-                          <div className="grid grid-cols-1 gap-4 p-4 bg-indigo-50 border border-indigo-100 rounded-lg mt-2">
-                            <div>
-                              <label className="block text-xs font-semibold mb-1 text-indigo-900">Cabeçalhos da Tabela Fixo (separados por vírgula)</label>
-                              <input 
-                                type="text" 
-                                className="w-full border border-indigo-200 p-2 rounded text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500"
-                                placeholder="Folha, Linha, Onde se lê, Leia-se"
-                                value={components[selectedComponentIndex].elements[selectedElementIndex].tableHeaders || ''}
-                                onChange={e => {
-                                  const newComps = [...components];
-                                  newComps[selectedComponentIndex].elements[selectedElementIndex].tableHeaders = e.target.value;
-                                  setComponents(newComps);
-                                }}
-                              />
-                            </div>
-                          </div>
-                        )}
-
-                      </div>
-
-                      {/* Posicionamento Horizontal */}
-                      <div className="pt-4 border-t border-slate-100 space-y-4">
-                        <h5 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Posicionamento na Página</h5>
-                        
-                        <div>
-                          <label className="block text-xs font-semibold mb-1 text-slate-600">Área Horizontal Ocupada</label>
-                          <select 
-                            className="w-full border border-slate-300 p-2 rounded-lg text-sm text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500"
-                            value={components[selectedComponentIndex].elements[selectedElementIndex].horizontalPlacement || 'FULL_CONTENT_WIDTH'}
-                            onChange={e => {
-                              const newComps = [...components];
-                              newComps[selectedComponentIndex].elements[selectedElementIndex].horizontalPlacement = e.target.value;
-                              setComponents(newComps);
-                            }}
-                          >
-                            <option value="FULL_CONTENT_WIDTH">Toda a largura útil da página</option>
-                            <option value="FROM_PAGE_CENTER_TO_RIGHT_MARGIN">Do centro da folha até a margem direita (Ex: Folha de Rosto, Epígrafe)</option>
-                            <option value="CUSTOM">Personalizado (Definir recuos absolutos)</option>
-                          </select>
-                        </div>
-                        
-                        {components[selectedComponentIndex].elements[selectedElementIndex].horizontalPlacement === 'CUSTOM' && (
-                          <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 border border-slate-100 rounded-lg">
-                            <div>
-                              <label className="block text-xs font-semibold mb-1 text-slate-600">Margem Esquerda do Bloco (cm)</label>
-                              <input 
-                                type="number" step="0.5" min="0"
-                                className="w-full border border-slate-300 p-2 rounded text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500"
-                                value={components[selectedComponentIndex].elements[selectedElementIndex].customLeftMarginCm || 0}
-                                onChange={e => {
-                                  const newComps = [...components];
-                                  newComps[selectedComponentIndex].elements[selectedElementIndex].customLeftMarginCm = Number(e.target.value);
-                                  setComponents(newComps);
-                                }}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-semibold mb-1 text-slate-600">Margem Direita do Bloco (cm)</label>
-                              <input 
-                                type="number" step="0.5" min="0"
-                                className="w-full border border-slate-300 p-2 rounded text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500"
-                                value={components[selectedComponentIndex].elements[selectedElementIndex].customRightMarginCm || 0}
-                                onChange={e => {
-                                  const newComps = [...components];
-                                  newComps[selectedComponentIndex].elements[selectedElementIndex].customRightMarginCm = Number(e.target.value);
-                                  setComponents(newComps);
-                                }}
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Estilo Visual */}
-                      <div className="pt-4 border-t border-slate-100 space-y-4">
-                        <h5 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Estilo Visual (StyleMapping)</h5>
-                        
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-xs font-semibold mb-1 text-slate-600">Alinhamento</label>
-                            <select 
-                              className="w-full border border-slate-300 p-2 rounded-lg text-sm text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500"
-                              value={components[selectedComponentIndex].elements[selectedElementIndex].alignment || 'inherit'}
-                              onChange={e => {
-                                const newComps = [...components];
-                                newComps[selectedComponentIndex].elements[selectedElementIndex].alignment = e.target.value;
-                                setComponents(newComps);
-                              }}
-                            >
-                              <option value="inherit">Herdar Padrão</option>
-                              <option value="left">Esquerda</option>
-                              <option value="center">Centralizado</option>
-                              <option value="right">Direita</option>
-                              <option value="justify">Justificado</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold mb-1 text-slate-600">Fonte (pt)</label>
-                            <select 
-                              className="w-full border border-slate-300 p-2 rounded-lg text-sm text-slate-800 bg-white focus:ring-2 focus:ring-indigo-500"
-                              value={components[selectedComponentIndex].elements[selectedElementIndex].fontSize || 'inherit'}
-                              onChange={e => {
-                                const newComps = [...components];
-                                newComps[selectedComponentIndex].elements[selectedElementIndex].fontSize = e.target.value;
-                                setComponents(newComps);
-                              }}
-                            >
-                              <option value="inherit">Herdar</option>
-                              <option value="10">10 pt</option>
-                              <option value="12">12 pt</option>
-                              <option value="14">14 pt</option>
-                              <option value="16">16 pt</option>
-                              <option value="18">18 pt</option>
-                            </select>
-                          </div>
-                        </div>
-
-                        <div className="flex gap-4 p-3 bg-slate-50 border border-slate-100 rounded-lg">
-                          <label className="flex items-center gap-1.5 cursor-pointer">
-                            <input 
-                              type="checkbox" 
-                              checked={components[selectedComponentIndex].elements[selectedElementIndex].uppercase || false}
-                              onChange={e => {
-                                const newComps = [...components];
-                                newComps[selectedComponentIndex].elements[selectedElementIndex].uppercase = e.target.checked;
-                                setComponents(newComps);
-                              }}
-                              className="text-indigo-600 rounded border-slate-300"
-                            />
-                            <span className="text-xs font-bold text-slate-700 uppercase">AA</span>
-                          </label>
-                          <label className="flex items-center gap-1.5 cursor-pointer">
-                            <input 
-                              type="checkbox" 
-                              checked={components[selectedComponentIndex].elements[selectedElementIndex].bold || false}
-                              onChange={e => {
-                                const newComps = [...components];
-                                newComps[selectedComponentIndex].elements[selectedElementIndex].bold = e.target.checked;
-                                setComponents(newComps);
-                              }}
-                              className="text-indigo-600 rounded border-slate-300"
-                            />
-                            <span className="text-xs font-bold text-slate-700">B</span>
-                          </label>
-                          <label className="flex items-center gap-1.5 cursor-pointer">
-                            <input 
-                              type="checkbox" 
-                              checked={components[selectedComponentIndex].elements[selectedElementIndex].italic || false}
-                              onChange={e => {
-                                const newComps = [...components];
-                                newComps[selectedComponentIndex].elements[selectedElementIndex].italic = e.target.checked;
-                                setComponents(newComps);
-                              }}
-                              className="text-indigo-600 rounded border-slate-300"
-                            />
-                            <span className="text-xs italic font-serif font-bold text-slate-700">I</span>
-                          </label>
-                        </div>
-                      </div>
-
-                      {/* Espaçamento Específico do SINGLE_PAGE */}
-                      {components[selectedComponentIndex].layoutMode === 'SINGLE_PAGE' && (
-                        <div className="pt-4 border-t border-slate-100 space-y-4">
-                          <h5 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Espaçamento Vertical Flexível</h5>
-                          <div className="grid grid-cols-1 gap-4">
-                            <div>
-                              <label className="block text-xs font-semibold mb-1 text-slate-600">Força de Espaçamento Abaixo</label>
-                              <input 
-                                type="number" min="0"
-                                className="w-full border border-slate-300 p-2 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500"
-                                value={components[selectedComponentIndex].elements[selectedElementIndex].gapWeight ?? 10}
-                                onChange={e => {
-                                  const newComps = [...components];
-                                  newComps[selectedComponentIndex].elements[selectedElementIndex].gapWeight = parseInt(e.target.value);
-                                  setComponents(newComps);
-                                }}
-                              />
-                              <p className="text-[10px] text-slate-500 mt-1">Valor relativo de 1 a 100. Valores maiores empurram os próximos blocos mais para baixo.</p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Espaçamento Padrão */}
-                      {components[selectedComponentIndex].layoutMode !== 'SINGLE_PAGE' && (
-                        <div className="pt-4 border-t border-slate-100 space-y-4">
-                          <h5 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Espaçamento Vertical (cm)</h5>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-xs font-semibold mb-1 text-slate-600">Antes</label>
-                              <input 
-                                type="number" step="0.1"
-                                className="w-full border border-slate-300 p-2 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500"
-                                value={components[selectedComponentIndex].elements[selectedElementIndex].marginTop ?? '0'}
-                                onChange={e => {
-                                  const newComps = [...components];
-                                  newComps[selectedComponentIndex].elements[selectedElementIndex].marginTop = e.target.value;
-                                  setComponents(newComps);
-                                }}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-semibold mb-1 text-slate-600">Depois</label>
-                              <input 
-                                type="number" step="0.1"
-                                className="w-full border border-slate-300 p-2 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-indigo-500"
-                                value={components[selectedComponentIndex].elements[selectedElementIndex].marginBottom ?? '1'}
-                                onChange={e => {
-                                  const newComps = [...components];
-                                  newComps[selectedComponentIndex].elements[selectedElementIndex].marginBottom = e.target.value;
-                                  setComponents(newComps);
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="pt-4 mt-2">
-                        <button 
-                          onClick={() => {
-                            const newComps = [...components];
-                            newComps[selectedComponentIndex].elements.splice(selectedElementIndex, 1);
-                            setComponents(newComps);
-                            setSelectedElementIndex(null);
-                          }}
-                          className="w-full py-2 border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition"
-                        >
-                          Excluir Elemento
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedComponentIndex === null && (
-                    <div className="text-sm text-slate-400 text-center mt-10">
-                      Selecione um componente ou elemento para inspecionar e alterar suas configurações.
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-between pt-6 mt-4 border-t">
-              <button onClick={() => setStep(1)} className="bg-slate-200 text-slate-700 px-6 py-3 rounded-lg font-medium hover:bg-slate-300 transition">&larr; Anterior</button>
-              <button onClick={() => setStep(3)} className="bg-slate-800 text-white px-8 py-3 rounded-lg font-medium hover:bg-slate-900 transition">Próximo Passo &rarr;</button>
-            </div>
-          </div>
-        )}
-
-        {/* --- PASSO 3: ELEMENTOS TEXTUAIS --- */}
-        {step === 3 && (
-          <div className="bg-white p-6 rounded-xl shadow-sm border animate-in fade-in slide-in-from-right-4 duration-500 min-h-[60vh]">
-            <h2 className="text-xl font-bold text-slate-800 mb-2">Configuração de Elementos Textuais</h2>
-            <p className="text-sm text-slate-500 mb-6">
-              Configure o formato dos elementos dinâmicos que podem aparecer no corpo do texto do seu trabalho. 
-              Estas regras definem como tabelas, citações e imagens se comportarão <b>se</b> o usuário enviá-las.
-            </p>
-            
-            <div className="flex min-h-[400px] border border-slate-200 rounded-lg overflow-hidden bg-slate-50">
-              <div className="w-64 border-r border-slate-200 bg-white">
-                <ul className="divide-y divide-slate-100">
-                  <li onClick={() => setTextualTab('CITATIONS')} className={`p-4 cursor-pointer hover:bg-slate-50 ${textualTab === 'CITATIONS' ? 'bg-blue-50 border-l-2 border-blue-600' : ''}`}>
-                    <span className={`font-semibold text-sm ${textualTab === 'CITATIONS' ? 'text-blue-800' : 'text-slate-700'}`}>Citações e Referências</span>
-                  </li>
-                  <li onClick={() => setTextualTab('FIGURES')} className={`p-4 cursor-pointer hover:bg-slate-50 ${textualTab === 'FIGURES' ? 'bg-blue-50 border-l-2 border-blue-600' : ''}`}>
-                    <span className={`font-semibold text-sm ${textualTab === 'FIGURES' ? 'text-blue-800' : 'text-slate-700'}`}>Figuras e Imagens</span>
-                  </li>
-                  <li onClick={() => setTextualTab('TABLES')} className={`p-4 cursor-pointer hover:bg-slate-50 ${textualTab === 'TABLES' ? 'bg-blue-50 border-l-2 border-blue-600' : ''}`}>
-                    <span className={`font-semibold text-sm ${textualTab === 'TABLES' ? 'text-blue-800' : 'text-slate-700'}`}>Tabelas e Quadros</span>
-                  </li>
-                  <li onClick={() => setTextualTab('CHARTS')} className={`p-4 cursor-pointer hover:bg-slate-50 ${textualTab === 'CHARTS' ? 'bg-blue-50 border-l-2 border-blue-600' : ''}`}>
-                    <span className={`font-semibold text-sm ${textualTab === 'CHARTS' ? 'text-blue-800' : 'text-slate-700'}`}>Gráficos</span>
-                  </li>
-                  <li onClick={() => setTextualTab('EQUATIONS')} className={`p-4 cursor-pointer hover:bg-slate-50 ${textualTab === 'EQUATIONS' ? 'bg-blue-50 border-l-2 border-blue-600' : ''}`}>
-                    <span className={`font-semibold text-sm ${textualTab === 'EQUATIONS' ? 'text-blue-800' : 'text-slate-700'}`}>Equações</span>
-                  </li>
-                  <li onClick={() => setTextualTab('CODE')} className={`p-4 cursor-pointer hover:bg-slate-50 ${textualTab === 'CODE' ? 'bg-blue-50 border-l-2 border-blue-600' : ''}`}>
-                    <span className={`font-semibold text-sm ${textualTab === 'CODE' ? 'text-blue-800' : 'text-slate-700'}`}>Código Fonte</span>
-                  </li>
-                </ul>
-              </div>
-              <div className="flex-1 p-6 bg-white overflow-y-auto">
-                {textualTab === 'CITATIONS' && (
-                  <div className="space-y-6 animate-in fade-in">
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-800 mb-2">Citações Diretas Longas</h3>
-                      <div className="grid grid-cols-2 gap-4 mb-6">
-                        <div>
-                          <label className="block text-sm font-semibold mb-1 text-slate-700">Recuo da Margem Esquerda (cm)</label>
-                          <input type="number" step="0.5" className="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500" value={longCitationIndentCm} onChange={e => setLongCitationIndentCm(Number(e.target.value))} />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-semibold mb-1 text-slate-700">Tamanho da Fonte (pt)</label>
-                          <input type="number" step="0.5" className="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500" value={longCitationFontSizePt} onChange={e => setLongCitationFontSizePt(Number(e.target.value))} />
-                        </div>
-                      </div>
-
-                      <h3 className="text-lg font-bold text-slate-800 mb-2 border-t pt-4">Conectores e Rótulos (Formatação de Citação)</h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs font-semibold mb-1 text-slate-700">Prefixo de Página</label>
-                          <input type="text" className="w-full border border-slate-300 p-2 rounded text-sm bg-slate-50" value={citPagePrefix} onChange={e => setCitPagePrefix(e.target.value)} />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold mb-1 text-slate-700">Separador Multi-autor</label>
-                          <input type="text" className="w-full border border-slate-300 p-2 rounded text-sm bg-slate-50" value={citMultiAuthorJoiner} onChange={e => setCitMultiAuthorJoiner(e.target.value)} />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold mb-1 text-slate-700">Marcador et al.</label>
-                          <input type="text" className="w-full border border-slate-300 p-2 rounded text-sm bg-slate-50" value={citEtAl} onChange={e => setCitEtAl(e.target.value)} />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold mb-1 text-slate-700">Conector apud</label>
-                          <input type="text" className="w-full border border-slate-300 p-2 rounded text-sm bg-slate-50" value={citApudConnector} onChange={e => setCitApudConnector(e.target.value)} />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold mb-1 text-slate-700">Supressão de texto</label>
-                          <input type="text" className="w-full border border-slate-300 p-2 rounded text-sm bg-slate-50" value={citSuppressionMarker} onChange={e => setCitSuppressionMarker(e.target.value)} />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold mb-1 text-slate-700">Rótulo Info. Verbal</label>
-                          <input type="text" className="w-full border border-slate-300 p-2 rounded text-sm bg-slate-50" value={citVerbalCitationLabel} onChange={e => setCitVerbalCitationLabel(e.target.value)} />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold mb-1 text-slate-700">Grifo Nosso</label>
-                          <input type="text" className="w-full border border-slate-300 p-2 rounded text-sm bg-slate-50" value={citEmphasisOursLabel} onChange={e => setCitEmphasisOursLabel(e.target.value)} />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold mb-1 text-slate-700">Grifo do Autor</label>
-                          <input type="text" className="w-full border border-slate-300 p-2 rounded text-sm bg-slate-50" value={citEmphasisAuthorLabel} onChange={e => setCitEmphasisAuthorLabel(e.target.value)} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
-                {textualTab === 'FIGURES' && (
-                  <div className="space-y-6 animate-in fade-in">
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-800 mb-2">Configuração de Figuras</h3>
-                      <p className="text-sm text-slate-500 mb-4">Templates para geração automática de legendas e posicionamento de imagens.</p>
-                      
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-semibold mb-1 text-slate-700">Template de Legenda Superior</label>
-                          <input 
-                            type="text" 
-                            className="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500" 
-                            value={figCaptionTemplate}
-                            onChange={e => setFigCaptionTemplate(e.target.value)}
-                          />
-                          <p className="text-xs text-slate-500 mt-1">Variáveis disponíveis: &#123;num&#125; (Número), &#123;title&#125; (Título providenciado)</p>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-semibold mb-1 text-slate-700">Template de Fonte Inferior</label>
-                          <input 
-                            type="text" 
-                            className="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500" 
-                            value={figSourceTemplate}
-                            onChange={e => setFigSourceTemplate(e.target.value)}
-                          />
-                          <p className="text-xs text-slate-500 mt-1">Variáveis disponíveis: &#123;source&#125;</p>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-semibold mb-1 text-slate-700">Alinhamento da Imagem</label>
-                          <select 
-                            className="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500"
-                            value={figAlignment}
-                            onChange={e => setFigAlignment(e.target.value)}
-                          >
-                            <option value="CENTER">Centralizado</option>
-                            <option value="LEFT">Esquerda</option>
-                            <option value="RIGHT">Direita</option>
-                          </select>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-semibold mb-1 text-slate-700">Tamanho da Fonte das Legendas (pt)</label>
-                            <input type="number" step="0.5" className="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500" value={figFontSizePt} onChange={e => setFigFontSizePt(Number(e.target.value))} />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-semibold mb-1 text-slate-700">Estratégia de Numeração</label>
-                            <select className="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500" value={figNumberingStrategy} onChange={e => setFigNumberingStrategy(e.target.value)}>
-                              <option value="GLOBAL_SEQUENTIAL">Global Sequencial (ex: 1, 2, 3)</option>
-                              <option value="BY_CHAPTER">Por Capítulo (ex: 1-1, 1-2)</option>
-                            </select>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-semibold mb-1 text-slate-700">Largura Máx. da Imagem (cm)</label>
-                            <input type="number" step="0.5" className="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500" value={figMaxWidthCm} onChange={e => setFigMaxWidthCm(Number(e.target.value))} />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {textualTab === 'TABLES' && (
-                  <div className="space-y-6 animate-in fade-in">
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-800 mb-2">Configuração de Tabelas</h3>
-                      <p className="text-sm text-slate-500 mb-4">Templates e comportamento para dados tabulares.</p>
-                      
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-semibold mb-1 text-slate-700">Template de Título</label>
-                          <input 
-                            type="text" 
-                            className="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500" 
-                            value={tableCaptionTemplate}
-                            onChange={e => setTableCaptionTemplate(e.target.value)}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-semibold mb-1 text-slate-700">Template de Fonte</label>
-                          <input 
-                            type="text" 
-                            className="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500" 
-                            value={tableSourceTemplate}
-                            onChange={e => setTableSourceTemplate(e.target.value)}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-semibold mb-1 text-slate-700">Alinhamento da Tabela na Página</label>
-                          <select 
-                            className="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500"
-                            value={tableAlignment}
-                            onChange={e => setTableAlignment(e.target.value)}
-                          >
-                            <option value="CENTER">Centralizado</option>
-                            <option value="LEFT">Esquerda</option>
-                            <option value="RIGHT">Direita</option>
-                          </select>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-semibold mb-1 text-slate-700">Tamanho da Fonte (pt)</label>
-                            <input type="number" step="0.5" className="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500" value={tableFontSizePt} onChange={e => setTableFontSizePt(Number(e.target.value))} />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-semibold mb-1 text-slate-700">Estratégia de Numeração</label>
-                            <select className="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500" value={tableNumberingStrategy} onChange={e => setTableNumberingStrategy(e.target.value)}>
-                              <option value="GLOBAL_SEQUENTIAL">Global Sequencial</option>
-                              <option value="BY_CHAPTER">Por Capítulo</option>
-                            </select>
-                          </div>
-                        </div>
-                        <label className="flex items-center gap-3 cursor-pointer mt-2">
-                          <input type="checkbox" checked={tableRepeatHeader} onChange={e => setTableRepeatHeader(e.target.checked)} className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500" />
-                          <span className="text-sm font-medium text-slate-700">Repetir cabeçalho em quebra de página</span>
-                        </label>
-                      </div>
-                      
-                      <h3 className="text-lg font-bold text-slate-800 mb-2 border-t pt-6 mt-6">Configuração de Quadros (Frames)</h3>
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-semibold mb-1 text-slate-700">Template de Título</label>
-                          <input type="text" className="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500" value={frameCaptionTemplate} onChange={e => setFrameCaptionTemplate(e.target.value)} />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-semibold mb-1 text-slate-700">Template de Fonte</label>
-                          <input type="text" className="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500" value={frameSourceTemplate} onChange={e => setFrameSourceTemplate(e.target.value)} />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-semibold mb-1 text-slate-700">Alinhamento na Página</label>
-                          <select className="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500" value={frameAlignment} onChange={e => setFrameAlignment(e.target.value)}>
-                            <option value="CENTER">Centralizado</option>
-                            <option value="LEFT">Esquerda</option>
-                            <option value="RIGHT">Direita</option>
-                          </select>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-semibold mb-1 text-slate-700">Tamanho da Fonte (pt)</label>
-                            <input type="number" step="0.5" className="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500" value={frameFontSizePt} onChange={e => setFrameFontSizePt(Number(e.target.value))} />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-semibold mb-1 text-slate-700">Estratégia de Numeração</label>
-                            <select className="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500" value={frameNumberingStrategy} onChange={e => setFrameNumberingStrategy(e.target.value)}>
-                              <option value="GLOBAL_SEQUENTIAL">Global Sequencial</option>
-                              <option value="BY_CHAPTER">Por Capítulo</option>
-                            </select>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {textualTab === 'CODE' && (
-                  <div className="space-y-6 animate-in fade-in">
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-800 mb-2">Listagens de Código</h3>
-                      
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-semibold mb-1 text-slate-700">Template de Título</label>
-                          <input 
-                            type="text" 
-                            className="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500" 
-                            value={codeCaptionTemplate}
-                            onChange={e => setCodeCaptionTemplate(e.target.value)}
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-semibold mb-1 text-slate-700">Família de Fonte do Código</label>
-                            <input type="text" className="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500" value={codeFontFamily} onChange={e => setCodeFontFamily(e.target.value)} placeholder="ex: Consolas, Courier New" />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-semibold mb-1 text-slate-700">Tamanho da Fonte (pt)</label>
-                            <input type="number" step="0.5" className="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500" value={codeFontSizePt} onChange={e => setCodeFontSizePt(Number(e.target.value))} />
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-semibold mb-1 text-slate-700">Estratégia de Numeração</label>
-                            <select className="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500" value={codeNumberingStrategy} onChange={e => setCodeNumberingStrategy(e.target.value)}>
-                              <option value="GLOBAL_SEQUENTIAL">Global Sequencial</option>
-                              <option value="BY_CHAPTER">Por Capítulo</option>
-                            </select>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {textualTab === 'CHARTS' && (
-                  <div className="space-y-6 animate-in fade-in">
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-800 mb-2">Configuração de Gráficos</h3>
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-semibold mb-1 text-slate-700">Template de Título</label>
-                          <input type="text" className="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500" value={chartCaptionTemplate} onChange={e => setChartCaptionTemplate(e.target.value)} />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-semibold mb-1 text-slate-700">Template de Fonte</label>
-                          <input type="text" className="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500" value={chartSourceTemplate} onChange={e => setChartSourceTemplate(e.target.value)} />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-semibold mb-1 text-slate-700">Alinhamento do Gráfico</label>
-                          <select className="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500" value={chartAlignment} onChange={e => setChartAlignment(e.target.value)}>
-                            <option value="CENTER">Centralizado</option>
-                            <option value="LEFT">Esquerda</option>
-                            <option value="RIGHT">Direita</option>
-                          </select>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-semibold mb-1 text-slate-700">Tamanho da Fonte (pt)</label>
-                            <input type="number" step="0.5" className="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500" value={chartFontSizePt} onChange={e => setChartFontSizePt(Number(e.target.value))} />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-semibold mb-1 text-slate-700">Estratégia de Numeração</label>
-                            <select className="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500" value={chartNumberingStrategy} onChange={e => setChartNumberingStrategy(e.target.value)}>
-                              <option value="GLOBAL_SEQUENTIAL">Global Sequencial</option>
-                              <option value="BY_CHAPTER">Por Capítulo</option>
-                            </select>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {textualTab === 'EQUATIONS' && (
-                  <div className="space-y-6 animate-in fade-in">
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-800 mb-2">Equações Matemáticas</h3>
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-semibold mb-1 text-slate-700">Template Numerador</label>
-                          <input type="text" className="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500" value={eqCaptionTemplate} onChange={e => setEqCaptionTemplate(e.target.value)} />
-                          <p className="text-xs text-slate-500 mt-1">Geralmente, equações usam "(&#123;num&#125;)" do lado direito.</p>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-semibold mb-1 text-slate-700">Alinhamento da Equação</label>
-                            <select className="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500" value={eqAlignment} onChange={e => setEqAlignment(e.target.value)}>
-                              <option value="CENTER">Centralizado</option>
-                              <option value="LEFT">Esquerda</option>
-                              <option value="RIGHT">Direita</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-semibold mb-1 text-slate-700">Estratégia de Numeração</label>
-                            <select className="w-full border border-slate-300 p-2.5 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500" value={eqNumberingStrategy} onChange={e => setEqNumberingStrategy(e.target.value)}>
-                              <option value="GLOBAL_SEQUENTIAL">Global Sequencial</option>
-                              <option value="BY_CHAPTER">Por Capítulo</option>
-                            </select>
-                          </div>
-                        </div>
-
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="flex justify-between pt-4 border-t mt-6">
-              <button onClick={() => setStep(2)} className="bg-slate-200 text-slate-700 px-6 py-3 rounded-lg font-medium hover:bg-slate-300 transition">&larr; Anterior</button>
-              <button onClick={() => setStep(4)} className="bg-slate-800 text-white px-8 py-3 rounded-lg font-medium hover:bg-slate-900 transition">Próximo Passo &rarr;</button>
-            </div>
-          </div>
-        )}
-
-        {/* --- PASSO 4: NUMERAÇÃO --- */}
-        {step === 4 && (
-          <div className="bg-white p-8 rounded-xl shadow-sm border space-y-8 animate-in fade-in slide-in-from-right-4 duration-500 max-w-4xl mx-auto">
-            <div>
-              <div className="flex items-center justify-between mb-6 border-b pb-2">
-                <h2 className="text-xl font-bold text-slate-800">Numeração de Páginas</h2>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={pageNumberingEnabled} onChange={e => setPageNumberingEnabled(e.target.checked)} className="w-5 h-5 text-blue-600 rounded border-slate-300 focus:ring-blue-500" />
-                  <span className="font-medium text-slate-700">Habilitar Numeração</span>
-                </label>
-              </div>
-              
-              {!pageNumberingEnabled ? (
-                <div className="p-8 text-center text-slate-500 border border-slate-100 rounded-lg bg-slate-50">
-                  A numeração de páginas está desabilitada para este perfil.
-                </div>
-              ) : components.length === 0 ? (
-                <div className="p-8 text-center text-red-500 border border-red-100 rounded-lg bg-red-50">
-                  Você precisa criar componentes na aba anterior (Construtor) antes de configurar a numeração.
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-6 rounded-lg border border-slate-100">
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1">Contar a partir de</label>
-                    <select className="w-full border-slate-300 border p-3 rounded-lg text-slate-800 bg-white" value={countFromComponentId} onChange={e => setCountFromComponentId(e.target.value)}>
-                      {components.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
-                    </select>
-                    <p className="text-xs text-slate-500 mt-1">Primeira página será o número 1.</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1">Visível a partir de</label>
-                    <select className="w-full border-slate-300 border p-3 rounded-lg text-slate-800 bg-white" value={visibleFromComponentId} onChange={e => setVisibleFromComponentId(e.target.value)}>
-                      {components.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
-                    </select>
-                    <p className="text-xs text-slate-500 mt-1">Onde o número passa a ser impresso na folha.</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1">Posição</label>
-                    <select className="w-full border-slate-300 border p-3 rounded-lg text-slate-800 bg-white" value={pageNumberingPlacement} onChange={e => setPageNumberingPlacement(e.target.value)}>
-                      <option value="HEADER_RIGHT">Cabeçalho Direito</option>
-                      <option value="HEADER_CENTER">Cabeçalho Central</option>
-                      <option value="FOOTER_RIGHT">Rodapé Direito</option>
-                      <option value="FOOTER_CENTER">Rodapé Central</option>
-                    </select>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Dist. Vertical (cm)</label>
-                      <input type="number" step="0.1" className="w-full border-slate-300 border p-2 rounded text-slate-800" value={vertDistCm} onChange={e => setVertDistCm(Number(e.target.value))} />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Dist. Horizontal (cm)</label>
-                      <input type="number" step="0.1" className="w-full border-slate-300 border p-2 rounded text-slate-800" value={horizDistCm} onChange={e => setHorizDistCm(Number(e.target.value))} />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-between pt-4 border-t mt-8">
-              <button onClick={() => setStep(3)} className="bg-slate-200 text-slate-700 px-6 py-3 rounded-lg font-medium hover:bg-slate-300 transition">&larr; Anterior</button>
-              <button onClick={() => setStep(5)} className="bg-slate-800 text-white px-8 py-3 rounded-lg font-medium hover:bg-slate-900 transition">Próximo Passo &rarr;</button>
-            </div>
-          </div>
-        )}
-
-        {step === 5 && (
-          <div className="bg-white p-8 rounded-xl shadow-sm border space-y-8 animate-in fade-in slide-in-from-right-4 duration-500 max-w-4xl mx-auto">
-            <h2 className="text-xl font-bold text-slate-800 mb-6 border-b pb-2">Pós-processamento e Validações</h2>
-            
-            <div className="space-y-6">
-              <div className="flex flex-col gap-4 bg-slate-50 p-6 rounded-lg border border-slate-100">
-                <h3 className="font-semibold text-slate-800">Verificações de Integridade</h3>
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input type="checkbox" checked={integrityEnabled} onChange={e => setIntegrityEnabled(e.target.checked)} className="w-5 h-5 text-blue-600 rounded border-slate-300" />
-                  <span className="font-medium text-slate-700">Habilitar Verificação (Avisos no Header HTTP)</span>
-                </label>
-                {integrityEnabled && (
-                  <div className="ml-8 space-y-3">
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <input type="checkbox" checked={marginOverflowCheck} onChange={e => setMarginOverflowCheck(e.target.checked)} className="w-4 h-4 text-blue-600 rounded border-slate-300" />
-                      <span className="text-sm text-slate-600">Verificar Overflow de Margens (Elementos saindo da página)</span>
-                    </label>
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <input type="checkbox" checked={fontSubCheck} onChange={e => setFontSubCheck(e.target.checked)} className="w-4 h-4 text-blue-600 rounded border-slate-300" />
-                      <span className="text-sm text-slate-600">Verificar Substituição de Fontes</span>
-                    </label>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-slate-600">Limite máximo de páginas:</span>
-                      <input type="number" className="border border-slate-300 rounded p-1 w-24 text-sm" value={maxPages} onChange={e => setMaxPages(Number(e.target.value))} />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex flex-col gap-4 bg-slate-50 p-6 rounded-lg border border-slate-100">
-                <h3 className="font-semibold text-slate-800">Tabelas Longas</h3>
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input type="checkbox" checked={tableContLabelsEnabled} onChange={e => setTableContLabelsEnabled(e.target.checked)} className="w-5 h-5 text-blue-600 rounded border-slate-300" />
-                  <span className="font-medium text-slate-700">Injetar rótulos em tabelas que quebram de página</span>
-                </label>
-                {tableContLabelsEnabled && (
-                  <div className="ml-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 mb-1">Rótulo Inicial</label>
-                      <input type="text" className="w-full border border-slate-300 rounded p-2 text-sm" value={continuesLabel} onChange={e => setContinuesLabel(e.target.value)} />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 mb-1">Rótulo Intermediário</label>
-                      <input type="text" className="w-full border border-slate-300 rounded p-2 text-sm" value={continuationLabel} onChange={e => setContinuationLabel(e.target.value)} />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 mb-1">Rótulo Final</label>
-                      <input type="text" className="w-full border border-slate-300 rounded p-2 text-sm" value={conclusionLabel} onChange={e => setConclusionLabel(e.target.value)} />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-slate-50 p-6 rounded-lg border border-slate-100 flex flex-col justify-center">
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" checked={orphanTitleEnabled} onChange={e => setOrphanTitleEnabled(e.target.checked)} className="w-5 h-5 text-blue-600 rounded border-slate-300" />
-                    <span className="font-medium text-slate-700">Correção de Títulos Órfãos</span>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Tipo de seção</label>
+              <div className="space-y-1.5">
+                {(Object.entries(RULE_TYPE_LABELS) as [ComponentRuleType, string][]).map(([v, l]) => (
+                  <label
+                    key={v}
+                    className={`flex items-center gap-3 p-2.5 border rounded-lg cursor-pointer transition ${
+                      newCompType === v ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                    }`}
+                  >
+                    <input type="radio" name="compType" className="text-blue-600"
+                      checked={newCompType === v} onChange={() => setNewCompType(v)} />
+                    <span className="text-sm text-slate-700">{l}</span>
                   </label>
-                  <p className="text-xs text-slate-500 mt-2 ml-8">Move títulos isolados no fim da página para a página seguinte automaticamente.</p>
-                </div>
-                <div className="bg-slate-50 p-6 rounded-lg border border-slate-100 flex flex-col justify-center">
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" checked={pdfOutputEnabled} onChange={e => setPdfOutputEnabled(e.target.checked)} className="w-5 h-5 text-blue-600 rounded border-slate-300" />
-                    <span className="font-medium text-slate-700">Exportar PDF simultâneo</span>
-                  </label>
-                  <p className="text-xs text-slate-500 mt-2 ml-8">Gera um arquivo PDF além do DOCX padrão.</p>
-                </div>
+                ))}
               </div>
             </div>
-
-            <div className="flex justify-between pt-4 border-t">
-              <button onClick={() => setStep(4)} className="bg-slate-200 text-slate-700 px-6 py-3 rounded-lg font-medium hover:bg-slate-300 transition">&larr; Anterior</button>
-              <button onClick={handleSaveProfile} className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-8 py-3 rounded-lg font-bold hover:from-green-600 hover:to-emerald-700 transition shadow-md hover:shadow-lg transform hover:-translate-y-0.5">Finalizar e Salvar Perfil</button>
-            </div>
-          </div>
-        )}
-
-      </main>
-
-      {/* VERSIONING MODAL */}
-      {showVersionModal && (
-        <div className="fixed inset-0 bg-black/60 z-[999] flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Opções de Versionamento</h3>
-              <p className="text-sm text-gray-600 mb-6">Você está atualizando um perfil existente. Como deseja lidar com a versão anterior?</p>
-              
-              <div className="space-y-4 mb-6">
-                <label className={`block p-4 border rounded-xl cursor-pointer transition-colors ${keepOldVersion ? 'border-blue-600 bg-blue-50/50' : 'border-gray-200 hover:bg-gray-50'}`}>
-                  <div className="flex items-start gap-3">
-                    <input 
-                      type="radio" 
-                      name="versionStrategy" 
-                      checked={keepOldVersion} 
-                      onChange={() => setKeepOldVersion(true)}
-                      className="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500"
-                    />
-                    <div>
-                      <div className="font-semibold text-gray-900">Manter versão anterior</div>
-                      <div className="text-sm text-gray-500 mt-1">Indicado para mudanças de regra/norma. Os usuários continuarão tendo acesso vitalício à versão passada.</div>
-                    </div>
-                  </div>
-                </label>
-                
-                <label className={`block p-4 border rounded-xl cursor-pointer transition-colors ${!keepOldVersion ? 'border-blue-600 bg-blue-50/50' : 'border-gray-200 hover:bg-gray-50'}`}>
-                  <div className="flex items-start gap-3">
-                    <input 
-                      type="radio" 
-                      name="versionStrategy" 
-                      checked={!keepOldVersion} 
-                      onChange={() => setKeepOldVersion(false)}
-                      className="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500"
-                    />
-                    <div>
-                      <div className="font-semibold text-gray-900">Sobrepor a versão anterior</div>
-                      <div className="text-sm text-gray-500 mt-1">Indicado para erros e correções menores. Manteremos a versão antiga por 30 dias apenas para backup (visível apenas para você).</div>
-                    </div>
-                  </div>
-                </label>
-              </div>
-
-
-            </div>
-            
-            <div className="bg-gray-50 p-4 border-t flex justify-end gap-2">
-              <button
-                onClick={() => setShowVersionModal(false)}
-                className="px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
-              >
+            <div className="flex gap-2 justify-end pt-2">
+              <button onClick={() => { setShowAddModal(false); setNewCompName(''); setNewCompType('SINGLE_PAGE'); }}
+                className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition">
                 Cancelar
               </button>
-              <button
-                onClick={submitEdit}
-                className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-sm"
-              >
-                Confirmar Atualização
+              <button onClick={addComponent} disabled={!newCompName.trim()}
+                className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition disabled:opacity-40">
+                Adicionar
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ALERT MODAL */}
-      <AlertModal 
-        show={modalConfig.show} 
-        title={modalConfig.title} 
-        message={modalConfig.message} 
-        type={modalConfig.type} 
+      {/* Versioning modal */}
+      {showVersionModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 space-y-4">
+            <h3 className="text-xl font-bold text-slate-900">Opções de Versionamento</h3>
+            <p className="text-sm text-slate-600">Como deseja lidar com a versão anterior?</p>
+            <div className="space-y-3">
+              {[
+                { value: true, title: 'Manter versão anterior', desc: 'Usuários mantêm acesso vitalício à versão passada.' },
+                { value: false, title: 'Sobrepor versão anterior', desc: 'Versão antiga preservada por 30 dias apenas para backup.' },
+              ].map(opt => (
+                <label key={String(opt.value)}
+                  className={`flex items-start gap-3 p-4 border rounded-xl cursor-pointer transition ${keepOldVersion === opt.value ? 'border-blue-600 bg-blue-50' : 'border-slate-200 hover:bg-slate-50'}`}>
+                  <input type="radio" name="v" checked={keepOldVersion === opt.value} onChange={() => setKeepOldVersion(opt.value)}
+                    className="mt-1 w-4 h-4 text-blue-600" />
+                  <div>
+                    <p className="font-semibold text-slate-900 text-sm">{opt.title}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{opt.desc}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button onClick={() => setShowVersionModal(false)}
+                className="px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 rounded-lg transition">
+                Cancelar
+              </button>
+              <button onClick={() => doSave(keepOldVersion)}
+                className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition">
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <AlertModal
+        show={modalConfig.show}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        type={modalConfig.type}
         onClose={closeModal}
-        onConfirm={modalConfig.onConfirm}
       />
     </div>
   );
