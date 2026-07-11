@@ -8,7 +8,8 @@ import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 
 export default function Register() {
   const [step, setStep] = useState<'REGISTER' | 'VERIFY'>('REGISTER');
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [otpCode, setOtpCode] = useState('');
@@ -45,7 +46,7 @@ export default function Register() {
     try {
       const res = await fetchApi('/api/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ firstName, lastName, email, password }),
       });
 
       if (!res.ok) {
@@ -117,15 +118,27 @@ export default function Register() {
           {step === 'REGISTER' ? (
             <div className="space-y-4">
               <form onSubmit={handleRegister} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
-                  <input
-                    type="text"
-                    required
-                    className="w-full border p-2 rounded text-black"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+                    <input
+                      type="text"
+                      required
+                      className="w-full border p-2 rounded text-black"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Sobrenome</label>
+                    <input
+                      type="text"
+                      required
+                      className="w-full border p-2 rounded text-black"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>

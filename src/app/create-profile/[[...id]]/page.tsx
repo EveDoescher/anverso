@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { fetchApi } from '@/lib/api';
 import Link from 'next/link';
+import { AlertModal, AlertModalType } from '@/components/ui/AlertModal';
 
 interface ProfileSummary {
   id: string;
@@ -12,11 +13,41 @@ interface ProfileSummary {
 }
 
 export default function CreateProfile() {
-  const [step, setStep] = useState<0 | 1 | 2 | 3 | 4 | 5>(0);
+  const params = useParams();
+  const profileId = params?.id ? params.id[0] : null;
+  const isEditMode = !!profileId;
+
+  const [step, setStep] = useState<0 | 1 | 2 | 3 | 4 | 5>(isEditMode ? 1 : 0);
   const router = useRouter();
 
   const [profiles, setProfiles] = useState<ProfileSummary[]>([]);
   const [loadingProfiles, setLoadingProfiles] = useState(true);
+
+  // Custom Modal state
+  const [modalConfig, setModalConfig] = useState<{show: boolean, title: string, message: string, type: AlertModalType, onConfirm?: () => void, redirectUrl?: string}>({
+    show: false,
+    title: '',
+    message: '',
+    type: 'info'
+  });
+
+  const showAlert = (title: string, message: string, type: AlertModalType, redirectUrl?: string) => {
+    setModalConfig({ show: true, title, message, type, redirectUrl });
+  };
+
+  const closeModal = () => {
+    const url = modalConfig.redirectUrl;
+    setModalConfig(prev => ({ ...prev, show: false }));
+    if (url) {
+      router.push(url);
+    }
+  };
+
+  // --- VERSIONING MODAL STATE ---
+  const [showVersionModal, setShowVersionModal] = useState(false);
+  const [oldVersionName, setOldVersionName] = useState('Versão Original');
+  const [keepOldVersion, setKeepOldVersion] = useState(false);
+  const [pendingPayload, setPendingPayload] = useState<any>(null);
 
   // --- META ---
   const [name, setName] = useState('');
@@ -119,7 +150,10 @@ export default function CreateProfile() {
 
   useEffect(() => {
     loadProfiles();
-  }, []);
+    if (isEditMode) {
+      loadEditingProfile();
+    }
+  }, [isEditMode]);
   
   // Update numbering dropdown defaults when components change
   useEffect(() => {
@@ -132,6 +166,75 @@ export default function CreateProfile() {
       setVisibleFromComponentId('');
     }
   }, [components]);
+
+  const loadEditingProfile = async () => {
+    try {
+      const res = await fetchApi(`/api/v1/profiles/${profileId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setName(data.name);
+        setDescription(data.description);
+        setIsPublic(data.isPublic);
+        
+        // Load the profileData into states
+        if (data.profileData) {
+          const pd = typeof data.profileData === 'string' ? JSON.parse(data.profileData) : data.profileData;
+          
+          if (pd.pageLayout?.paperSize?.format) setPaperFormat(pd.pageLayout.paperSize.format);
+          if (pd.pageLayout?.paperSize?.widthCm) setWidthCm(pd.pageLayout.paperSize.widthCm);
+          if (pd.pageLayout?.paperSize?.heightCm) setHeightCm(pd.pageLayout.paperSize.heightCm);
+          if (pd.pageLayout?.orientation) setOrientation(pd.pageLayout.orientation);
+          
+          if (pd.pageLayout?.margins) {
+            setMarginTopCm(pd.pageLayout.margins.topCm);
+            setMarginRightCm(pd.pageLayout.margins.rightCm);
+            setMarginBottomCm(pd.pageLayout.margins.bottomCm);
+            setMarginLeftCm(pd.pageLayout.margins.leftCm);
+          }
+          
+          if (pd.pageNumbering) {
+            setPageNumberingPlacement(pd.pageNumbering.placement || 'HEADER_RIGHT');
+            setCountFromComponentId(pd.pageNumbering.countFromComponentId || '');
+            setVisibleFromComponentId(pd.pageNumbering.visibleFromComponentId || '');
+            setVertDistCm(pd.pageNumbering.verticalDistanceFromEdgeCm || 2);
+            setHorizDistCm(pd.pageNumbering.horizontalDistanceFromEdgeCm || 2);
+          }
+          
+          if (pd._builderState) {
+            if (pd._builderState.components) setComponents(pd._builderState.components);
+          } else {
+            // Fallback to legacy structure if present
+            if (pd.components) setComponents(pd.components);
+          }
+          
+          if (pd.styleRules && pd.styleRules.length > 0) {
+            const body = pd.styleRules.find((r: any) => r.id === 'bodyContent.paragraph');
+            if (body) {
+              setFontFamily(body.fontFamily);
+              setFontSizePt(body.fontSizePt);
+              setLineSpacing(body.lineSpacing);
+              setAlignment(body.alignment);
+              setFirstLineIndentCm(body.firstLineIndentCm);
+            }
+          }
+
+          if (pd.postProcessing) {
+            if (pd.postProcessing.orphanTitle !== undefined) setOrphanTitleEnabled(pd.postProcessing.orphanTitle.enabled);
+            if (pd.postProcessing.integrityCheck) {
+              setIntegrityEnabled(pd.postProcessing.integrityCheck.enabled);
+              setMarginOverflowCheck(pd.postProcessing.integrityCheck.checkMarginOverflow);
+              setFontSubCheck(pd.postProcessing.integrityCheck.checkFontSubstitution);
+              if (pd.postProcessing.integrityCheck.maxPages) setMaxPages(pd.postProcessing.integrityCheck.maxPages);
+            }
+            if (pd.postProcessing.pdfOutput !== undefined) setPdfOutputEnabled(pd.postProcessing.pdfOutput.enabled);
+          }
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      showAlert('Erro', 'Não foi possível carregar o perfil para edição', 'error');
+    }
+  };
 
   const loadProfiles = async () => {
     try {
@@ -314,7 +417,7 @@ export default function CreateProfile() {
       }
     } catch (err) {
       console.error('Erro ao carregar perfil base', err);
-      alert('Erro ao carregar perfil base');
+      showAlert('Erro', 'Erro ao carregar perfil base', 'error');
     }
   };
 
@@ -436,7 +539,7 @@ export default function CreateProfile() {
             type: "PARAGRAPH",
             fontFamily,
             fontSizePt: el.fontSize === 'inherit' ? fontSizePt : Number(el.fontSize),
-            alignment: el.alignment === 'inherit' ? alignment : el.alignment.toUpperCase(),
+            alignment: (!el.alignment || el.alignment === 'inherit') ? alignment : el.alignment.toUpperCase(),
             lineSpacing,
             firstLineIndentCm: 0,
             leftIndentCm: 0,
@@ -604,6 +707,7 @@ export default function CreateProfile() {
         { id: "pageNumber", type: "CHARACTER", fontFamily, fontSizePt: 10, alignment: "RIGHT", lineSpacing: 1.0, firstLineIndentCm: 0, leftIndentCm: 0, rightIndentCm: 0, spacingBeforePt: 0, spacingAfterPt: 0, bold: false, italic: false, uppercase: false },
         ...extraStyleRules
       ],
+      _builderState: { components },
       ...componentRules
     };
 
@@ -615,16 +719,68 @@ export default function CreateProfile() {
       profileData: JSON.stringify(profileData),
     };
 
+    if (isEditMode) {
+      // Instead of submitting right away, open the versioning modal
+      setPendingPayload(payload);
+      setShowVersionModal(true);
+      return;
+    }
+
     try {
       const res = await fetchApi('/api/v1/profiles', {
         method: 'POST',
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error('Erro ao salvar no backend');
-      alert('Perfil criado com sucesso!');
-      router.push('/dashboard');
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(txt || 'Erro ao salvar o perfil.');
+      }
+      showAlert('Sucesso', 'Perfil criado com sucesso!', 'success', '/dashboard');
     } catch (err: any) {
-      alert(err.message || 'Erro ao criar perfil');
+      console.error(err);
+      showAlert('Erro', err.message || 'Erro ao criar perfil', 'error');
+    }
+  };
+
+  const submitEdit = async () => {
+    setShowVersionModal(false);
+    
+    if (!pendingPayload) {
+      showAlert('Erro', 'Dados do perfil não encontrados.', 'error');
+      return;
+    }
+
+    let autoVersionName = "v1.0";
+    try {
+      const verRes = await fetchApi(`/api/v1/profiles/${profileId}/versions`);
+      if (verRes.ok) {
+        const versions = await verRes.json();
+        autoVersionName = `v${versions.length + 1}.0`;
+      }
+    } catch (e) {}
+
+    const payload = {
+      name,
+      description,
+      isPublic,
+      profileData: pendingPayload.profileData,
+      keepOldVersion,
+      oldVersionName: autoVersionName
+    };
+
+    try {
+      const res = await fetchApi(`/api/v1/profiles/${profileId}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(txt || 'Erro ao editar o perfil.');
+      }
+      showAlert('Sucesso', 'Perfil atualizado com sucesso!', 'success', `/explore/${profileId}`);
+    } catch (err: any) {
+      console.error(err);
+      showAlert('Erro', err.message || 'Erro ao editar perfil', 'error');
     }
   };
 
@@ -633,7 +789,7 @@ export default function CreateProfile() {
       <div className="flex space-x-2 overflow-x-auto pb-2">
         {['Início', 'Info. Básicas', 'Construtor', 'Elementos Textuais', 'Numeração', 'Validações'].map((label, idx) => (
           <div key={idx} className="flex items-center whitespace-nowrap">
-            <div className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${step === idx ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-200 text-gray-600 cursor-pointer hover:bg-gray-300'}`} onClick={() => { if(step !== 0) setStep(idx as any) }}>
+            <div className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${step === idx ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-200 text-gray-600 cursor-pointer hover:bg-gray-300'} ${isEditMode && idx === 0 ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`} onClick={() => { if(step !== 0 && !(isEditMode && idx === 0)) setStep(idx as any) }}>
               {idx + 1}. {label}
             </div>
             {idx < 5 && <div className="w-4 lg:w-8 h-px bg-gray-300 mx-2"></div>}
@@ -2162,6 +2318,79 @@ export default function CreateProfile() {
         )}
 
       </main>
+
+      {/* VERSIONING MODAL */}
+      {showVersionModal && (
+        <div className="fixed inset-0 bg-black/60 z-[999] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Opções de Versionamento</h3>
+              <p className="text-sm text-gray-600 mb-6">Você está atualizando um perfil existente. Como deseja lidar com a versão anterior?</p>
+              
+              <div className="space-y-4 mb-6">
+                <label className={`block p-4 border rounded-xl cursor-pointer transition-colors ${keepOldVersion ? 'border-blue-600 bg-blue-50/50' : 'border-gray-200 hover:bg-gray-50'}`}>
+                  <div className="flex items-start gap-3">
+                    <input 
+                      type="radio" 
+                      name="versionStrategy" 
+                      checked={keepOldVersion} 
+                      onChange={() => setKeepOldVersion(true)}
+                      className="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                    />
+                    <div>
+                      <div className="font-semibold text-gray-900">Manter versão anterior</div>
+                      <div className="text-sm text-gray-500 mt-1">Indicado para mudanças de regra/norma. Os usuários continuarão tendo acesso vitalício à versão passada.</div>
+                    </div>
+                  </div>
+                </label>
+                
+                <label className={`block p-4 border rounded-xl cursor-pointer transition-colors ${!keepOldVersion ? 'border-blue-600 bg-blue-50/50' : 'border-gray-200 hover:bg-gray-50'}`}>
+                  <div className="flex items-start gap-3">
+                    <input 
+                      type="radio" 
+                      name="versionStrategy" 
+                      checked={!keepOldVersion} 
+                      onChange={() => setKeepOldVersion(false)}
+                      className="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                    />
+                    <div>
+                      <div className="font-semibold text-gray-900">Sobrepor a versão anterior</div>
+                      <div className="text-sm text-gray-500 mt-1">Indicado para erros e correções menores. Manteremos a versão antiga por 30 dias apenas para backup (visível apenas para você).</div>
+                    </div>
+                  </div>
+                </label>
+              </div>
+
+
+            </div>
+            
+            <div className="bg-gray-50 p-4 border-t flex justify-end gap-2">
+              <button
+                onClick={() => setShowVersionModal(false)}
+                className="px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={submitEdit}
+                className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-sm"
+              >
+                Confirmar Atualização
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ALERT MODAL */}
+      <AlertModal 
+        show={modalConfig.show} 
+        title={modalConfig.title} 
+        message={modalConfig.message} 
+        type={modalConfig.type} 
+        onClose={closeModal}
+        onConfirm={modalConfig.onConfirm}
+      />
     </div>
   );
 }

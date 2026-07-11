@@ -11,14 +11,14 @@
     "epigraph",
     "resumo",
     "abstract",
-    "listOfAbbreviations",
-    "listOfSymbols",
-    "summary",
     "listOfFigures",
     "listOfTables",
     "listOfFrames",
     "listOfCharts",
     "listOfCodeListings",
+    "listOfAbbreviations",
+    "listOfSymbols",
+    "summary",
     "bodyContent",
     "references",
     "appendix",
@@ -48,7 +48,7 @@
       "id": "pageNumber",
       "type": "PARAGRAPH",
       "fontFamily": "Times New Roman",
-      "fontSizePt": 12,
+      "fontSizePt": 10,
       "alignment": "RIGHT",
       "lineSpacing": 1,
       "firstLineIndentCm": 0,
@@ -193,7 +193,7 @@
       "type": "PARAGRAPH",
       "fontFamily": "Times New Roman",
       "fontSizePt": 12,
-      "alignment": "JUSTIFIED",
+      "alignment": "LEFT",
       "lineSpacing": 1,
       "firstLineIndentCm": 0,
       "leftIndentCm": 0,
@@ -250,7 +250,7 @@
       "spacingAfterPt": 0,
       "bold": false,
       "italic": false,
-      "uppercase": false
+      "uppercase": true
     },
     {
       "id": "approvalSheet.author",
@@ -305,7 +305,7 @@
       "type": "PARAGRAPH",
       "fontFamily": "Times New Roman",
       "fontSizePt": 12,
-      "alignment": "JUSTIFIED",
+      "alignment": "LEFT",
       "lineSpacing": 1,
       "firstLineIndentCm": 0,
       "leftIndentCm": 0,
@@ -408,7 +408,7 @@
       "rightIndentCm": 0,
       "spacingBeforePt": 0,
       "spacingAfterPt": 0,
-      "bold": true,
+      "bold": false,
       "italic": false,
       "uppercase": false
     },
@@ -424,7 +424,7 @@
       "rightIndentCm": 0,
       "spacingBeforePt": 0,
       "spacingAfterPt": 0,
-      "bold": true,
+      "bold": false,
       "italic": false,
       "uppercase": false
     },
@@ -440,7 +440,7 @@
       "rightIndentCm": 0,
       "spacingBeforePt": 0,
       "spacingAfterPt": 0,
-      "bold": true,
+      "bold": false,
       "italic": false,
       "uppercase": false
     },
@@ -456,7 +456,7 @@
       "rightIndentCm": 0,
       "spacingBeforePt": 0,
       "spacingAfterPt": 0,
-      "bold": true,
+      "bold": false,
       "italic": false,
       "uppercase": false
     },
@@ -749,22 +749,6 @@
       "spacingAfterPt": 0
     },
     {
-      "id": "errata.entry",
-      "type": "PARAGRAPH",
-      "fontFamily": "Times New Roman",
-      "fontSizePt": 12,
-      "bold": false,
-      "italic": false,
-      "uppercase": false,
-      "alignment": "JUSTIFIED",
-      "lineSpacing": 1.5,
-      "firstLineIndentCm": 0,
-      "leftIndentCm": 0,
-      "rightIndentCm": 0,
-      "spacingBeforePt": 0,
-      "spacingAfterPt": 0
-    },
-    {
       "id": "errata.tableHeader",
       "type": "PARAGRAPH",
       "fontFamily": "Times New Roman",
@@ -823,7 +807,7 @@
       "alignment": "LEFT",
       "lineSpacing": 1.0,
       "firstLineIndentCm": 0,
-      "leftIndentCm": 9,
+      "leftIndentCm": 0,
       "rightIndentCm": 0,
       "spacingBeforePt": 0,
       "spacingAfterPt": 0
@@ -839,7 +823,7 @@
       "alignment": "LEFT",
       "lineSpacing": 1.0,
       "firstLineIndentCm": 0,
-      "leftIndentCm": 9,
+      "leftIndentCm": 0,
       "rightIndentCm": 0,
       "spacingBeforePt": 0,
       "spacingAfterPt": 0
@@ -901,7 +885,7 @@
       "italic": false,
       "uppercase": false,
       "alignment": "JUSTIFIED",
-      "lineSpacing": 1.0,
+      "lineSpacing": 1.5,
       "firstLineIndentCm": 0,
       "leftIndentCm": 0,
       "rightIndentCm": 0,
@@ -917,7 +901,7 @@
       "italic": false,
       "uppercase": false,
       "alignment": "JUSTIFIED",
-      "lineSpacing": 1.0,
+      "lineSpacing": 1.5,
       "firstLineIndentCm": 0,
       "leftIndentCm": 0,
       "rightIndentCm": 0,
@@ -926,7 +910,7 @@
     },
     {
       "id": "references.heading",
-      "type": "PARAGRAPH",
+      "type": "HEADING_1",
       "fontFamily": "Times New Roman",
       "fontSizePt": 12,
       "bold": true,
@@ -957,8 +941,40 @@
       "spacingAfterPt": 0
     },
     {
-      "id": "appendix.heading",
+      "id": "sectioned.heading1",
       "type": "PARAGRAPH",
+      "fontFamily": "Times New Roman",
+      "fontSizePt": 12,
+      "bold": true,
+      "italic": false,
+      "uppercase": true,
+      "alignment": "LEFT",
+      "lineSpacing": 1.5,
+      "firstLineIndentCm": 0,
+      "leftIndentCm": 0,
+      "rightIndentCm": 0,
+      "spacingBeforePt": 0,
+      "spacingAfterPt": 0
+    },
+    {
+      "id": "sectioned.heading2",
+      "type": "PARAGRAPH",
+      "fontFamily": "Times New Roman",
+      "fontSizePt": 12,
+      "bold": true,
+      "italic": false,
+      "uppercase": false,
+      "alignment": "LEFT",
+      "lineSpacing": 1.5,
+      "firstLineIndentCm": 0,
+      "leftIndentCm": 0,
+      "rightIndentCm": 0,
+      "spacingBeforePt": 0,
+      "spacingAfterPt": 0
+    },
+    {
+      "id": "appendix.heading",
+      "type": "HEADING_1",
       "fontFamily": "Times New Roman",
       "fontSizePt": 12,
       "bold": true,
@@ -974,7 +990,7 @@
     },
     {
       "id": "annex.heading",
-      "type": "PARAGRAPH",
+      "type": "HEADING_1",
       "fontFamily": "Times New Roman",
       "fontSizePt": 12,
       "bold": true,
@@ -990,7 +1006,7 @@
     },
     {
       "id": "glossary.heading",
-      "type": "PARAGRAPH",
+      "type": "HEADING_1",
       "fontFamily": "Times New Roman",
       "fontSizePt": 12,
       "bold": true,
@@ -1013,6 +1029,38 @@
       "italic": false,
       "uppercase": false,
       "alignment": "JUSTIFIED",
+      "lineSpacing": 1.5,
+      "firstLineIndentCm": 0,
+      "leftIndentCm": 0,
+      "rightIndentCm": 0,
+      "spacingBeforePt": 0,
+      "spacingAfterPt": 0
+    },
+    {
+      "id": "summary.entry.primary",
+      "type": "PARAGRAPH",
+      "fontFamily": "Times New Roman",
+      "fontSizePt": 12,
+      "bold": true,
+      "italic": false,
+      "uppercase": true,
+      "alignment": "LEFT",
+      "lineSpacing": 1.5,
+      "firstLineIndentCm": 0,
+      "leftIndentCm": 0,
+      "rightIndentCm": 0,
+      "spacingBeforePt": 0,
+      "spacingAfterPt": 0
+    },
+    {
+      "id": "summary.entry.secondary",
+      "type": "PARAGRAPH",
+      "fontFamily": "Times New Roman",
+      "fontSizePt": 12,
+      "bold": false,
+      "italic": false,
+      "uppercase": false,
+      "alignment": "LEFT",
       "lineSpacing": 1.5,
       "firstLineIndentCm": 0,
       "leftIndentCm": 0,
@@ -1055,6 +1103,7 @@
   ],
   "componentRules": {
     "cover": {
+      "ruleType": "SINGLE_PAGE",
       "componentId": "cover",
       "slots": {
         "institutionalLines": {
@@ -1187,6 +1236,7 @@
       }
     },
     "titlePage": {
+      "ruleType": "SINGLE_PAGE",
       "componentId": "titlePage",
       "slots": {
         "authors": {
@@ -1362,6 +1412,7 @@
       }
     },
     "approvalSheet": {
+      "ruleType": "SINGLE_PAGE",
       "componentId": "approvalSheet",
       "slots": {
         "authors": {
@@ -1548,6 +1599,7 @@
       }
     },
     "bodyContent": {
+      "ruleType": "BODY_CONTENT",
       "componentId": "bodyContent",
       "styleMapping": {
         "sectionTitleStyleIdsByLevel": [
@@ -1578,12 +1630,13 @@
         "blankLinesBeforeSectionTitleWhenPrecededByContent": 1,
         "blankLinesAfterSectionTitle": 1,
         "pageBreakBeforePrimarySection": false,
+        "keepWithNextOnHeadings": true,
         "blankLineStyleId": "bodyContent.paragraph"
       },
       "figure": {
         "captionStyleId": "bodyContent.figure.caption",
         "sourceStyleId": "bodyContent.figure.source",
-        "captionTemplate": "Figura {number} - {caption}",
+        "captionTemplate": "Figura {number} – {caption}",
         "sourceTemplate": "Fonte: {source}",
         "continuationLabels": {
           "first": "continua",
@@ -1606,7 +1659,7 @@
         "sourceStyleId": "bodyContent.table.source",
         "headerStyleId": "bodyContent.table.header",
         "cellStyleId": "bodyContent.table.cell",
-        "captionTemplate": "Tabela {number} - {caption}",
+        "captionTemplate": "Tabela {number} – {caption}",
         "sourceTemplate": "Fonte: {source}",
         "continuationLabels": {
           "first": "continua",
@@ -1625,7 +1678,7 @@
         "sourceStyleId": "bodyContent.frame.source",
         "headerStyleId": "bodyContent.frame.header",
         "cellStyleId": "bodyContent.frame.cell",
-        "captionTemplate": "Quadro {number} - {caption}",
+        "captionTemplate": "Quadro {number} – {caption}",
         "sourceTemplate": "Fonte: {source}",
         "continuationLabels": {
           "first": "continua",
@@ -1643,7 +1696,7 @@
         "captionStyleId": "bodyContent.figure.caption",
         "sourceStyleId": "bodyContent.figure.source",
         "codeStyleId": "bodyContent.codeListing.code",
-        "captionTemplate": "Código-fonte {number} - {caption}",
+        "captionTemplate": "Código-fonte {number} – {caption}",
         "sourceTemplate": "Fonte: {source}",
         "continuationLabels": {
           "first": "continua",
@@ -1657,7 +1710,7 @@
       "chart": {
         "captionStyleId": "bodyContent.figure.caption",
         "sourceStyleId": "bodyContent.figure.source",
-        "captionTemplate": "Gráfico {number} - {caption}",
+        "captionTemplate": "Gráfico {number} – {caption}",
         "sourceTemplate": "Fonte: {source}",
         "continuationLabels": {
           "first": "continua",
@@ -1668,7 +1721,7 @@
         "imageRule": {
           "captionStyleId": "bodyContent.figure.caption",
           "sourceStyleId": "bodyContent.figure.source",
-          "captionTemplate": "Gráfico {number} - {caption}",
+          "captionTemplate": "Gráfico {number} – {caption}",
           "sourceTemplate": "Fonte: {source}",
           "continuationLabels": {
             "first": "continua",
@@ -1697,7 +1750,12 @@
         "suppressionMarker": "[...]",
         "emphasisOursLabel": "grifo nosso",
         "emphasisAuthorLabel": "grifo do autor",
-        "verbalCitationLabel": "informação verbal"
+        "verbalCitationLabel": "informação verbal",
+        "authorYearSeparator": ", ",
+        "pageReferenceSeparator": ", ",
+        "parenOpen": "(",
+        "parenClose": ")",
+        "multiSourceSeparator": "; "
       },
       "crossReferenceLabels": {
         "sectionLabel": "Seção",
@@ -1710,64 +1768,177 @@
       }
     },
     "errata": {
+      "ruleType": "FLOW_TEXTUAL",
       "componentId": "errata",
-      "headingStyleId": "errata.heading",
-      "headingText": "ERRATA",
-      "tableHeaderStyleId": "errata.tableHeader",
-      "tableCellStyleId": "errata.tableCell",
-      "tableHeaders": [
-        "Folha",
-        "Linha",
-        "Onde se lê",
-        "Leia-se"
-      ],
-      "blankLinesAfterHeading": 1
+      "items": [
+        { "itemType": "HEADING", "styleId": "errata.heading", "text": "ERRATA" },
+        { "itemType": "BLANK_LINES", "styleId": "errata.heading", "count": 1 },
+        {
+          "itemType": "TABLE_BLOCK",
+          "headerStyleId": "errata.tableHeader",
+          "cellStyleId": "errata.tableCell",
+          "headers": ["Folha", "Linha", "Onde se lê", "Leia-se"],
+          "rowsSlotName": "rows"
+        }
+      ]
     },
     "dedication": {
+      "ruleType": "SINGLE_PAGE",
       "componentId": "dedication",
-      "textStyleId": "dedication.text",
-      "blankLinesBefore": 10
+      "slots": {
+        "text": {
+          "type": "TEXT",
+          "required": true
+        }
+      },
+      "styleMapping": {
+        "text": "dedication.text"
+      },
+      "layoutRule": {
+        "groups": [
+          {
+            "id": "dedication.text",
+            "required": true,
+            "items": [
+              {
+                "id": "text",
+                "required": true,
+                "horizontalPlacement": {
+                  "strategy": "FROM_PAGE_CENTER_TO_RIGHT_MARGIN"
+                }
+              }
+            ]
+          }
+        ],
+        "gapRules": [],
+        "policy": {
+          "anchorStrategy": "LAST_GROUP_AT_SAFE_AREA_END",
+          "lineHeightStrategy": "MAX_EXACT_LINE_HEIGHT",
+          "spacerStylePolicy": "NEXT_GROUP_STYLE",
+          "safetyPolicy": "MARGIN_BASED"
+        }
+      }
     },
     "epigraph": {
+      "ruleType": "SINGLE_PAGE",
       "componentId": "epigraph",
-      "textStyleId": "epigraph.text",
-      "authorStyleId": "epigraph.author",
-      "authorTemplate": "— {author}, {source}"
+      "slots": {
+        "text": {
+          "type": "TEXT",
+          "required": true
+        },
+        "author": {
+          "type": "TEXT",
+          "required": false
+        },
+        "source": {
+          "type": "TEXT",
+          "required": false
+        }
+      },
+      "styleMapping": {
+        "text": "epigraph.text",
+        "author": "epigraph.author",
+        "source": "epigraph.author"
+      },
+      "layoutRule": {
+        "groups": [
+          {
+            "id": "epigraph.block",
+            "required": true,
+            "items": [
+              {
+                "id": "text",
+                "required": true,
+                "horizontalPlacement": {
+                  "strategy": "FROM_PAGE_CENTER_TO_RIGHT_MARGIN"
+                }
+              },
+              {
+                "id": "author",
+                "required": false,
+                "horizontalPlacement": {
+                  "strategy": "FROM_PAGE_CENTER_TO_RIGHT_MARGIN"
+                }
+              },
+              {
+                "id": "source",
+                "required": false,
+                "horizontalPlacement": {
+                  "strategy": "FROM_PAGE_CENTER_TO_RIGHT_MARGIN"
+                }
+              }
+            ]
+          }
+        ],
+        "gapRules": [],
+        "policy": {
+          "anchorStrategy": "LAST_GROUP_AT_SAFE_AREA_END",
+          "lineHeightStrategy": "MAX_EXACT_LINE_HEIGHT",
+          "spacerStylePolicy": "NEXT_GROUP_STYLE",
+          "safetyPolicy": "MARGIN_BASED"
+        }
+      }
     },
     "acknowledgments": {
+      "ruleType": "FLOW_TEXTUAL",
       "componentId": "acknowledgments",
-      "headingStyleId": "acknowledgments.heading",
-      "headingText": "AGRADECIMENTOS",
-      "textStyleId": "acknowledgments.text",
-      "blankLinesAfterHeading": 1
+      "items": [
+        { "itemType": "HEADING", "styleId": "acknowledgments.heading", "text": "AGRADECIMENTOS" },
+        { "itemType": "BLANK_LINES", "styleId": "acknowledgments.heading", "count": 1 },
+        { "itemType": "PLAIN_TEXT", "styleId": "acknowledgments.text", "slotName": "text" }
+      ]
     },
     "resumo": {
+      "ruleType": "FLOW_TEXTUAL",
       "componentId": "resumo",
-      "headingStyleId": "resumo.heading",
-      "headingText": "RESUMO",
-      "textStyleId": "resumo.text",
-      "keywordsStyleId": "resumo.keywords",
-      "keywordsLabel": "Palavras-chave:",
-      "keywordsSeparator": "; ",
-      "keywordsTerminator": ".",
-      "blankLinesAfterHeading": 1
+      "items": [
+        { "itemType": "HEADING", "styleId": "resumo.heading", "text": "RESUMO" },
+        { "itemType": "BLANK_LINES", "styleId": "resumo.heading", "count": 1 },
+        { "itemType": "PLAIN_TEXT", "styleId": "resumo.text", "slotName": "text" },
+        {
+          "itemType": "BOLD_LABELED_KEYWORDS",
+          "styleId": "resumo.keywords",
+          "labelSlotName": "keywordsLabel",
+          "keywordsSlotName": "keywords",
+          "separator": "; ",
+          "terminator": "."
+        }
+      ]
     },
     "abstract": {
+      "ruleType": "FLOW_TEXTUAL",
       "componentId": "abstract",
-      "headingStyleId": "resumo.heading",
-      "textStyleId": "resumo.text",
-      "keywordsStyleId": "resumo.keywords",
-      "keywordsSeparator": "; ",
-      "keywordsTerminator": ".",
-      "blankLinesAfterHeading": 1
+      "items": [
+        {
+          "itemType": "REPEAT_GROUP",
+          "entriesSlotName": "entries",
+          "pageBreakBetweenEntries": true,
+          "group": [
+            { "itemType": "PLAIN_TEXT", "styleId": "resumo.heading", "slotName": "headingText" },
+            { "itemType": "BLANK_LINES", "styleId": "resumo.heading", "count": 1 },
+            { "itemType": "PLAIN_TEXT", "styleId": "resumo.text", "slotName": "text" },
+            {
+              "itemType": "BOLD_LABELED_KEYWORDS",
+              "styleId": "resumo.keywords",
+              "labelSlotName": "keywordsLabel",
+              "keywordsSlotName": "keywords",
+              "separator": "; ",
+              "terminator": "."
+            }
+          ]
+        }
+      ]
     },
     "references": {
+      "ruleType": "BIBLIOGRAPHY",
       "componentId": "references",
       "headingStyleId": "references.heading",
       "headingText": "REFERÊNCIAS",
       "entryStyleId": "references.entry",
       "blankLinesBetweenEntries": 1,
       "blankLinesAfterHeading": 1,
+      "sortOrder": "ALPHABETICAL",
       "formattingRule": {
         "authorFormat": {
           "surnameUppercase": true,
@@ -1779,184 +1950,633 @@
         },
         "entryFormats": {
           "BOOK": [
-            { "source": "authors",       "bold": false, "prefix": "",    "suffix": "",    "optional": false },
-            { "source": "title",         "bold": true,  "prefix": "",    "suffix": "",    "optional": false },
-            { "source": "subtitle",      "bold": false, "prefix": ": ",  "suffix": "",    "optional": true  },
-            { "source": "edition",       "bold": false, "prefix": ". ",  "suffix": ". ed.", "optional": true },
-            { "source": "city",          "bold": false, "prefix": ". ", "suffix": ": ",  "optional": true  },
-            { "source": "publisher",     "bold": false, "prefix": "",    "suffix": ", ",  "optional": true  },
-            { "source": "year",          "bold": false, "prefix": "",    "suffix": ".",   "optional": false }
+            {
+              "source": "authors",
+              "bold": false,
+              "prefix": "",
+              "suffix": "",
+              "optional": false
+            },
+            {
+              "source": "title",
+              "bold": true,
+              "prefix": "",
+              "suffix": "",
+              "optional": false
+            },
+            {
+              "source": "subtitle",
+              "bold": false,
+              "prefix": ": ",
+              "suffix": "",
+              "optional": true
+            },
+            {
+              "source": "edition",
+              "bold": false,
+              "prefix": ". ",
+              "suffix": ". ed.",
+              "optional": true
+            },
+            {
+              "source": "city",
+              "bold": false,
+              "prefix": ". ",
+              "suffix": ": ",
+              "optional": true
+            },
+            {
+              "source": "publisher",
+              "bold": false,
+              "prefix": "",
+              "suffix": ", ",
+              "optional": true
+            },
+            {
+              "source": "year",
+              "bold": false,
+              "prefix": "",
+              "suffix": ".",
+              "optional": false
+            }
           ],
           "BOOK_CHAPTER": [
-            { "source": "authors",       "bold": false, "prefix": "",      "suffix": "",    "optional": false },
-            { "source": "title",         "bold": true,  "prefix": "",      "suffix": "",    "optional": false },
-            { "source": "literal:In: ",  "bold": false, "prefix": "",      "suffix": "",    "optional": false },
-            { "source": "bookAuthors",   "bold": false, "prefix": "",      "suffix": "",    "optional": true  },
-            { "source": "bookTitle",     "bold": true,  "prefix": "",      "suffix": ". ",  "optional": true  },
-            { "source": "edition",       "bold": false, "prefix": "",      "suffix": ". ed. ", "optional": true },
-            { "source": "city",          "bold": false, "prefix": "",      "suffix": ": ",  "optional": true  },
-            { "source": "publisher",     "bold": false, "prefix": "",      "suffix": ", ",  "optional": true  },
-            { "source": "year",          "bold": false, "prefix": "",      "suffix": ".",   "optional": false },
-            { "source": "pages",         "bold": false, "prefix": " p. ", "suffix": ".",   "optional": true  }
+            {
+              "source": "authors",
+              "bold": false,
+              "prefix": "",
+              "suffix": "",
+              "optional": false
+            },
+            {
+              "source": "title",
+              "bold": false,
+              "prefix": "",
+              "suffix": "",
+              "optional": false
+            },
+            {
+              "source": "literal:In: ",
+              "bold": false,
+              "prefix": ". ",
+              "suffix": "",
+              "optional": false
+            },
+            {
+              "source": "bookAuthors",
+              "bold": false,
+              "prefix": "",
+              "suffix": "",
+              "optional": true
+            },
+            {
+              "source": "bookTitle",
+              "bold": true,
+              "prefix": "",
+              "suffix": ". ",
+              "optional": true
+            },
+            {
+              "source": "edition",
+              "bold": false,
+              "prefix": "",
+              "suffix": ". ed. ",
+              "optional": true
+            },
+            {
+              "source": "city",
+              "bold": false,
+              "prefix": "",
+              "suffix": ": ",
+              "optional": true
+            },
+            {
+              "source": "publisher",
+              "bold": false,
+              "prefix": "",
+              "suffix": ", ",
+              "optional": true
+            },
+            {
+              "source": "year",
+              "bold": false,
+              "prefix": "",
+              "suffix": ".",
+              "optional": false
+            },
+            {
+              "source": "pages",
+              "bold": false,
+              "prefix": " p. ",
+              "suffix": ".",
+              "optional": true
+            }
           ],
           "JOURNAL": [
-            { "source": "authors",       "bold": false, "prefix": "",    "suffix": "",    "optional": false },
-            { "source": "title",         "bold": true,  "prefix": "",    "suffix": "",    "optional": false },
-            { "source": "subtitle",      "bold": false, "prefix": ": ",  "suffix": "",    "optional": true  },
-            { "source": "publisher",     "bold": false, "prefix": " ",   "suffix": "",    "optional": true  },
-            { "source": "volume",        "bold": false, "prefix": ", v. ", "suffix": "",  "optional": true  },
-            { "source": "issue",         "bold": false, "prefix": ", n. ", "suffix": "",  "optional": true  },
-            { "source": "pages",         "bold": false, "prefix": ", p. ", "suffix": "",  "optional": true  },
-            { "source": "year",          "bold": false, "prefix": ", ",  "suffix": ".",   "optional": false },
-            { "source": "doi",           "bold": false, "prefix": " ",   "suffix": ".",   "optional": true  }
+            {
+              "source": "authors",
+              "bold": false,
+              "prefix": "",
+              "suffix": "",
+              "optional": false
+            },
+            {
+              "source": "title",
+              "bold": false,
+              "prefix": "",
+              "suffix": "",
+              "optional": false
+            },
+            {
+              "source": "subtitle",
+              "bold": false,
+              "prefix": ": ",
+              "suffix": "",
+              "optional": true
+            },
+            {
+              "source": "publisher",
+              "bold": true,
+              "prefix": ". ",
+              "suffix": "",
+              "optional": true
+            },
+            {
+              "source": "volume",
+              "bold": false,
+              "prefix": ", v. ",
+              "suffix": "",
+              "optional": true
+            },
+            {
+              "source": "issue",
+              "bold": false,
+              "prefix": ", n. ",
+              "suffix": "",
+              "optional": true
+            },
+            {
+              "source": "pages",
+              "bold": false,
+              "prefix": ", p. ",
+              "suffix": "",
+              "optional": true
+            },
+            {
+              "source": "year",
+              "bold": false,
+              "prefix": ", ",
+              "suffix": ".",
+              "optional": false
+            },
+            {
+              "source": "doi",
+              "bold": false,
+              "prefix": " ",
+              "suffix": ".",
+              "optional": true
+            }
           ],
           "WEBSITE": [
-            { "source": "authors",       "bold": false, "prefix": "",    "suffix": "",    "optional": true  },
-            { "source": "title",         "bold": true,  "prefix": "",    "suffix": "",    "optional": false },
-            { "source": "subtitle",      "bold": false, "prefix": ": ",  "suffix": "",    "optional": true  },
-            { "source": "url",           "bold": false, "prefix": " Disponível em: ", "suffix": ".", "optional": true },
-            { "source": "accessDate",    "bold": false, "prefix": " Acesso em: ", "suffix": ".", "optional": true }
+            {
+              "source": "authors",
+              "bold": false,
+              "prefix": "",
+              "suffix": "",
+              "optional": true
+            },
+            {
+              "source": "title",
+              "bold": true,
+              "prefix": "",
+              "suffix": "",
+              "optional": false
+            },
+            {
+              "source": "subtitle",
+              "bold": false,
+              "prefix": ": ",
+              "suffix": "",
+              "optional": true
+            },
+            {
+              "source": "url",
+              "bold": false,
+              "prefix": " Disponível em: ",
+              "suffix": ".",
+              "optional": true
+            },
+            {
+              "source": "accessDate",
+              "bold": false,
+              "prefix": " Acesso em: ",
+              "suffix": ".",
+              "optional": true
+            }
           ],
           "LEGISLATION": [
-            { "source": "title",         "bold": false, "prefix": "",    "suffix": "",    "optional": false },
-            { "source": "subtitle",      "bold": false, "prefix": ". ",  "suffix": "",    "optional": true  },
-            { "source": "year",          "bold": false, "prefix": ". ",  "suffix": ".",   "optional": false },
-            { "source": "url",           "bold": false, "prefix": " Disponível em: ", "suffix": ".", "optional": true }
+            {
+              "source": "title",
+              "bold": true,
+              "prefix": "",
+              "suffix": "",
+              "optional": false
+            },
+            {
+              "source": "subtitle",
+              "bold": false,
+              "prefix": ". ",
+              "suffix": "",
+              "optional": true
+            },
+            {
+              "source": "year",
+              "bold": false,
+              "prefix": ". ",
+              "suffix": ".",
+              "optional": false
+            },
+            {
+              "source": "url",
+              "bold": false,
+              "prefix": " Disponível em: ",
+              "suffix": ".",
+              "optional": true
+            }
           ],
           "THESIS": [
-            { "source": "authors",       "bold": false, "prefix": "",    "suffix": "",    "optional": false },
-            { "source": "title",         "bold": true,  "prefix": "",    "suffix": "",    "optional": false },
-            { "source": "subtitle",      "bold": false, "prefix": ": ",  "suffix": "",    "optional": true  },
-            { "source": "year",          "bold": false, "prefix": ". ",  "suffix": ".",   "optional": false },
-            { "source": "degree",        "bold": false, "prefix": " ",   "suffix": ".",   "optional": true  },
-            { "source": "institutionName", "bold": false, "prefix": " ", "suffix": ".",   "optional": true  }
+            {
+              "source": "authors",
+              "bold": false,
+              "prefix": "",
+              "suffix": "",
+              "optional": false
+            },
+            {
+              "source": "title",
+              "bold": true,
+              "prefix": "",
+              "suffix": "",
+              "optional": false
+            },
+            {
+              "source": "subtitle",
+              "bold": false,
+              "prefix": ": ",
+              "suffix": "",
+              "optional": true
+            },
+            {
+              "source": "year",
+              "bold": false,
+              "prefix": ". ",
+              "suffix": ".",
+              "optional": false
+            },
+            {
+              "source": "degree",
+              "bold": false,
+              "prefix": " ",
+              "suffix": ".",
+              "optional": true
+            },
+            {
+              "source": "institutionName",
+              "bold": false,
+              "prefix": " ",
+              "suffix": ".",
+              "optional": true
+            }
           ],
           "CONFERENCE_PAPER": [
-            { "source": "authors",       "bold": false, "prefix": "",    "suffix": "",    "optional": false },
-            { "source": "title",         "bold": true,  "prefix": "",    "suffix": "",    "optional": false },
-            { "source": "literal:In: ",  "bold": false, "prefix": ". ",  "suffix": "",    "optional": false },
-            { "source": "publisher",     "bold": false, "prefix": "",    "suffix": ". ",  "optional": true  },
-            { "source": "city",          "bold": false, "prefix": "",    "suffix": ": ",  "optional": true  },
-            { "source": "year",          "bold": false, "prefix": "",    "suffix": ".",   "optional": false },
-            { "source": "pages",         "bold": false, "prefix": " p. ", "suffix": ".", "optional": true  }
+            {
+              "source": "authors",
+              "bold": false,
+              "prefix": "",
+              "suffix": "",
+              "optional": false
+            },
+            {
+              "source": "title",
+              "bold": false,
+              "prefix": "",
+              "suffix": "",
+              "optional": false
+            },
+            {
+              "source": "literal:In: ",
+              "bold": false,
+              "prefix": ". ",
+              "suffix": "",
+              "optional": false
+            },
+            {
+              "source": "publisher",
+              "bold": true,
+              "prefix": "",
+              "suffix": ". ",
+              "optional": true
+            },
+            {
+              "source": "city",
+              "bold": false,
+              "prefix": "",
+              "suffix": ": ",
+              "optional": true
+            },
+            {
+              "source": "year",
+              "bold": false,
+              "prefix": "",
+              "suffix": ".",
+              "optional": false
+            },
+            {
+              "source": "pages",
+              "bold": false,
+              "prefix": " p. ",
+              "suffix": ".",
+              "optional": true
+            }
           ],
           "REPORT": [
-            { "source": "authors",       "bold": false, "prefix": "",    "suffix": "",    "optional": false },
-            { "source": "title",         "bold": true,  "prefix": "",    "suffix": "",    "optional": false },
-            { "source": "subtitle",      "bold": false, "prefix": ": ",  "suffix": "",    "optional": true  },
-            { "source": "city",          "bold": false, "prefix": ". ",  "suffix": ": ",  "optional": true  },
-            { "source": "institutionName", "bold": false, "prefix": "", "suffix": ", ",   "optional": true  },
-            { "source": "year",          "bold": false, "prefix": "",    "suffix": ".",   "optional": false },
-            { "source": "issue",         "bold": false, "prefix": " (Relatório técnico, n. ", "suffix": ")", "optional": true }
+            {
+              "source": "authors",
+              "bold": false,
+              "prefix": "",
+              "suffix": "",
+              "optional": false
+            },
+            {
+              "source": "title",
+              "bold": true,
+              "prefix": "",
+              "suffix": "",
+              "optional": false
+            },
+            {
+              "source": "subtitle",
+              "bold": false,
+              "prefix": ": ",
+              "suffix": "",
+              "optional": true
+            },
+            {
+              "source": "city",
+              "bold": false,
+              "prefix": ". ",
+              "suffix": ": ",
+              "optional": true
+            },
+            {
+              "source": "institutionName",
+              "bold": false,
+              "prefix": "",
+              "suffix": ", ",
+              "optional": true
+            },
+            {
+              "source": "year",
+              "bold": false,
+              "prefix": "",
+              "suffix": ".",
+              "optional": false
+            },
+            {
+              "source": "issue",
+              "bold": false,
+              "prefix": " (Relatório técnico, n. ",
+              "suffix": ")",
+              "optional": true
+            }
           ],
           "STANDARD": [
-            { "source": "authors",       "bold": false, "prefix": "",    "suffix": "",    "optional": true  },
-            { "source": "title",         "bold": false, "prefix": "",    "suffix": "",    "optional": false },
-            { "source": "subtitle",      "bold": false, "prefix": ": ",  "suffix": "",    "optional": true  },
-            { "source": "city",          "bold": false, "prefix": ". ",  "suffix": ", ",  "optional": true  },
-            { "source": "year",          "bold": false, "prefix": "",    "suffix": ".",   "optional": false }
+            {
+              "source": "authors",
+              "bold": false,
+              "prefix": "",
+              "suffix": "",
+              "optional": true
+            },
+            {
+              "source": "title",
+              "bold": true,
+              "prefix": "",
+              "suffix": "",
+              "optional": false
+            },
+            {
+              "source": "subtitle",
+              "bold": false,
+              "prefix": ": ",
+              "suffix": "",
+              "optional": true
+            },
+            {
+              "source": "city",
+              "bold": false,
+              "prefix": ". ",
+              "suffix": ", ",
+              "optional": true
+            },
+            {
+              "source": "year",
+              "bold": false,
+              "prefix": "",
+              "suffix": ".",
+              "optional": false
+            }
           ]
         }
       }
     },
     "appendix": {
+      "ruleType": "SECTIONED",
       "componentId": "appendix",
       "headingTemplate": "APÊNDICE {letter} – {title}",
       "headingStyleId": "appendix.heading",
       "paragraphStyleId": "bodyContent.paragraph",
       "sectionTitleStyleIdsByLevel": [
-        "bodyContent.heading1",
-        "bodyContent.heading2"
-      ]
+        "sectioned.heading1",
+        "sectioned.heading2"
+      ],
+      "indexingStyle": "ALPHABETIC",
+      "bodyContentComponentId": "bodyContent"
     },
     "annex": {
+      "ruleType": "SECTIONED",
       "componentId": "annex",
       "headingTemplate": "ANEXO {letter} – {title}",
       "headingStyleId": "annex.heading",
       "paragraphStyleId": "bodyContent.paragraph",
       "sectionTitleStyleIdsByLevel": [
-        "bodyContent.heading1",
-        "bodyContent.heading2"
-      ]
+        "sectioned.heading1",
+        "sectioned.heading2"
+      ],
+      "indexingStyle": "ALPHABETIC",
+      "bodyContentComponentId": "bodyContent"
     },
     "glossary": {
+      "ruleType": "FLOW_TEXTUAL",
       "componentId": "glossary",
-      "headingStyleId": "glossary.heading",
-      "headingText": "GLOSSÁRIO",
-      "entryStyleId": "glossary.entry",
-      "termSeparator": " — ",
-      "blankLinesAfterHeading": 1
+      "items": [
+        { "itemType": "HEADING", "styleId": "glossary.heading", "text": "GLOSSÁRIO" },
+        { "itemType": "BLANK_LINES", "styleId": "glossary.heading", "count": 1 },
+        {
+          "itemType": "PAIR_LIST",
+          "styleId": "glossary.entry",
+          "termsSlotName": "terms",
+          "definitionsSlotName": "definitions",
+          "separator": " — "
+        }
+      ]
     },
     "summary": {
+      "ruleType": "SECTION_INDEX",
       "componentId": "summary",
       "headingStyleId": "list.heading",
       "headingText": "SUMÁRIO",
       "entryStyleIdsByLevel": [
-        "list.entry",
-        "list.entry",
-        "list.entry",
-        "list.entry",
-        "list.entry",
-        "list.entry"
+        "summary.entry.primary",
+        "summary.entry.secondary",
+        "summary.entry.secondary",
+        "summary.entry.secondary",
+        "summary.entry.secondary",
+        "summary.entry.secondary"
       ],
-      "useTocField": true
+      "useTocField": true,
+      "blankLinesAfterHeading": 1
     },
     "listOfFigures": {
+      "ruleType": "ELEMENT_INDEX",
       "componentId": "listOfFigures",
+      "elementType": "FIGURE",
       "headingStyleId": "list.heading",
       "headingText": "LISTA DE ILUSTRAÇÕES",
       "entryStyleId": "list.entry",
-      "entryTemplate": "{number} — {caption}",
-      "blankLinesAfterHeading": 1
+      "entryTemplate": "Figura {number} – {caption}",
+      "blankLinesAfterHeading": 1,
+      "pageReferenceEnabled": true
     },
     "listOfTables": {
+      "ruleType": "ELEMENT_INDEX",
       "componentId": "listOfTables",
+      "elementType": "TABLE",
       "headingStyleId": "list.heading",
       "headingText": "LISTA DE TABELAS",
       "entryStyleId": "list.entry",
-      "entryTemplate": "{number} — {caption}",
-      "blankLinesAfterHeading": 1
+      "entryTemplate": "Tabela {number} – {caption}",
+      "blankLinesAfterHeading": 1,
+      "pageReferenceEnabled": true
     },
     "listOfFrames": {
+      "ruleType": "ELEMENT_INDEX",
       "componentId": "listOfFrames",
+      "elementType": "FRAME",
       "headingStyleId": "list.heading",
       "headingText": "LISTA DE QUADROS",
       "entryStyleId": "list.entry",
-      "entryTemplate": "{number} — {caption}",
-      "blankLinesAfterHeading": 1
+      "entryTemplate": "Quadro {number} – {caption}",
+      "blankLinesAfterHeading": 1,
+      "pageReferenceEnabled": true
     },
     "listOfCharts": {
+      "ruleType": "ELEMENT_INDEX",
       "componentId": "listOfCharts",
+      "elementType": "CHART",
       "headingStyleId": "list.heading",
       "headingText": "LISTA DE GRÁFICOS",
       "entryStyleId": "list.entry",
-      "entryTemplate": "{number} — {caption}",
-      "blankLinesAfterHeading": 1
+      "entryTemplate": "Gráfico {number} – {caption}",
+      "blankLinesAfterHeading": 1,
+      "pageReferenceEnabled": true
     },
     "listOfCodeListings": {
+      "ruleType": "ELEMENT_INDEX",
       "componentId": "listOfCodeListings",
+      "elementType": "CODE_LISTING",
       "headingStyleId": "list.heading",
       "headingText": "LISTA DE LISTAGENS",
       "entryStyleId": "list.entry",
-      "entryTemplate": "{number} — {caption}",
-      "blankLinesAfterHeading": 1
+      "entryTemplate": "Código-fonte {number} – {caption}",
+      "blankLinesAfterHeading": 1,
+      "pageReferenceEnabled": true
     },
     "listOfAbbreviations": {
+      "ruleType": "FLOW_TEXTUAL",
       "componentId": "listOfAbbreviations",
-      "headingStyleId": "list.heading",
-      "headingText": "LISTA DE ABREVIATURAS E SIGLAS",
-      "entryStyleId": "list.entry",
-      "termSeparator": " — ",
-      "sortAlphabetically": true,
-      "blankLinesAfterHeading": 1
+      "items": [
+        { "itemType": "HEADING", "styleId": "list.heading", "text": "LISTA DE ABREVIATURAS E SIGLAS" },
+        { "itemType": "BLANK_LINES", "styleId": "list.heading", "count": 1 },
+        {
+          "itemType": "PAIR_LIST",
+          "styleId": "list.entry",
+          "termsSlotName": "$abbreviations",
+          "definitionsSlotName": "$sort",
+          "separator": " — "
+        }
+      ]
     },
     "listOfSymbols": {
+      "ruleType": "FLOW_TEXTUAL",
       "componentId": "listOfSymbols",
-      "headingStyleId": "list.heading",
-      "headingText": "LISTA DE SÍMBOLOS",
-      "entryStyleId": "list.entry",
-      "termSeparator": " — ",
-      "blankLinesAfterHeading": 1
+      "items": [
+        { "itemType": "HEADING", "styleId": "list.heading", "text": "LISTA DE SÍMBOLOS" },
+        { "itemType": "BLANK_LINES", "styleId": "list.heading", "count": 1 },
+        {
+          "itemType": "PAIR_LIST",
+          "styleId": "list.entry",
+          "termsSlotName": "terms",
+          "definitionsSlotName": "definitions",
+          "separator": " — "
+        }
+      ]
+    }
+  },
+  "fontRoles": {
+    "baseFont": {
+      "default": "Times New Roman",
+      "allowedValues": ["Times New Roman", "Arial"],
+      "styleIds": [
+        "pageNumber",
+        "cover.top", "cover.author", "cover.title", "cover.subtitle", "cover.bottom",
+        "titlePage.author", "titlePage.title", "titlePage.subtitle", "titlePage.nature",
+        "titlePage.advisor", "titlePage.coadvisor", "titlePage.bottom",
+        "approvalSheet.author", "approvalSheet.title", "approvalSheet.subtitle",
+        "approvalSheet.nature", "approvalSheet.approval",
+        "approvalSheet.committee.heading", "approvalSheet.committee",
+        "bodyContent.heading1", "bodyContent.heading2", "bodyContent.heading3",
+        "bodyContent.heading4", "bodyContent.heading5", "bodyContent.heading6",
+        "bodyContent.paragraph", "bodyContent.longQuote",
+        "bodyContent.figure.caption", "bodyContent.figure.source",
+        "bodyContent.table.caption", "bodyContent.table.source",
+        "bodyContent.table.header", "bodyContent.table.cell",
+        "bodyContent.frame.caption", "bodyContent.frame.source",
+        "bodyContent.frame.header", "bodyContent.frame.cell",
+        "bodyContent.list.ordered", "bodyContent.list.unordered",
+        "bodyContent.footnoteCall", "bodyContent.footnoteText",
+        "errata.heading", "errata.tableHeader", "errata.tableCell",
+        "dedication.text",
+        "epigraph.text", "epigraph.author",
+        "acknowledgments.heading", "acknowledgments.text",
+        "resumo.heading", "resumo.text", "resumo.keywords",
+        "references.heading", "references.entry",
+        "sectioned.heading1", "sectioned.heading2",
+        "appendix.heading", "annex.heading",
+        "glossary.heading", "glossary.entry",
+        "summary.entry.primary", "summary.entry.secondary",
+        "list.heading", "list.entry"
+      ]
+    }
+  },
+  "postProcessing": {
+    "orphanTitleCorrection": { "enabled": true },
+    "tableContinuationLabels": {
+      "enabled": true,
+      "continuesLabel": "continua",
+      "continuationLabel": "continuação",
+      "conclusionLabel": "conclusão",
+      "labelStyleId": "bodyContent.table.header"
     }
   }
 }

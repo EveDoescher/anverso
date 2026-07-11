@@ -1,0 +1,1013 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { fetchApi } from '@/lib/api';
+import Link from 'next/link';
+import BodyEditor from '@/components/body-editor/BodyEditor';
+import SectionedEditor from '@/components/body-editor/SectionedEditor';
+import { ChevronRight, ChevronLeft, Save, CheckCircle, FileText, ArrowLeft, Loader2, FileCheck2, Share2, Bookmark } from 'lucide-react';
+import { AlertModal, AlertModalType } from '@/components/ui/AlertModal';
+
+export default function SubmitWork() {
+  const params = useParams();
+  const searchParams = useSearchParams();
+  const workId = params?.id?.[0] || null;
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [profiles, setProfiles] = useState<any[]>([]);
+  const [profileId, setProfileId] = useState('');
+  const [profile, setProfile] = useState<any>(null);
+  const [formData, setFormData] = useState<any>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState(0);
+  const [autoFill, setAutoFill] = useState(true);
+  const [workName, setWorkName] = useState('');
+  const [fontFamily, setFontFamily] = useState('Times New Roman');
+  const [enabledComponents, setEnabledComponents] = useState<Record<string, boolean>>({});
+  const router = useRouter();
+
+  // Custom Modal state
+  const [modalConfig, setModalConfig] = useState<{show: boolean, title: string, message: string, type: AlertModalType, redirectUrl?: string, onConfirm?: () => void}>({
+    show: false,
+    title: '',
+    message: '',
+    type: 'info'
+  });
+
+  const showAlert = (title: string, message: string, type: AlertModalType, redirectUrl?: string) => {
+    setModalConfig({ show: true, title, message, type, redirectUrl });
+  };
+
+  const showConfirm = (title: string, message: string, onConfirm: () => void) => {
+    setModalConfig({ show: true, title, message, type: 'confirm', onConfirm });
+  };
+
+  const closeModal = () => {
+    const url = modalConfig.redirectUrl;
+    setModalConfig(prev => ({ ...prev, show: false }));
+    if (url) {
+      router.push(url);
+    }
+  };
+
+  const handleBackNavigation = () => {
+    if (hasUnsavedChanges) {
+      showConfirm('Progresso não salvo', 'Você tem alterações não salvas. Se sair desta página agora, perderá o progresso não salvo. Deseja realmente sair?', () => {
+        closeModal();
+        router.push('/dashboard');
+      });
+    } else {
+      router.push('/dashboard');
+    }
+  };
+
+  const handleSwitchProfile = () => {
+    if (hasUnsavedChanges) {
+      showConfirm('Progresso não salvo', 'Se trocar de perfil, as edições não salvas do perfil atual serão perdidas. Deseja continuar?', () => {
+        closeModal();
+        setProfile(null);
+        setProfileId('');
+      });
+    } else {
+      setProfile(null);
+      setProfileId('');
+    }
+  };
+
+  useEffect(() => {
+    loadProfiles();
+    if (workId) {
+      loadWork(workId);
+    } else {
+      const urlProfileId = searchParams.get('profileId');
+      const urlVersionId = searchParams.get('versionId');
+      if (urlProfileId) {
+        setProfileId(urlProfileId);
+        selectProfile(urlProfileId, null, urlVersionId, true);
+      }
+    }
+  }, [workId, searchParams]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
+  const loadWork = async (id: string) => {
+    setLoading(true);
+    try {
+      const res = await fetchApi(`/api/v1/works/${id}`);
+      if (res.ok) {
+        const workData = await res.json();
+        setWorkName(workData.fileName || '');
+        if (workData.options) {
+           setFontFamily(workData.options.fontFamily || 'Times New Roman');
+        }
+        await selectProfile(workData.profileId, workData);
+      } else {
+        router.push('/submit-work');
+      }
+    } catch (err) {
+      router.push('/submit-work');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadProfiles = async () => {
+    try {
+      const res = await fetchApi('/api/v1/profiles');
+      if (res.ok) {
+        const data = await res.json();
+        setProfiles(data);
+      }
+    } catch (err) {
+      console.error('Erro ao carregar perfis', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const selectProfile = async (id: string, savedWorkData?: any, overrideVersionId?: string | null, autoSkipStep0?: boolean) => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetchApi(`/api/v1/profiles/${id}`);
+      if (!res.ok) throw new Error('Falha ao carregar o perfil completo');
+      const data = await res.json();
+      
+      let parsedProfileData = data.profileData || data;
+
+      if (overrideVersionId) {
+        try {
+          const verRes = await fetchApi(`/api/v1/profiles/${id}/versions`);
+          if (verRes.ok) {
+            const versions = await verRes.json();
+            const ver = versions.find((v: any) => v.id === overrideVersionId);
+            if (ver) {
+              parsedProfileData = ver.profileData;
+            }
+          }
+        } catch (e) {}
+      }
+      
+      if (typeof parsedProfileData === 'string') {
+        parsedProfileData = JSON.parse(parsedProfileData);
+      }
+      
+      const selectedProfileInfo = profiles.find(p => p.id === id);
+      const profileName = selectedProfileInfo ? selectedProfileInfo.name : `Perfil ${id}`;
+      
+      const initialData: any = {};
+      const componentFields: Record<string, any[]> = {};
+
+      parsedProfileData?.componentOrder?.forEach((compId: string) => {
+        const comp = parsedProfileData.componentRules?.[compId] || parsedProfileData[compId];
+        if (!comp) return;
+        
+        initialData[compId] = {};
+        const fields: any[] = [];
+
+        // Parsing logic here... (same as before)
+        if (comp && comp.slots) {
+          Object.keys(comp.slots).forEach(slotName => {
+            const slot = comp.slots[slotName];
+            if (slot.type === 'COMPOSED_TEXT') {
+              initialData[compId][slotName] = {};
+              fields.push({ name: slotName, type: 'composed', required: slot.required, fields: slot.fieldNames || [] });
+            } else if (slot.type === 'SIGNATURE_BLOCK_LIST') {
+              initialData[compId][slotName] = [];
+              fields.push({ name: slotName, type: 'signature', required: slot.required, fields: slot.knownFieldNames || [] });
+            } else {
+              const isArray = slot.type === 'TEXT_LIST';
+              initialData[compId][slotName] = '';
+              fields.push({ name: slotName, isArray, required: slot.required, type: isArray ? 'array' : 'text' });
+            }
+          });
+        } else if (comp.items && Array.isArray(comp.items)) {
+          comp.items.forEach((item: any) => {
+              switch (item.type) {
+                  case 'PLAIN_TEXT':
+                      initialData[compId][item.slotName] = '';
+                      fields.push({ name: item.slotName, type: 'text', required: false });
+                      break;
+                  case 'TEMPLATED_TEXT':
+                      item.fieldNames?.forEach((fn: string) => {
+                          initialData[compId][fn] = '';
+                          fields.push({ name: fn, type: 'text', required: false, hint: `Template: ${item.template}` });
+                      });
+                      break;
+                  case 'BOLD_LABELED_KEYWORDS':
+                      initialData[compId][item.labelSlotName] = '';
+                      initialData[compId][item.keywordsSlotName] = '';
+                      fields.push(
+                          { name: item.labelSlotName, type: 'text', required: false, hint: 'Ex: Palavras-chave:' },
+                          { name: item.keywordsSlotName, type: 'array', required: false }
+                      );
+                      break;
+                  case 'PAIR_LIST':
+                      initialData[compId][item.termsSlotName] = '';
+                      initialData[compId][item.definitionsSlotName] = '';
+                      fields.push(
+                          { name: item.termsSlotName, type: 'array', required: false },
+                          { name: item.definitionsSlotName, type: 'array', required: false }
+                      );
+                      break;
+                  case 'TABLE_BLOCK':
+                      initialData[compId][item.rowsSlotName] = '';
+                      fields.push({ name: item.rowsSlotName, type: 'array', required: false, desc: 'Itens por linha (vírgulas)' });
+                      break;
+                  case 'REPEAT_GROUP':
+                      initialData[compId][item.entriesSlotName] = [{}];
+                      fields.push({ name: item.entriesSlotName, type: 'repeat', required: false, group: item.group || [] });
+                      break;
+              }
+          });
+        } else if (comp.ruleType === 'BODY_CONTENT' || compId === 'bodyContent' || comp.componentId === 'bodyContent') {
+          initialData[compId] = { sections: [] };
+          fields.push({ name: 'sections', type: 'body_content', required: true });
+        } else if (comp.ruleType === 'SECTIONED') {
+          initialData[compId] = { items: [] };
+          fields.push({ name: 'items', type: 'sectioned', required: true });
+        } else if (['abstract', 'resumo', 'foreignAbstract'].includes(compId) || ['abstract', 'resumo', 'foreignAbstract'].includes(comp.componentId)) {
+          initialData[compId] = { text: '', keywords: [] };
+          fields.push(
+            { name: 'text', type: 'text', required: true, desc: 'Texto do resumo' },
+            { name: 'keywords', type: 'array', required: true, desc: 'Palavras-chave (separadas por vírgula)' }
+          );
+        } else if (['dedication', 'acknowledgments'].includes(compId) || ['dedication', 'acknowledgments'].includes(comp.componentId)) {
+          initialData[compId] = { text: '' };
+          fields.push({ name: 'text', type: 'text', required: true, desc: 'Texto principal' });
+        } else if (compId === 'epigraph' || comp.componentId === 'epigraph') {
+          initialData[compId] = { text: '', author: '' };
+          fields.push(
+            { name: 'text', type: 'text', required: true, desc: 'Texto da epígrafe' },
+            { name: 'author', type: 'text', required: true, desc: 'Autor' }
+          );
+        } else if (compId === 'references' || comp.componentId === 'references') {
+          initialData[compId] = { items: [] };
+          fields.push({ name: 'items', type: 'array', required: true, desc: 'Lista de referências bibliográficas' });
+        }
+        
+        if (fields.length > 0) {
+          // Sort fields logically for better UX
+          const preferredOrder: Record<string, number> = {
+            'institution': 1, 'author': 2, 'authors': 2, 'title': 3, 'subtitle': 4,
+            'nature': 5, 'objective': 5, 'purpose': 5, 'advisor': 6, 'coadvisor': 7,
+            'city': 8, 'local': 8, 'year': 9, 'date': 9
+          };
+          
+          fields.sort((a, b) => {
+            const aName = a.name.toLowerCase();
+            const bName = b.name.toLowerCase();
+            const aWeight = preferredOrder[aName] || 50;
+            const bWeight = preferredOrder[bName] || 50;
+            return aWeight - bWeight;
+          });
+
+          componentFields[compId] = fields;
+        }
+      });
+      
+      const initialEnabled: Record<string, boolean> = {};
+      parsedProfileData?.componentOrder?.forEach((compId: string) => {
+        initialEnabled[compId] = true;
+      });
+      
+      if (savedWorkData && savedWorkData.document) {
+         Object.keys(savedWorkData.document).forEach(compId => {
+             if (initialData[compId]) {
+                 initialData[compId] = { ...initialData[compId], ...savedWorkData.document[compId] };
+             }
+         });
+         if (savedWorkData.options?.selectedComponents) {
+             Object.keys(initialEnabled).forEach(c => initialEnabled[c] = false);
+             savedWorkData.options.selectedComponents.forEach((c: string) => initialEnabled[c] = true);
+         }
+      }
+
+      setFormData(initialData);
+      setEnabledComponents(initialEnabled);
+      setProfile({ id, name: profileName, profileData: parsedProfileData, componentFields });
+      setActiveTab(autoSkipStep0 ? 1 : 0);
+    } catch (err: any) {
+      setError(err.message || 'Erro ao carregar perfil.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInputChange = (componentName: string, elementName: string, value: any) => {
+    setHasUnsavedChanges(true);
+    setFormData((prev: any) => {
+      const newState = { ...prev };
+      
+      newState[componentName] = {
+        ...newState[componentName],
+        [elementName]: value
+      };
+      
+      if (autoFill) {
+         const sourceField = profile?.componentFields?.[componentName]?.find((f: any) => f.name === elementName);
+         
+         if (sourceField) {
+           Object.keys(newState).forEach(compId => {
+             if (compId !== componentName && profile?.componentFields?.[compId]) {
+               const targetField = profile.componentFields[compId].find((f: any) => f.name === elementName);
+               
+               // Only auto-fill if both fields exist and have the exact same type (prevents array vs sectioned corruption)
+               if (targetField && targetField.type === sourceField.type) {
+                 newState[compId] = {
+                   ...newState[compId],
+                   [elementName]: value
+                 };
+               }
+             }
+           });
+         }
+      }
+      
+      return newState;
+    });
+  };
+
+  const handleNext = () => {
+    const componentOrder = profile?.profileData?.componentOrder?.filter((c: string) => profile.componentFields[c]) || [];
+    if (activeTab < componentOrder.length - 1) setActiveTab(prev => prev + 1);
+  };
+
+  const handlePrev = () => {
+    if (activeTab > 0) setActiveTab(prev => prev - 1);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    const document: any = {};
+    const selectedComponents: string[] = [];
+
+    profile?.profileData?.componentOrder?.forEach((compId: string) => {
+      if (!profile.componentFields[compId]) return;
+      if (!enabledComponents[compId]) return;
+      
+      selectedComponents.push(compId);
+      document[compId] = {};
+      
+      profile.componentFields[compId].forEach((field: any) => {
+        const val = formData[compId][field.name];
+        if (field.isArray) {
+          document[compId][field.name] = val ? val.split(',').map((s: string) => s.trim()) : [];
+        } else {
+          document[compId][field.name] = val;
+        }
+      });
+    });
+
+    const sanitizedName = (workName || 'meu_trabalho')
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9_\-]/g, "_")
+      .toLowerCase();
+
+    const payload = {
+      fileName: sanitizedName,
+      profileId: profile.id,
+      options: { 
+        selectedComponents,
+        fontFamily
+      },
+      document
+    };
+
+    try {
+      const res = await fetchApi('/api/v1/works/submit', {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        const errData = await res.text();
+        throw new Error(errData || 'Erro ao enviar o trabalho.');
+      }
+      showAlert('Sucesso', 'Trabalho submetido com sucesso! O processamento foi iniciado.', 'success', '/dashboard');
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Erro ao submeter o trabalho.');
+      showAlert('Erro', err.message || 'Erro ao submeter o trabalho.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveProgress = async () => {
+    try {
+      setLoading(true);
+      const document: any = {};
+      const selectedComponents: string[] = [];
+      profile?.profileData?.componentOrder?.forEach((compId: string) => {
+        if (!profile.componentFields[compId]) return;
+        if (!enabledComponents[compId]) return;
+        selectedComponents.push(compId);
+        document[compId] = {};
+        profile.componentFields[compId].forEach((field: any) => {
+          const val = formData[compId][field.name];
+          if (field.isArray && typeof val === 'string') {
+            document[compId][field.name] = val ? val.split(',').map((s: string) => s.trim()) : [];
+          } else {
+            document[compId][field.name] = val;
+          }
+        });
+      });
+
+      const payload = {
+        id: workId,
+        profileId: profile.id,
+        fileName: workName || 'meu_trabalho',
+        options: { selectedComponents, fontFamily },
+        document
+      };
+
+      const res = await fetchApi('/api/v1/works/draft', {
+        method: 'PUT',
+        body: JSON.stringify(payload)
+      });
+      
+      if (!res.ok) throw new Error('Falha ao salvar rascunho');
+      
+      const savedData = await res.json();
+      setHasUnsavedChanges(false);
+      showAlert('Progresso Salvo', 'O rascunho do seu trabalho foi salvo no servidor com sucesso.', 'success');
+      
+      if (!workId && savedData.id) {
+         router.replace(`/submit-work/${savedData.id}`);
+      }
+    } catch (error) {
+      console.error('Erro ao salvar rascunho:', error);
+      showAlert('Erro', 'Não foi possível salvar o rascunho no servidor.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleShareWork = async () => {
+    try {
+      // Como não há backend de rascunhos, copia a URL atual para a área de transferência,
+      // ou aciona o compartilhamento nativo do dispositivo.
+      const shareData = {
+        title: 'Formatação de Trabalho - Anverso',
+        text: 'Estou formatando meu trabalho acadêmico utilizando o Anverso.',
+        url: window.location.href,
+      };
+
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        showAlert('Link Copiado', 'O link da página foi copiado para sua área de transferência!', 'success');
+      }
+    } catch (error: any) {
+      if (error.name !== 'AbortError') { // Ignora se o usuário cancelou a tela de compartilhamento
+        console.error('Erro ao compartilhar:', error);
+        showAlert('Erro', 'Não foi possível compartilhar no momento.', 'error');
+      }
+    }
+  };
+
+  const componentOrder = profile?.profileData?.componentOrder?.filter((c: string) => profile.componentFields[c]) || [];
+  const activeComponentId = componentOrder[activeTab];
+  const activeFields = activeComponentId ? profile.componentFields[activeComponentId] : [];
+
+  return (
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans selection:bg-indigo-100 selection:text-indigo-900">
+      <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30 transition-all">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button type="button" onClick={handleBackNavigation} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors">
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div className="h-5 w-px bg-slate-200"></div>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent flex items-center gap-2">
+              <FileText className="w-5 h-5 text-indigo-600" />
+              Novo Trabalho Acadêmico
+            </h1>
+          </div>
+          {profile && (
+            <div className="flex items-center gap-3">
+               <button 
+                 type="button" 
+                 onClick={handleSaveProgress}
+                 className="text-xs font-medium bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-full transition-colors flex items-center gap-1.5"
+                 title="Salvar Progresso"
+               >
+                 <Bookmark className="w-3.5 h-3.5" />
+                 <span className="hidden md:inline">Salvar Progresso</span>
+               </button>
+               <button 
+                 type="button" 
+                 onClick={handleShareWork}
+                 className="text-xs font-medium bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-full transition-colors flex items-center gap-1.5"
+                 title="Compartilhar Trabalho"
+               >
+                 <Share2 className="w-3.5 h-3.5" />
+                 <span className="hidden md:inline">Compartilhar</span>
+               </button>
+               <div className="w-px h-4 bg-slate-200 mx-1 hidden lg:block"></div>
+               <span className="text-sm text-slate-500 hidden lg:inline-block">
+                 Perfil: <span className="font-semibold text-slate-700">{profile.name}</span>
+               </span>
+               <button 
+                  type="button" 
+                  onClick={handleSwitchProfile} 
+                  className="text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-full transition-colors"
+                >
+                  Trocar Perfil
+                </button>
+            </div>
+          )}
+        </div>
+      </header>
+
+      <main className="flex-1 max-w-7xl mx-auto w-full p-6 flex flex-col">
+        
+        {/* Step 1: Profile Selection */}
+        {!profile && (
+          <div className="max-w-4xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500 pt-8">
+            <div className="text-center mb-10">
+              <div className="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-indigo-50">
+                 <FileCheck2 className="w-8 h-8 text-indigo-600" />
+              </div>
+              <h2 className="text-3xl font-extrabold text-slate-900 mb-3 tracking-tight">Escolha o Padrão de Formatação</h2>
+              <p className="text-slate-500 text-lg max-w-2xl mx-auto">
+                Selecione a norma acadêmica ou modelo institucional que o seu trabalho deve seguir. O Anverso cuidará de toda a formatação para você.
+              </p>
+            </div>
+            
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+                <Loader2 className="w-10 h-10 animate-spin mb-4 text-indigo-500" />
+                <p className="font-medium">Carregando modelos disponíveis...</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {profiles.map(p => (
+                  <button 
+                    key={p.id} 
+                    onClick={() => selectProfile(p.id)}
+                    className="group text-left bg-white border border-slate-200 rounded-2xl p-6 hover:border-indigo-300 hover:shadow-lg hover:shadow-indigo-100/50 transition-all duration-300 flex flex-col h-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                  >
+                    <div className="flex justify-between items-start mb-4">
+                       <h3 className="font-bold text-slate-900 text-lg group-hover:text-indigo-700 transition-colors">{p.name}</h3>
+                       <div className="w-8 h-8 rounded-full bg-slate-50 group-hover:bg-indigo-50 flex items-center justify-center transition-colors">
+                         <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-indigo-600" />
+                       </div>
+                    </div>
+                    <p className="text-sm text-slate-500 leading-relaxed mt-auto">{p.description || 'Modelo de formatação padrão estruturado.'}</p>
+                  </button>
+                ))}
+                {profiles.length === 0 && (
+                  <div className="col-span-2 text-center bg-white border border-dashed border-slate-300 rounded-2xl p-12">
+                    <p className="text-slate-500 font-medium">Nenhum perfil de formatação disponível no momento.</p>
+                  </div>
+                )}
+              </div>
+            )}
+            {error && <div className="mt-6 bg-red-50 text-red-700 p-4 rounded-xl border border-red-100 text-sm font-medium flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-red-500" />{error}</div>}
+          </div>
+        )}
+
+        {/* Step 2: Wizard Form */}
+        {profile && (
+          <div className="flex flex-col md:flex-row gap-8 flex-1 animate-in fade-in duration-500 h-full">
+            
+            {/* Sidebar Navigation */}
+            <div className="w-full md:w-64 lg:w-72 shrink-0 md:sticky md:top-24 self-start bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+              <div className="p-4 bg-slate-50 border-b border-slate-100 flex flex-col gap-4">
+                
+                <div>
+                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Identificação</h3>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Nome do Arquivo (sem acentos)</label>
+                  <input 
+                    type="text" 
+                    value={workName} 
+                    onChange={(e) => { setWorkName(e.target.value); setHasUnsavedChanges(true); }} 
+                    placeholder="ex: tcc_joao_silva"
+                    className="w-full text-sm p-2 bg-white border border-slate-300 rounded-lg focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-shadow"
+                  />
+                </div>
+
+                <div className="h-px bg-slate-200 w-full" />
+
+                <div>
+                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Configurações</h3>
+                  
+                  <div className="mb-3">
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">Fonte Principal</label>
+                    <select 
+                      value={fontFamily}
+                      onChange={(e) => { setFontFamily(e.target.value); setHasUnsavedChanges(true); }}
+                      className="w-full text-sm p-2 bg-white border border-slate-300 rounded-lg focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-shadow cursor-pointer"
+                    >
+                      <option value="Times New Roman">Times New Roman</option>
+                      <option value="Arial">Arial</option>
+                    </select>
+                  </div>
+
+                  <label className="flex items-center gap-2 p-2 bg-indigo-50/50 rounded-lg cursor-pointer hover:bg-indigo-50 transition-colors border border-indigo-100/50">
+                    <input 
+                      type="checkbox" 
+                      className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                      checked={autoFill}
+                      onChange={(e) => { setAutoFill(e.target.checked); setHasUnsavedChanges(true); }}
+                    />
+                    <span className="text-xs font-semibold text-indigo-900 leading-tight">Preencher campos iguais automaticamente</span>
+                  </label>
+                </div>
+              </div>
+              <div className="py-2 max-h-[calc(100vh-320px)] overflow-y-auto custom-scrollbar">
+                {componentOrder.map((compId: string, idx: number) => {
+                  const isActive = idx === activeTab;
+                  const isDone = false; // Logic to check if required fields are filled can go here
+
+                  return (
+                    <button
+                      key={compId}
+                      onClick={() => setActiveTab(idx)}
+                      className={`w-full text-left px-4 py-3 flex items-center gap-3 text-sm transition-all relative
+                        ${isActive ? 'bg-indigo-50/50 text-indigo-700 font-semibold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'}
+                      `}
+                    >
+                      {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-600 rounded-r-full" />}
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] flex-shrink-0 transition-colors
+                        ${isActive ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'}
+                      `}>
+                        {idx + 1}
+                      </div>
+                      <span className={`truncate capitalize ${!enabledComponents[compId] ? 'line-through text-slate-400 opacity-70' : ''}`}>
+                        {compId.replace(/([A-Z])/g, ' $1').trim()}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Main Form Area */}
+            <div className="flex-1 flex flex-col min-h-0 bg-white rounded-2xl shadow-sm border border-slate-200">
+              <form onSubmit={handleSubmit} className="flex flex-col h-full">
+                
+                {/* Active Section Header */}
+                <div className="p-6 md:p-8 border-b border-slate-100 bg-white rounded-t-2xl">
+                  <div className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-bold uppercase tracking-wider mb-3">
+                    Seção {activeTab + 1} de {componentOrder.length}
+                  </div>
+                  
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-2xl font-bold text-slate-900 capitalize">
+                      {activeComponentId?.replace(/([A-Z])/g, ' $1').trim()}
+                    </h2>
+                    
+                    {!['cover', 'titlePage', 'summary', 'bodyContent', 'references', 'resumo', 'abstract'].includes(activeComponentId) && (
+                      <label className="flex items-center gap-2 cursor-pointer bg-slate-50 hover:bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 transition-colors">
+                        <input 
+                          type="checkbox" 
+                          className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                          checked={enabledComponents[activeComponentId] ?? true}
+                          onChange={(e) => { setEnabledComponents({...enabledComponents, [activeComponentId]: e.target.checked}); setHasUnsavedChanges(true); }}
+                        />
+                        <span className="text-sm font-semibold text-slate-700 select-none">Incluir no Trabalho</span>
+                      </label>
+                    )}
+                  </div>
+                  
+                  <p className="text-slate-500 text-sm">
+                    Preencha as informações necessárias para esta seção. Elas serão formatadas automaticamente no documento final.
+                  </p>
+                </div>
+                
+                {/* Active Section Fields */}
+                <div className={`p-6 md:p-8 flex-1 overflow-y-auto bg-slate-50/30 transition-opacity duration-300 ${!enabledComponents[activeComponentId] ? 'opacity-40 pointer-events-none grayscale-[0.5]' : ''}`}>
+                  <div className="max-w-3xl space-y-6">
+                    {activeFields?.map((el: any, elIdx: number) => {
+                      
+                      // COMPOSED TYPE
+                      if (el.type === 'composed') {
+                        return (
+                          <div key={elIdx} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <label className="flex items-center gap-2 text-sm font-bold mb-4 text-slate-800 capitalize">
+                              {el.name} {el.required && <span className="text-red-500">*</span>}
+                            </label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {el.fields.map((fName: string) => (
+                                <div key={fName}>
+                                  <label className="block text-xs font-semibold mb-1.5 text-slate-500 capitalize">{fName}</label>
+                                  <input 
+                                    type="text"
+                                    required={el.required}
+                                    className="w-full border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 p-2.5 rounded-lg text-sm text-slate-900 transition-shadow outline-none"
+                                    value={formData[activeComponentId]?.[el.name]?.[fName] || ''}
+                                    onChange={(e) => {
+                                      const currentObj = formData[activeComponentId]?.[el.name] || {};
+                                      handleInputChange(activeComponentId, el.name, { ...currentObj, [fName]: e.target.value });
+                                    }}
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      // SIGNATURE TYPE
+                      if (el.type === 'signature') {
+                        const items = formData[activeComponentId]?.[el.name] || [];
+                        return (
+                          <div key={elIdx} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <div className="flex justify-between items-center mb-4">
+                              <label className="text-sm font-bold text-slate-800 capitalize">
+                                {el.name} (Assinaturas) {el.required && <span className="text-red-500">*</span>}
+                              </label>
+                              <button type="button" onClick={() => {
+                                handleInputChange(activeComponentId, el.name, [...items, {}]);
+                              }} className="text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg transition-colors">
+                                + Adicionar Membro
+                              </button>
+                            </div>
+                            <div className="space-y-3">
+                              {items.map((item: any, itemIdx: number) => (
+                                <div key={itemIdx} className="p-4 border border-slate-200 rounded-lg bg-slate-50/50 relative group">
+                                  <button type="button" onClick={() => {
+                                    const newItems = [...items];
+                                    newItems.splice(itemIdx, 1);
+                                    handleInputChange(activeComponentId, el.name, newItems);
+                                  }} className="absolute top-3 right-3 text-slate-400 hover:text-red-500 transition-colors w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-50">
+                                    ✕
+                                  </button>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pr-8">
+                                    {el.fields.map((fName: string) => (
+                                      <div key={fName}>
+                                        <label className="block text-xs font-semibold mb-1.5 text-slate-500 capitalize">{fName}</label>
+                                        <input 
+                                          type="text"
+                                          className="w-full border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 p-2 rounded-md text-sm text-slate-900 transition-shadow outline-none"
+                                          value={item[fName] || ''}
+                                          onChange={(e) => {
+                                            const newItems = [...items];
+                                            newItems[itemIdx] = { ...newItems[itemIdx], [fName]: e.target.value };
+                                            handleInputChange(activeComponentId, el.name, newItems);
+                                          }}
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                              {items.length === 0 && <div className="text-sm text-slate-400 italic text-center py-4 border border-dashed border-slate-200 rounded-lg">Nenhum membro adicionado.</div>}
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      // BODY CONTENT TYPE
+                      if (el.type === 'body_content') {
+                        return (
+                          <div key={elIdx} className="space-y-3">
+                            <label className="block text-sm font-bold text-slate-800 capitalize">
+                              Conteúdo Textual
+                            </label>
+                            <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                                <BodyEditor
+                                  value={formData[activeComponentId]?.sections || []}
+                                  onChange={(sections: any) => handleInputChange(activeComponentId, 'sections', sections)}
+                                  maxDepth={profile.profileData.componentRules?.[activeComponentId]?.styleMapping?.sectionTitleStyleIdsByLevel?.length || 4}
+                                />
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      // SECTIONED TYPE
+                      if (el.type === 'sectioned') {
+                        return (
+                          <div key={elIdx} className="space-y-3">
+                            <label className="block text-sm font-bold text-slate-800 capitalize">
+                              Itens da Seção
+                            </label>
+                            <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm bg-white">
+                                <SectionedEditor
+                                  value={formData[activeComponentId]?.items || []}
+                                  onChange={(items: any) => handleInputChange(activeComponentId, 'items', items)}
+                                />
+                            </div>
+                          </div>
+                        );
+                      }
+                      
+                      // REPEAT TYPE
+                      if (el.type === 'repeat') {
+                        const items = formData[activeComponentId]?.[el.name] || [];
+                        return (
+                          <div key={elIdx} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <div className="flex justify-between items-center mb-4">
+                              <label className="text-sm font-bold text-slate-800 capitalize">
+                                {el.name} {el.required && <span className="text-red-500">*</span>}
+                              </label>
+                              <button type="button" onClick={() => {
+                                handleInputChange(activeComponentId, el.name, [...items, {}]);
+                              }} className="text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg transition-colors">
+                                + Adicionar Item
+                              </button>
+                            </div>
+                            <div className="space-y-3">
+                              {items.map((item: any, itemIdx: number) => (
+                                <div key={itemIdx} className="p-4 border border-slate-200 rounded-lg bg-slate-50/50 relative">
+                                  <button type="button" onClick={() => {
+                                    const newItems = [...items];
+                                    newItems.splice(itemIdx, 1);
+                                    handleInputChange(activeComponentId, el.name, newItems);
+                                  }} className="absolute top-3 right-3 text-slate-400 hover:text-red-500 transition-colors w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-50">
+                                    ✕
+                                  </button>
+                                  
+                                  {el.group && el.group.length > 0 ? (
+                                    <div className="grid grid-cols-1 gap-3 pr-8">
+                                      {el.group.map((gItem: any, gIdx: number) => {
+                                        if (gItem.type === 'HEADING' || gItem.type === 'BLANK_LINES') return null;
+                                        
+                                        if (gItem.type === 'TEMPLATED_TEXT') {
+                                            return gItem.fieldNames?.map((fn: string) => (
+                                              <div key={fn}>
+                                                <label className="block text-xs font-semibold mb-1.5 text-slate-500 capitalize">{fn}</label>
+                                                <input 
+                                                  type="text"
+                                                  className="w-full border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 p-2 rounded-md text-sm text-slate-900 outline-none"
+                                                  value={item[fn] || ''}
+                                                  onChange={(e) => {
+                                                    const newItems = [...items];
+                                                    newItems[itemIdx] = { ...newItems[itemIdx], [fn]: e.target.value };
+                                                    handleInputChange(activeComponentId, el.name, newItems);
+                                                  }}
+                                                />
+                                              </div>
+                                            ));
+                                        }
+                                        
+                                        const sName = gItem.slotName || gItem.termsSlotName || gItem.keywordsSlotName || gItem.rowsSlotName;
+                                        if (!sName) return null;
+                                        
+                                        return (
+                                          <div key={sName}>
+                                            <label className="block text-xs font-semibold mb-1.5 text-slate-500 capitalize">{sName}</label>
+                                            <input 
+                                              type="text"
+                                              className="w-full border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 p-2 rounded-md text-sm text-slate-900 outline-none"
+                                              value={item[sName] || ''}
+                                              onChange={(e) => {
+                                                const newItems = [...items];
+                                                newItems[itemIdx] = { ...newItems[itemIdx], [sName]: e.target.value };
+                                                handleInputChange(activeComponentId, el.name, newItems);
+                                              }}
+                                            />
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  ) : (
+                                    <textarea
+                                      className="w-full border border-slate-300 focus:border-indigo-500 p-3 rounded-md text-sm font-mono outline-none"
+                                      rows={3}
+                                      placeholder="Dados em formato texto ou JSON..."
+                                      value={typeof item === 'object' ? JSON.stringify(item) : item}
+                                      onChange={(e) => {
+                                        const newItems = [...items];
+                                        try { newItems[itemIdx] = JSON.parse(e.target.value); } catch { newItems[itemIdx] = e.target.value; }
+                                        handleInputChange(activeComponentId, el.name, newItems);
+                                      }}
+                                    />
+                                  )}
+                                </div>
+                              ))}
+                              {items.length === 0 && <div className="text-sm text-slate-400 italic text-center py-4 border border-dashed border-slate-200 rounded-lg">Nenhum item adicionado.</div>}
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      // DEFAULT TEXT/ARRAY TYPE
+                      const isTextarea = el.name.toLowerCase().includes('text') || el.name.toLowerCase().includes('resumo') || el.name.toLowerCase().includes('abstract');
+                      return (
+                        <div key={elIdx} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                          <label className="block text-sm font-bold mb-1.5 text-slate-800 capitalize">
+                            {el.name} {el.required && <span className="text-red-500">*</span>}
+                          </label>
+                          {(el.isArray || el.desc) && (
+                            <p className="text-xs text-slate-500 mb-3">
+                              {el.desc || ''} {el.isArray ? (el.desc ? ' | ' : '') + 'Separe múltiplos itens por vírgula' : ''}
+                            </p>
+                          )}
+                          
+                          {isTextarea && !el.isArray ? (
+                            <textarea 
+                              required={el.required}
+                              className="w-full border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 p-3 rounded-lg text-sm text-slate-900 transition-shadow outline-none resize-y min-h-[120px]"
+                              value={formData[activeComponentId]?.[el.name] || ''}
+                              placeholder={`Digite o ${el.name}...`}
+                              onChange={(e) => handleInputChange(activeComponentId, el.name, e.target.value)}
+                            />
+                          ) : (
+                            <input 
+                              type="text"
+                              required={el.required}
+                              className="w-full border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 p-2.5 rounded-lg text-sm text-slate-900 transition-shadow outline-none"
+                              value={formData[activeComponentId]?.[el.name] || ''}
+                              placeholder={`Ex: ${el.isArray ? 'Item 1, Item 2' : 'Preencha aqui...'}`}
+                              onChange={(e) => handleInputChange(activeComponentId, el.name, e.target.value)}
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                    
+                    {activeFields?.length === 0 && (
+                      <div className="bg-white p-8 rounded-xl border border-dashed border-slate-300 flex flex-col items-center justify-center text-center">
+                        <CheckCircle className="w-10 h-10 text-emerald-400 mb-3" />
+                        <h3 className="text-slate-800 font-semibold mb-1">Seção Automática</h3>
+                        <p className="text-slate-500 text-sm max-w-sm">Esta seção faz parte da estrutura, mas não requer preenchimento manual de dados. O Anverso cuidará dela automaticamente.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Form Navigation Footer */}
+                <div className="p-4 md:px-8 md:py-5 border-t border-slate-100 bg-white rounded-b-2xl flex items-center justify-between mt-auto">
+                  <button 
+                    type="button" 
+                    onClick={handlePrev}
+                    disabled={activeTab === 0}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-slate-600 hover:bg-slate-100"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    Anterior
+                  </button>
+                  
+                  {activeTab < componentOrder.length - 1 ? (
+                    <button 
+                      type="button" 
+                      onClick={handleNext}
+                      className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-colors bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
+                    >
+                      Próxima Seção
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  ) : (
+                    <button 
+                      type="submit" 
+                      disabled={loading}
+                      className="flex items-center gap-2 px-8 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm hover:shadow text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 disabled:opacity-70"
+                    >
+                      {loading ? (
+                        <><Loader2 className="w-4 h-4 animate-spin" /> Submetendo...</>
+                      ) : (
+                        <><Save className="w-4 h-4" /> Finalizar e Formatar</>
+                      )}
+                    </button>
+                  )}
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </main>
+      
+      {/* Global CSS overrides for the custom scrollbar */}
+      <style dangerouslySetInnerHTML={{__html: `
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background-color: #cbd5e1;
+          border-radius: 20px;
+        }
+      `}} />
+
+      <AlertModal 
+        show={modalConfig.show} 
+        title={modalConfig.title} 
+        message={modalConfig.message} 
+        type={modalConfig.type} 
+        onClose={closeModal}
+        onConfirm={modalConfig.onConfirm}
+      />
+    </div>
+  );
+}

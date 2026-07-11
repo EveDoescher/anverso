@@ -12,11 +12,14 @@
       "epigraph",
       "resumo",
       "abstract",
+      "listOfFigures",
+      "listOfTables",
+      "listOfFrames",
+      "listOfCharts",
+      "listOfCodeListings",
       "listOfAbbreviations",
       "listOfSymbols",
       "summary",
-      "listOfFigures",
-      "listOfTables",
       "bodyContent",
       "references",
       "appendix",
@@ -26,21 +29,27 @@
   },
   "document": {
     "cover": {
+      "contentType": "SINGLE_PAGE",
       "institutionalLines": [
         "UNIVERSIDADE FICTÍCIA DE LIMEIRA",
         "INSTITUTO DE CIÊNCIAS EXATAS E TECNOLOGIA",
         "CURSO DE ANÁLISE E DESENVOLVIMENTO DE SISTEMAS"
       ],
-      "authors": ["PESSOA AUTORA TESTE 01"],
+      "authors": [
+        "PESSOA AUTORA TESTE 01"
+      ],
       "title": "FORMATAÇÃO AUTOMÁTICA DE TRABALHOS ACADÊMICOS",
-      "subtitle": "Uma proposta orientada por perfis institucionais",
+      "subtitle": "Uma proposta orientada por perfis institucionais declarativos",
       "city": "Limeira",
       "year": "2026"
     },
     "titlePage": {
-      "authors": ["Pessoa Autora Teste 01"],
+      "contentType": "SINGLE_PAGE",
+      "authors": [
+        "Pessoa Autora Teste 01"
+      ],
       "title": "Formatação Automática de Trabalhos Acadêmicos",
-      "subtitle": "Uma proposta orientada por perfis institucionais",
+      "subtitle": "Uma proposta orientada por perfis institucionais declarativos",
       "nature": {
         "workType": "Trabalho de conclusão de curso",
         "degreeObjective": "obtenção do título de graduado",
@@ -51,17 +60,28 @@
         "academicTitle": "Prof. Dr.",
         "name": "Pessoa Orientadora Teste"
       },
+      "coadvisor": {
+        "academicTitle": "Profa. Dra.",
+        "name": "Pessoa Coorientadora Teste"
+      },
       "city": "Limeira",
       "year": "2026"
     },
     "errata": {
+      "contentType": "FLOW_TEXTUAL",
       "rows": [
-        ["12", "3", "formatção", "formatação"]
+        ["12", "3", "formatção", "formatação"],
+        ["47", "15", "renderizaçao", "renderização"],
+        ["83", "7", "documeto", "documento"]
       ]
     },
     "approvalSheet": {
-      "authors": ["Pessoa Autora Teste 01"],
+      "contentType": "SINGLE_PAGE",
+      "authors": [
+        "Pessoa Autora Teste 01"
+      ],
       "title": "Formatação Automática de Trabalhos Acadêmicos",
+      "subtitle": "Uma proposta orientada por perfis institucionais declarativos",
       "nature": {
         "workType": "Trabalho de conclusão de curso",
         "degreeObjective": "obtenção do título de graduado",
@@ -82,50 +102,104 @@
           "title": "Profa. Dra.",
           "institutionName": "Universidade Fictícia de Limeira",
           "role": "Examinadora"
+        },
+        {
+          "name": "Banca Examinadora Teste 02",
+          "title": "Prof. Me.",
+          "institutionName": "Instituto Fictício de Tecnologia",
+          "role": "Examinador"
         }
       ]
     },
     "dedication": {
-      "text": "Aos que tornaram esta jornada possível."
+      "contentType": "SINGLE_PAGE",
+      "text": "À minha família, que sustentou cada passo desta jornada com paciência, amor e confiança inabalável. Às pessoas que acreditaram neste trabalho antes mesmo que ele tomasse forma."
     },
     "acknowledgments": {
-      "text": "Agradeço à orientação recebida e ao suporte da família durante todo o percurso."
+      "contentType": "FLOW_TEXTUAL",
+      "text": "Agradeço, primeiramente, ao Prof. Dr. Pessoa Orientadora Teste, cuja orientação precisa e rigorosa foi determinante para a qualidade deste trabalho. Sua capacidade de identificar o essencial em meio à complexidade tornou este percurso muito mais claro.\n\nÀ Profa. Dra. Pessoa Coorientadora Teste, pelo suporte metodológico e pelas revisões atentas que enriqueceram cada capítulo.\n\nAos colegas do grupo de estudos de Engenharia de Software da Universidade Fictícia de Limeira, pelas discussões instigantes e pelo ambiente colaborativo que alimentou as ideias aqui desenvolvidas.\n\nÀ minha família, pelo apoio incondicional durante todos os momentos deste processo — especialmente nos períodos em que a dedicação ao trabalho se fez mais intensa.\n\nPor fim, à Universidade Fictícia de Limeira, pela estrutura e pelos recursos que tornaram esta pesquisa possível."
     },
     "epigraph": {
-      "text": "A clareza na escrita é o reflexo da clareza no pensamento.",
+      "contentType": "SINGLE_PAGE",
+      "text": "A clareza na escrita é o reflexo da clareza no pensamento. Um sistema que precisa de explicação para ser compreendido já falhou antes de ser usado.",
       "author": "Autor Fictício",
-      "source": "Obra Fictícia, 2024"
+      "source": "Reflexões sobre Sistemas, 2023"
     },
     "resumo": {
-      "text": "Este trabalho apresenta uma proposta de motor de formatação automática de documentos acadêmicos, orientado por perfis institucionais declarativos. A abordagem elimina lógica hardcoded dos componentes de renderização, permitindo que novos perfis sejam criados sem alterações de código.",
+      "contentType": "FLOW_TEXTUAL",
+      "text": "Este trabalho apresenta a concepção e implementação de um motor de formatação automática de documentos acadêmicos orientado por perfis institucionais declarativos. O problema investigado é a proliferação de lógica de formatação endurecida em código-fonte, que torna os sistemas de geração de documentos frágeis, de difícil manutenção e incapazes de suportar múltiplos perfis normativos sem alterações estruturais. A solução proposta separa de forma rigorosa as camadas de entrada, de perfil e de renderização, de modo que a adição de um novo perfil institucional não demande nenhuma alteração no motor de renderização. O trabalho descreve a arquitetura do sistema, os modelos de dados adotados, os mecanismos de layout para componentes de página única, o tratamento de blocos textuais com citações e formatação inline, e os mecanismos de indexação para listas de figuras, tabelas, quadros e gráficos. Os resultados demonstram que o motor é capaz de gerar documentos conformes com perfis distintos a partir de dados de entrada idênticos, validando a hipótese de separação entre dados, perfil e renderização.",
       "keywordsLabel": "Palavras-chave:",
-      "keywords": ["formatação automática", "documentos acadêmicos", "perfis institucionais"]
+      "keywords": [
+        "formatação automática",
+        "documentos acadêmicos",
+        "perfis institucionais",
+        "motor de renderização",
+        "ABNT"
+      ]
     },
     "abstract": {
+      "contentType": "FLOW_TEXTUAL",
       "entries": [
         {
           "headingText": "ABSTRACT",
-          "text": "This work presents a proposal for an automatic formatting engine for academic documents, driven by declarative institutional profiles. The approach eliminates hardcoded logic from rendering components, enabling new profiles to be created without code changes.",
-          "keywords": ["automatic formatting", "academic documents", "institutional profiles"],
+          "text": "This work presents the design and implementation of an automatic formatting engine for academic documents driven by declarative institutional profiles. The investigated problem is the proliferation of hard-coded formatting logic in source code, which makes document generation systems fragile, difficult to maintain, and incapable of supporting multiple normative profiles without structural changes. The proposed solution rigorously separates the input, profile, and rendering layers so that adding a new institutional profile requires no changes to the rendering engine. Results demonstrate that the engine can generate documents compliant with distinct profiles from identical input data, validating the hypothesis of separation between data, profile, and rendering.",
+          "keywords": [
+            "automatic formatting",
+            "academic documents",
+            "institutional profiles",
+            "rendering engine",
+            "ABNT"
+          ],
           "keywordsLabel": "Keywords:"
         },
         {
           "headingText": "RESUMEN",
-          "text": "Este trabajo presenta una propuesta de motor de formateo automático de documentos académicos, orientado por perfiles institucionales declarativos. El enfoque elimina la lógica codificada de los componentes de renderizado.",
-          "keywords": ["formateo automático", "documentos académicos", "perfiles institucionales"],
+          "text": "Este trabajo presenta la concepción e implementación de un motor de formateo automático de documentos académicos orientado por perfiles institucionales declarativos. El problema investigado es la proliferación de lógica de formateo codificada en el código fuente, que hace que los sistemas de generación de documentos sean frágiles, de difícil mantenimiento e incapaces de soportar múltiples perfiles normativos sin cambios estructurales. Los resultados demuestran que el motor puede generar documentos conformes con perfiles distintos a partir de datos de entrada idénticos.",
+          "keywords": [
+            "formateo automático",
+            "documentos académicos",
+            "perfiles institucionales",
+            "motor de renderizado"
+          ],
           "keywordsLabel": "Palabras clave:"
         }
       ]
     },
-    "listOfAbbreviations": {},
-    "listOfSymbols": {
-      "terms": ["α", "β", "n"],
-      "definitions": ["Nível de significância", "Coeficiente de regressão", "Tamanho da amostra"]
+    "listOfFigures": {
+      "contentType": "ELEMENT_INDEX"
     },
-    "summary": {},
-    "listOfFigures": {},
-    "listOfTables": {},
+    "listOfTables": {
+      "contentType": "ELEMENT_INDEX"
+    },
+    "listOfFrames": {
+      "contentType": "ELEMENT_INDEX"
+    },
+    "listOfCharts": {
+      "contentType": "ELEMENT_INDEX"
+    },
+    "listOfCodeListings": {
+      "contentType": "ELEMENT_INDEX"
+    },
+    "listOfAbbreviations": {
+      "contentType": "FLOW_TEXTUAL"
+    },
+    "listOfSymbols": {
+      "contentType": "FLOW_TEXTUAL",
+      "terms": ["α", "β", "σ", "μ", "n", "∑"],
+      "definitions": [
+        "Nível de significância estatística",
+        "Coeficiente de regressão linear",
+        "Desvio padrão da amostra",
+        "Média aritmética",
+        "Tamanho da amostra",
+        "Somatório"
+      ]
+    },
+    "summary": {
+      "contentType": "SECTION_INDEX"
+    },
     "bodyContent": {
+      "contentType": "BODY_CONTENT",
       "sections": [
         {
           "id": "s1",
@@ -137,7 +211,7 @@
               "content": [
                 {
                   "type": "TEXT",
-                  "text": "Este trabalho aborda a formatação de documentos acadêmicos por meio de um motor orientado a perfis. A norma "
+                  "text": "A produção de trabalhos acadêmicos é uma atividade central na formação universitária e na produção científica. No Brasil, a norma "
                 },
                 {
                   "type": "ABBREVIATION",
@@ -146,7 +220,7 @@
                 },
                 {
                   "type": "TEXT",
-                  "text": " define os requisitos para trabalhos como o "
+                  "text": " regula a estrutura e a apresentação de documentos como o "
                 },
                 {
                   "type": "ABBREVIATION",
@@ -155,7 +229,40 @@
                 },
                 {
                   "type": "TEXT",
-                  "text": "."
+                  "text": ", dissertações e teses. Entretanto, ferramentas de formatação existentes frequentemente embarcam regras normativas diretamente em código-fonte, resultando em sistemas acoplados e de difícil evolução."
+                }
+              ]
+            },
+            {
+              "type": "PARAGRAPH",
+              "content": [
+                {
+                  "type": "TEXT",
+                  "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Vestibulum tortor quam, feugiat vitae, ultricies eget, tempor sit amet, ante. Donec eu libero sit amet quam egestas semper. Aenean ultricies mi vitae est. Mauris placerat eleifend leo. Quisque sit amet est et sapien ullamcorper pharetra. Vestibulum erat wisi, condimentum sed, commodo vitae, ornare sit amet, wisi. Aenean fermentum, elit eget tincidunt condimentum, eros ipsum rutrum orci, sagittis tempus lacus enim ac dui."
+                }
+              ]
+            },
+            {
+              "type": "PARAGRAPH",
+              "content": [
+                {
+                  "type": "TEXT",
+                  "text": "Neste contexto, o presente trabalho propõe uma arquitetura de motor de formatação orientada por perfis declarativos. Conforme "
+                },
+                {
+                  "type": "CITATION",
+                  "citationType": "INDIRECT",
+                  "mode": "PARENTHETICAL",
+                  "source": {
+                    "authors": [
+                      { "type": "PERSON", "surname": "Lima" }
+                    ],
+                    "year": "2021"
+                  }
+                },
+                {
+                  "type": "TEXT",
+                  "text": ", a separação entre dados, regras e saída é um princípio fundamental de sistemas de composição tipográfica robustos."
                 }
               ]
             },
@@ -163,84 +270,1085 @@
               "type": "FIGURE",
               "figure": {
                 "id": "fig-1",
-                "caption": "Arquitetura geral do motor de formatação",
-                "source": "Elaboração teste",
+                "caption": "Arquitetura geral do motor de formatação orientado por perfis",
+                "source": "Elaboração da autora",
                 "image": {
-                  "sourceType": "DATA_URI",
-                  "dataUri": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=",
-                  "altText": "Diagrama de arquitetura"
+                  "sourceType": "URL",
+                  "url": "https://picsum.photos/seed/fig1/800/400",
+                  "altText": "Diagrama de arquitetura geral do motor"
                 }
               }
             },
             {
-              "type": "TABLE",
-              "table": {
-                "id": "tab-1",
-                "caption": "Componentes do documento ABNT avaliados",
-                "source": "Elaboração teste",
-                "columns": [
-                  {"header": "Componente"},
-                  {"header": "Tipo"}
-                ],
-                "rows": [
-                  {
-                    "cells": [
-                      {"text": "Capa", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false},
-                      {"text": "Single-page", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false}
-                    ]
-                  },
-                  {
-                    "cells": [
-                      {"text": "Resumo", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false},
-                      {"text": "Flow-textual", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false}
-                    ]
+              "type": "PARAGRAPH",
+              "content": [
+                {
+                  "type": "TEXT",
+                  "text": "A "
+                },
+                {
+                  "type": "CROSS_REFERENCE",
+                  "crossReference": {
+                    "targetId": "fig-1",
+                    "targetType": "FIGURE",
+                    "displayMode": "LABEL_AND_NUMBER"
                   }
-                ]
-              }
+                },
+                {
+                  "type": "TEXT",
+                  "text": " ilustra as três camadas principais do motor: entrada, perfil e renderização. Cada camada possui responsabilidades bem delimitadas, conforme discutido nas seções seguintes."
+                }
+              ]
             }
           ]
         },
         {
           "id": "s2",
           "level": 1,
+          "title": "Referencial Teórico",
+          "blocks": [
+            {
+              "type": "PARAGRAPH",
+              "content": [
+                {
+                  "type": "TEXT",
+                  "text": "Esta seção apresenta os principais conceitos que fundamentam a proposta. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur."
+                }
+              ]
+            }
+          ],
+          "subsections": [
+            {
+              "id": "s2-1",
+              "level": 2,
+              "title": "Normas de Formatação Acadêmica",
+              "blocks": [
+                {
+                  "type": "PARAGRAPH",
+                  "content": [
+                    {
+                      "type": "TEXT",
+                      "text": "As normas de formatação acadêmica estabelecem convenções visuais e estruturais para a apresentação de trabalhos científicos. No Brasil, a "
+                    },
+                    {
+                      "type": "ABBREVIATION",
+                      "text": "ABNT",
+                      "expansion": "Associação Brasileira de Normas Técnicas"
+                    },
+                    {
+                      "type": "TEXT",
+                      "text": " publica um conjunto de normas técnicas que regulam desde as margens da página até a formatação das referências bibliográficas. A principal norma para trabalhos acadêmicos é a NBR 14724, que especifica os elementos pré-textuais, textuais e pós-textuais."
+                    }
+                  ]
+                },
+                {
+                  "type": "DIRECT_LONG_QUOTE",
+                  "mode": "PARENTHETICAL",
+                  "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Vestibulum tortor quam, feugiat vitae, ultricies eget, tempor sit amet, ante. Donec eu libero sit amet quam egestas semper. Aenean ultricies mi vitae est.",
+                  "source": {
+                    "authors": [
+                      { "type": "PERSON", "surname": "Rocha" }
+                    ],
+                    "year": "2019",
+                    "page": "45"
+                  },
+                  "markers": [
+                    { "type": "SUPPRESSION", "position": 150 }
+                  ]
+                },
+                {
+                  "type": "PARAGRAPH",
+                  "content": [
+                    {
+                      "type": "TEXT",
+                      "text": "Internacionalmente, outros sistemas normativos são amplamente adotados. O estilo Chicago, por exemplo, oferece dois sistemas: autor-data e notas bibliográficas. "
+                    },
+                    {
+                      "type": "CITATION",
+                      "citationType": "INDIRECT",
+                      "mode": "NARRATIVE",
+                      "source": {
+                        "authors": [
+                          { "type": "PERSON", "surname": "Souza" },
+                          { "type": "PERSON", "surname": "Fernandes" }
+                        ],
+                        "year": "2020"
+                      }
+                    },
+                    {
+                      "type": "TEXT",
+                      "text": " discutem como a escolha do sistema normativo afeta a legibilidade e a padronização dos documentos produzidos em diferentes áreas do conhecimento."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s2-2",
+              "level": 2,
+              "title": "Sistemas de Composição Tipográfica",
+              "blocks": [
+                {
+                  "type": "PARAGRAPH",
+                  "content": [
+                    {
+                      "type": "TEXT",
+                      "text": "Sistemas de composição tipográfica como LaTeX, Groff e pandoc adotam abordagens declarativas para a formatação de documentos. Nesses sistemas, o autor especifica a estrutura semântica do documento e o motor de composição aplica as regras visuais sem que o autor precise controlar manualmente cada detalhe de apresentação."
+                    }
+                  ]
+                },
+                {
+                  "type": "TABLE",
+                  "table": {
+                    "id": "tab-1",
+                    "caption": "Comparação entre sistemas de composição tipográfica",
+                    "source": "Elaboração da autora com base em Lima (2021) e Souza e Fernandes (2020)",
+                    "columns": [
+                      { "header": "Sistema" },
+                      { "header": "Abordagem" },
+                      { "header": "Suporte a normas ABNT" }
+                    ],
+                    "rows": [
+                      {
+                        "cells": [
+                          { "text": "LaTeX", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false },
+                          { "text": "Declarativa / Macro", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false },
+                          { "text": "Parcial (via pacotes)", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false }
+                        ]
+                      },
+                      {
+                        "cells": [
+                          { "text": "Microsoft Word", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false },
+                          { "text": "WYSIWYG / Imperativa", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false },
+                          { "text": "Manual (via templates)", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false }
+                        ]
+                      },
+                      {
+                        "cells": [
+                          { "text": "Motor proposto", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false },
+                          { "text": "Perfil declarativo", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false },
+                          { "text": "Integral e extensível", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "type": "PARAGRAPH",
+                  "content": [
+                    {
+                      "type": "TEXT",
+                      "text": "Conforme apresentado na "
+                    },
+                    {
+                      "type": "CROSS_REFERENCE",
+                      "crossReference": {
+                        "targetId": "tab-1",
+                        "targetType": "TABLE",
+                        "displayMode": "LABEL_AND_NUMBER"
+                      }
+                    },
+                    {
+                      "type": "TEXT",
+                      "text": ", o motor proposto difere dos sistemas existentes ao oferecer suporte integral às normas ABNT de forma extensível, sem acoplamento entre as regras normativas e o código de renderização."
+                    }
+                  ]
+                }
+              ],
+              "subsections": [
+                {
+                  "id": "s2-2-1",
+                  "level": 3,
+                  "title": "Padrões de separação de responsabilidades",
+                  "blocks": [
+                    {
+                      "type": "PARAGRAPH",
+                      "content": [
+                        {
+                          "type": "TEXT",
+                          "text": "O princípio de separação de responsabilidades é amplamente documentado na literatura de engenharia de software. No contexto de sistemas de formatação, isso significa que as regras de apresentação não devem residir no mesmo componente que processa o conteúdo semântico."
+                        }
+                      ]
+                    },
+                    {
+                      "type": "PARAGRAPH",
+                      "content": [
+                        {
+                          "type": "TEXT",
+                          "text": "Segundo "
+                        },
+                        {
+                          "type": "CITATION",
+                          "citationType": "INDIRECT",
+                          "mode": "NARRATIVE",
+                          "source": {
+                            "authors": [
+                              { "type": "PERSON", "surname": "Alves" }
+                            ],
+                            "year": "2022"
+                          }
+                        },
+                        {
+                          "type": "TEXT",
+                          "text": ", a aplicação desse padrão em motores de renderização reduz em até 60% o esforço de manutenção quando novos perfis de formatação precisam ser introduzidos. Essa constatação corrobora a hipótese central deste trabalho."
+                        }
+                      ]
+                    },
+                    {
+                      "type": "ORDERED_LIST",
+                      "list": {
+                        "type": "ORDERED",
+                        "items": [
+                          {
+                            "content": [
+                              { "type": "TEXT", "text": "Separação entre dados de entrada e regras de perfil" }
+                            ]
+                          },
+                          {
+                            "content": [
+                              { "type": "TEXT", "text": "Separação entre perfil e lógica de renderização" }
+                            ]
+                          },
+                          {
+                            "content": [
+                              { "type": "TEXT", "text": "Validação em cada camada de forma independente" }
+                            ]
+                          },
+                          {
+                            "content": [
+                              { "type": "TEXT", "text": "Ausência de valores padrão silenciosos no modelo de domínio" }
+                            ]
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "type": "PARAGRAPH",
+                      "content": [
+                        {
+                          "type": "TEXT",
+                          "text": "Esses quatro princípios nortearam todas as decisões arquiteturais documentadas nas seções seguintes, conforme detalhado na "
+                        },
+                        {
+                          "type": "CROSS_REFERENCE",
+                          "crossReference": {
+                            "targetId": "s3",
+                            "targetType": "SECTION",
+                            "displayMode": "LABEL_AND_NUMBER"
+                          }
+                        },
+                        {
+                          "type": "TEXT",
+                          "text": "."
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "s2-2-2",
+                  "level": 3,
+                  "title": "Modelos de dados para documentos estruturados",
+                  "blocks": [
+                    {
+                      "type": "PARAGRAPH",
+                      "content": [
+                        {
+                          "type": "TEXT",
+                          "text": "A representação interna de documentos estruturados é um problema clássico em ciência da computação. Modelos baseados em árvores — como o "
+                        },
+                        {
+                          "type": "ABBREVIATION",
+                          "text": "DOM",
+                          "expansion": "Document Object Model"
+                        },
+                        {
+                          "type": "TEXT",
+                          "text": " e o modelo de dados do "
+                        },
+                        {
+                          "type": "ABBREVIATION",
+                          "text": "XML",
+                          "expansion": "Extensible Markup Language"
+                        },
+                        {
+                          "type": "TEXT",
+                          "text": " — são amplamente utilizados por sua capacidade de representar hierarquias recursivas de conteúdo. O modelo adotado neste trabalho estende esse conceito para incluir regras de perfil como metadados associados a cada nó da árvore documental."
+                        }
+                      ]
+                    }
+                  ],
+                  "subsections": [
+                    {
+                      "id": "s2-2-2-1",
+                      "level": 4,
+                      "title": "Representação de componentes pré-textuais",
+                      "blocks": [
+                        {
+                          "type": "PARAGRAPH",
+                          "content": [
+                            {
+                              "type": "TEXT",
+                              "text": "Os componentes pré-textuais — como capa, folha de rosto e folha de aprovação — possuem estrutura de página única com grupos posicionados verticalmente. O motor os representa como um conjunto de grupos de conteúdo com regras de distribuição de espaço entre eles."
+                            }
+                          ]
+                        },
+                        {
+                          "type": "PARAGRAPH",
+                          "content": [
+                            {
+                              "type": "TEXT",
+                              "text": "Essa representação permite que o perfil declare pesos de espaçamento entre grupos sem conhecer a altura real do conteúdo, que só é conhecida durante a renderização. O motor distribui o espaço remanescente proporcionalmente aos pesos declarados no perfil."
+                            }
+                          ]
+                        }
+                      ],
+                      "subsections": [
+                        {
+                          "id": "s2-2-2-1-1",
+                          "level": 5,
+                          "title": "Estratégias de ancoragem vertical",
+                          "blocks": [
+                            {
+                              "type": "PARAGRAPH",
+                              "content": [
+                                {
+                                  "type": "TEXT",
+                                  "text": "A estratégia de ancoragem do último grupo ao fim da área segura da página é utilizada para posicionar os dados de cidade e ano na parte inferior da capa e da folha de rosto, conforme exige a norma ABNT NBR 14724."
+                                }
+                              ]
+                            }
+                          ],
+                          "subsections": [
+                            {
+                              "id": "s2-2-2-1-1-1",
+                              "level": 6,
+                              "title": "Cálculo de altura de linha",
+                              "blocks": [
+                                {
+                                  "type": "PARAGRAPH",
+                                  "content": [
+                                    {
+                                      "type": "TEXT",
+                                      "text": "O cálculo de altura de linha considera o tamanho da fonte, o espaçamento entre linhas declarado no estilo e o número de linhas visuais que o conteúdo ocupa após a aplicação da largura disponível. Esse cálculo é realizado de forma determinística antes da renderização DOCX."
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "s3",
+          "level": 1,
+          "title": "Metodologia",
+          "blocks": [
+            {
+              "type": "PARAGRAPH",
+              "content": [
+                {
+                  "type": "TEXT",
+                  "text": "Este trabalho adota uma abordagem de pesquisa aplicada com desenvolvimento incremental. A metodologia combina revisão bibliográfica, projeto arquitetural e validação empírica por meio de casos de teste documentados. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
+                }
+              ]
+            },
+            {
+              "type": "UNORDERED_LIST",
+              "list": {
+                "type": "UNORDERED",
+                "items": [
+                  {
+                    "content": [
+                      { "type": "TEXT", "text": "Revisão da literatura sobre sistemas de formatação e normas ABNT" }
+                    ]
+                  },
+                  {
+                    "content": [
+                      { "type": "TEXT", "text": "Projeto da arquitetura em camadas com separação estrita de responsabilidades" }
+                    ]
+                  },
+                  {
+                    "content": [
+                      { "type": "TEXT", "text": "Implementação incremental com validação por testes de integração" }
+                    ]
+                  },
+                  {
+                    "content": [
+                      { "type": "TEXT", "text": "Geração de documentos de referência para validação visual" }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "PARAGRAPH",
+              "content": [
+                {
+                  "type": "TEXT",
+                  "text": "A validação inclui a geração de documentos completos com todos os componentes previstos pelo perfil institucional, seguida de inspeção visual e comparação com exemplares formatados manualmente conforme a norma. Adicionalmente, testes automatizados verificam a corretude da serialização para o formato "
+                },
+                {
+                  "type": "ABBREVIATION",
+                  "text": "DOCX",
+                  "expansion": "Office Open XML Document"
+                },
+                {
+                  "type": "TEXT",
+                  "text": "."
+                }
+              ]
+            },
+            {
+              "type": "PARAGRAPH",
+              "content": [
+                {
+                  "type": "TEXT",
+                  "text": "Conforme "
+                },
+                {
+                  "type": "CITATION",
+                  "citationType": "CITATION_OF_CITATION",
+                  "mode": "PARENTHETICAL",
+                  "originalSource": {
+                    "authors": [
+                      { "type": "PERSON", "surname": "Martins" }
+                    ],
+                    "year": "2010"
+                  },
+                  "consultedSource": {
+                    "authors": [
+                      { "type": "PERSON", "surname": "Costa" }
+                    ],
+                    "year": "2018",
+                    "page": "23"
+                  }
+                },
+                {
+                  "type": "TEXT",
+                  "text": ", a validação de motores de composição tipográfica exige a comparação com saídas de referência produzidas por especialistas no padrão normativo adotado."
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "s4",
+          "level": 1,
+          "title": "Resultados e Discussão",
+          "blocks": [
+            {
+              "type": "PARAGRAPH",
+              "content": [
+                {
+                  "type": "TEXT",
+                  "text": "Os resultados demonstram que o motor é capaz de produzir documentos conformes com o perfil "
+                },
+                {
+                  "type": "ABBREVIATION",
+                  "text": "ABNT",
+                  "expansion": "Associação Brasileira de Normas Técnicas"
+                },
+                {
+                  "type": "TEXT",
+                  "text": " sem qualquer lógica condicional de perfil no código de renderização. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Vestibulum tortor quam, feugiat vitae, ultricies eget, tempor sit amet, ante. Donec eu libero sit amet quam egestas semper."
+                }
+              ]
+            },
+            {
+              "type": "FRAME",
+              "frame": {
+                "id": "qua-1",
+                "caption": "Síntese dos componentes implementados e seus tipos de regra",
+                "source": "Elaboração da autora",
+                "columns": [
+                  { "header": "Componente" },
+                  { "header": "Tipo de regra" },
+                  { "header": "Status" }
+                ],
+                "rows": [
+                  {
+                    "cells": [
+                      { "text": "Capa", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false },
+                      { "text": "SINGLE_PAGE", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false },
+                      { "text": "Implementado", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false }
+                    ]
+                  },
+                  {
+                    "cells": [
+                      { "text": "Folha de rosto", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false },
+                      { "text": "SINGLE_PAGE", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false },
+                      { "text": "Implementado", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false }
+                    ]
+                  },
+                  {
+                    "cells": [
+                      { "text": "Folha de aprovação", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false },
+                      { "text": "SINGLE_PAGE", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false },
+                      { "text": "Implementado", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false }
+                    ]
+                  },
+                  {
+                    "cells": [
+                      { "text": "Resumo / Abstract", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false },
+                      { "text": "FLOW_TEXTUAL", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false },
+                      { "text": "Implementado", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false }
+                    ]
+                  },
+                  {
+                    "cells": [
+                      { "text": "Corpo textual", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false },
+                      { "text": "BODY_CONTENT", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false },
+                      { "text": "Implementado", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false }
+                    ]
+                  },
+                  {
+                    "cells": [
+                      { "text": "Referências", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false },
+                      { "text": "BIBLIOGRAPHY", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false },
+                      { "text": "Implementado", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false }
+                    ]
+                  },
+                  {
+                    "cells": [
+                      { "text": "Apêndice / Anexo", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false },
+                      { "text": "SECTIONED", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false },
+                      { "text": "Implementado", "colspan": 1, "rowspanStart": false, "rowspanContinuation": false }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "PARAGRAPH",
+              "content": [
+                {
+                  "type": "TEXT",
+                  "text": "O "
+                },
+                {
+                  "type": "CROSS_REFERENCE",
+                  "crossReference": {
+                    "targetId": "qua-1",
+                    "targetType": "FRAME",
+                    "displayMode": "LABEL_AND_NUMBER"
+                  }
+                },
+                {
+                  "type": "TEXT",
+                  "text": " apresenta a síntese dos componentes implementados. Todos os tipos de regra previstos pelo perfil foram cobertos, demonstrando a completude da implementação em relação ao escopo definido."
+                }
+              ]
+            },
+            {
+              "type": "CHART",
+              "chart": {
+                "id": "gra-1",
+                "caption": "Distribuição dos tipos de bloco utilizados no documento de validação",
+                "source": "Elaboração da autora",
+                "image": {
+                  "sourceType": "URL",
+                  "url": "https://picsum.photos/seed/gra1/800/400",
+                  "altText": "Gráfico de distribuição de tipos de bloco"
+                }
+              }
+            },
+            {
+              "type": "PARAGRAPH",
+              "content": [
+                {
+                  "type": "TEXT",
+                  "text": "O "
+                },
+                {
+                  "type": "CROSS_REFERENCE",
+                  "crossReference": {
+                    "targetId": "gra-1",
+                    "targetType": "CHART",
+                    "displayMode": "LABEL_AND_NUMBER"
+                  }
+                },
+                {
+                  "type": "TEXT",
+                  "text": " demonstra que parágrafos representam a maior parte do conteúdo textual, seguidos por tabelas e figuras. Esse resultado é esperado em documentos acadêmicos conforme os padrões ABNT."
+                }
+              ]
+            }
+          ],
+          "subsections": [
+            {
+              "id": "s4-1",
+              "level": 2,
+              "title": "Formatação Inline e Citações",
+              "blocks": [
+                {
+                  "type": "PARAGRAPH",
+                  "content": [
+                    {
+                      "type": "TEXT",
+                      "text": "O sistema suporta formatação inline com negrito, itálico, sublinhado, sobrescrito e subscrito. Por exemplo, a fórmula química da água é H"
+                    },
+                    {
+                      "type": "TEXT",
+                      "text": "2",
+                      "formatting": { "subscript": true }
+                    },
+                    {
+                      "type": "TEXT",
+                      "text": "O, e a potência de dois ao cubo é 2"
+                    },
+                    {
+                      "type": "TEXT",
+                      "text": "3",
+                      "formatting": { "superscript": true }
+                    },
+                    {
+                      "type": "TEXT",
+                      "text": " = 8. Termos em outras línguas são grafados em "
+                    },
+                    {
+                      "type": "TEXT",
+                      "text": "itálico",
+                      "formatting": { "italic": true }
+                    },
+                    {
+                      "type": "TEXT",
+                      "text": " por convenção acadêmica."
+                    }
+                  ]
+                },
+                {
+                  "type": "PARAGRAPH",
+                  "content": [
+                    {
+                      "type": "TEXT",
+                      "text": "As citações diretas curtas são inseridas no corpo do parágrafo entre aspas. Conforme "
+                    },
+                    {
+                      "type": "CITATION",
+                      "citationType": "DIRECT_SHORT",
+                      "mode": "PARENTHETICAL",
+                      "source": {
+                        "authors": [
+                          { "type": "PERSON", "surname": "Lima" }
+                        ],
+                        "year": "2021",
+                        "page": "112"
+                      }
+                    },
+                    {
+                      "type": "QUOTE_TEXT",
+                      "quoteType": "SHORT",
+                      "text": "a separação entre dados e regras é o fundamento de qualquer motor de composição robusto"
+                    },
+                    {
+                      "type": "TEXT",
+                      "text": ". Essa afirmação orienta toda a arquitetura proposta neste trabalho."
+                    }
+                  ]
+                },
+                {
+                  "type": "PARAGRAPH",
+                  "content": [
+                    {
+                      "type": "TEXT",
+                      "text": "Citações com grifo do autor são marcadas adequadamente. A passagem a seguir exemplifica o recurso: "
+                    },
+                    {
+                      "type": "CITATION",
+                      "citationType": "DIRECT_SHORT",
+                      "mode": "PARENTHETICAL",
+                      "source": {
+                        "authors": [
+                          { "type": "PERSON", "surname": "Rocha" }
+                        ],
+                        "year": "2019",
+                        "page": "78"
+                      }
+                    },
+                    {
+                      "type": "QUOTE_TEXT",
+                      "quoteType": "SHORT",
+                      "text": "o perfil deve ser o único ponto de variação em um motor de formatação genérico",
+                      "markers": [
+                        { "type": "EMPHASIS_AUTHOR", "position": 3, "endPosition": 8 }
+                      ]
+                    },
+                    {
+                      "type": "TEXT",
+                      "text": "."
+                    }
+                  ]
+                },
+                {
+                  "type": "PARAGRAPH",
+                  "content": [
+                    {
+                      "type": "TEXT",
+                      "text": "Citações verbais são suportadas. "
+                    },
+                    {
+                      "type": "CITATION",
+                      "citationType": "VERBAL",
+                      "mode": "PARENTHETICAL",
+                      "source": {
+                        "authors": [
+                          { "type": "PERSON", "surname": "Orientadora Teste" }
+                        ],
+                        "year": "2026"
+                      }
+                    },
+                    {
+                      "type": "TEXT",
+                      "text": " indicou, em reunião de orientação, que a abordagem declarativa reduz significativamente o custo de manutenção do sistema."
+                    }
+                  ]
+                },
+                {
+                  "type": "PARAGRAPH",
+                  "content": [
+                    {
+                      "type": "TEXT",
+                      "text": "O sistema também suporta notas de rodapé."
+                    },
+                    {
+                      "type": "FOOTNOTE",
+                      "content": [
+                        {
+                          "type": "TEXT",
+                          "text": "Esta é uma nota de rodapé de exemplo. Notas de rodapé são utilizadas para informações complementares que não cabem no corpo principal do texto sem prejudicar a fluência da leitura."
+                        }
+                      ]
+                    },
+                    {
+                      "type": "TEXT",
+                      "text": " O conteúdo da nota é renderizado no rodapé da página onde a chamada aparece."
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "s4-2",
+              "level": 2,
+              "title": "Blocos Especiais",
+              "blocks": [
+                {
+                  "type": "PARAGRAPH",
+                  "content": [
+                    {
+                      "type": "TEXT",
+                      "text": "Além dos parágrafos e citações longas, o motor suporta blocos de código-fonte, equações e listas com aninhamento. Esta seção demonstra cada um desses elementos."
+                    }
+                  ]
+                },
+                {
+                  "type": "CODE_LISTING",
+                  "codeListing": {
+                    "id": "cod-1",
+                    "caption": "Exemplo de mapeamento de perfil em JSON",
+                    "language": "json",
+                    "code": "{\n  \"id\": \"abnt-unip-profile\",\n  \"componentRules\": {\n    \"cover\": {\n      \"ruleType\": \"SINGLE_PAGE\",\n      \"slots\": {\n        \"title\": { \"type\": \"TEXT\", \"required\": true }\n      }\n    }\n  }\n}",
+                    "source": "Elaboração da autora"
+                  }
+                },
+                {
+                  "type": "PARAGRAPH",
+                  "content": [
+                    {
+                      "type": "TEXT",
+                      "text": "O "
+                    },
+                    {
+                      "type": "CROSS_REFERENCE",
+                      "crossReference": {
+                        "targetId": "cod-1",
+                        "targetType": "CODE_LISTING",
+                        "displayMode": "LABEL_AND_NUMBER"
+                      }
+                    },
+                    {
+                      "type": "TEXT",
+                      "text": " apresenta a estrutura mínima de um perfil com um único componente de página única. O perfil completo inclui todos os componentes e seus respectivos mapeamentos de estilo."
+                    }
+                  ]
+                },
+                {
+                  "type": "EQUATION",
+                  "equation": {
+                    "text": "σ = √(Σ(xᵢ - μ)² / n)",
+                    "label": "eq-1"
+                  }
+                },
+                {
+                  "type": "PARAGRAPH",
+                  "content": [
+                    {
+                      "type": "TEXT",
+                      "text": "A equação acima representa o desvio padrão amostral, onde σ é o desvio padrão, μ é a média aritmética, xᵢ são os valores individuais e n é o tamanho da amostra."
+                    }
+                  ]
+                },
+                {
+                  "type": "ORDERED_LIST",
+                  "list": {
+                    "type": "ORDERED",
+                    "items": [
+                      {
+                        "content": [
+                          { "type": "TEXT", "text": "Primeiro item de lista ordenada com subitem aninhado" }
+                        ],
+                        "subList": {
+                          "type": "UNORDERED",
+                          "items": [
+                            {
+                              "content": [
+                                { "type": "TEXT", "text": "Subitem não ordenado aninhado A" }
+                              ]
+                            },
+                            {
+                              "content": [
+                                { "type": "TEXT", "text": "Subitem não ordenado aninhado B" }
+                              ]
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "content": [
+                          { "type": "TEXT", "text": "Segundo item de lista ordenada" }
+                        ]
+                      },
+                      {
+                        "content": [
+                          { "type": "TEXT", "text": "Terceiro item de lista ordenada com texto mais longo para verificar o comportamento do recuo em relação à margem esquerda definida pelo estilo" }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "type": "FIGURE",
+                  "figure": {
+                    "id": "fig-2",
+                    "caption": "Diagrama de camadas do motor de renderização",
+                    "source": "Elaboração da autora",
+                    "image": {
+                      "sourceType": "URL",
+                      "url": "https://picsum.photos/seed/fig2/800/400",
+                      "altText": "Diagrama de camadas do motor"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "s5",
+          "level": 1,
           "title": "Conclusão",
           "blocks": [
             {
               "type": "PARAGRAPH",
-              "text": "O motor demonstrou capacidade de gerar documentos completos em conformidade com as normas, sem lógica específica de perfil no código de renderização."
+              "content": [
+                {
+                  "type": "TEXT",
+                  "text": "Este trabalho demonstrou que é possível construir um motor de formatação de documentos acadêmicos completamente orientado por perfis declarativos, sem qualquer lógica condicional de perfil no código de renderização. A arquitetura proposta atende ao princípio fundamental estabelecido no início da pesquisa: qualquer decisão que possa variar entre perfis deve residir no perfil, não no código."
+                }
+              ]
+            },
+            {
+              "type": "PARAGRAPH",
+              "content": [
+                {
+                  "type": "TEXT",
+                  "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus imperdiet, nulla et dictum interdum, nisi lorem egestas odio, vitae scelerisque enim ligula venenatis dolor. Aenean nisl magna, congue ornare metus ut, semper auctor risus. Integer venenatis orci eu mi placerat, at accumsan eros imperdiet. Nullam posuere libero vitae erat ullamcorper efficitur. Curabitur aliquet quam id dui posuere blandit."
+                }
+              ]
+            },
+            {
+              "type": "PARAGRAPH",
+              "content": [
+                {
+                  "type": "TEXT",
+                  "text": "Como trabalho futuro, propõe-se a implementação de um serviço alimentador que forneça perfis, preferências e conteúdo a partir de uma base de dados persistente, sem qualquer alteração no motor de renderização — confirmando assim a independência arquitetural entre as camadas."
+                }
+              ]
             }
           ]
         }
       ]
     },
     "references": {
+      "contentType": "BIBLIOGRAPHY",
       "entries": [
         {
-          "id": "ref1",
+          "id": "ref-alves-2022",
+          "type": "JOURNAL",
+          "authors": [
+            { "surname": "Alves", "givenNames": "Beatriz Rocha" }
+          ],
+          "title": "Impacto da separação de responsabilidades em motores de composição tipográfica",
+          "publisher": "Revista Brasileira de Engenharia de Software Fictícia",
+          "volume": "14",
+          "issue": "2",
+          "pages": "88–104",
+          "year": "2022",
+          "doi": "10.9999/rbesf.2022.14.2.88"
+        },
+        {
+          "id": "ref-costa-2018",
+          "type": "THESIS",
+          "authors": [
+            { "surname": "Costa", "givenNames": "Marcela Oliveira" }
+          ],
+          "title": "Validação de motores de composição tipográfica por inspeção de saídas de referência",
+          "subtitle": "um estudo de caso em sistemas de geração de documentos",
+          "year": "2018",
+          "degree": "Dissertação (Mestrado em Ciência da Computação)",
+          "institutionName": "Universidade Fictícia de Limeira"
+        },
+        {
+          "id": "ref-lima-2021",
           "type": "BOOK",
           "authors": [
-            {"surname": "Lima", "givenNames": "Carlos Eduardo"}
+            { "surname": "Lima", "givenNames": "Carlos Eduardo" }
           ],
           "title": "Fundamentos de Formatação Documental",
+          "subtitle": "sistemas declarativos e composição tipográfica",
+          "edition": "2",
           "year": "2021",
           "city": "Limeira",
           "publisher": "Editora Fictícia"
+        },
+        {
+          "id": "ref-martins-2010",
+          "type": "BOOK",
+          "authors": [
+            { "surname": "Martins", "givenNames": "Pedro Augusto" }
+          ],
+          "title": "Teoria da Composição Tipográfica",
+          "year": "2010",
+          "city": "São Paulo",
+          "publisher": "Editora Técnica Fictícia"
+        },
+        {
+          "id": "ref-rocha-2019",
+          "type": "BOOK_CHAPTER",
+          "authors": [
+            { "surname": "Rocha", "givenNames": "Ana Paula" }
+          ],
+          "title": "Perfis declarativos em sistemas de editoração eletrônica",
+          "bookAuthors": [
+            { "surname": "Fernandes", "givenNames": "Jorge Luís" }
+          ],
+          "bookTitle": "Avanços em Sistemas de Publicação Digital",
+          "city": "Limeira",
+          "publisher": "Editora Acadêmica Fictícia",
+          "year": "2019",
+          "pages": "33–61"
+        },
+        {
+          "id": "ref-souza-fernandes-2020",
+          "type": "CONFERENCE_PAPER",
+          "authors": [
+            { "surname": "Souza", "givenNames": "Rafael Monteiro" },
+            { "surname": "Fernandes", "givenNames": "Jorge Luís" }
+          ],
+          "title": "Comparação entre sistemas normativos de citação e seu impacto na legibilidade de documentos científicos",
+          "publisher": "SIMPÓSIO FICTÍCIO DE INFORMÁTICA",
+          "city": "Limeira",
+          "year": "2020",
+          "pages": "210–218"
+        },
+        {
+          "id": "ref-abnt-14724",
+          "type": "STANDARD",
+          "title": "ABNT NBR 14724",
+          "subtitle": "Informação e documentação — trabalhos acadêmicos — apresentação",
+          "city": "Rio de Janeiro",
+          "year": "2011"
+        },
+        {
+          "id": "ref-website-ficticio",
+          "type": "WEBSITE",
+          "title": "Guia prático de formatação acadêmica",
+          "year": "2025",
+          "url": "https://exemplo-ficticio.org/guia-formatacao",
+          "accessDate": "8 jul. 2026"
+        },
+        {
+          "id": "ref-relatorio-ficticio",
+          "type": "REPORT",
+          "authors": [
+            { "surname": "Oliveira", "givenNames": "Camila Santos" },
+            { "surname": "Nascimento", "givenNames": "Diego Ferreira" }
+          ],
+          "title": "Relatório de avaliação de ferramentas de geração de documentos acadêmicos",
+          "city": "Limeira",
+          "institutionName": "Universidade Fictícia de Limeira",
+          "year": "2023",
+          "issue": "7"
+        },
+        {
+          "id": "ref-lei-ficticia",
+          "type": "LEGISLATION",
+          "title": "Lei n. 99.999, de 1 de janeiro de 2020",
+          "subtitle": "Dispõe sobre normas fictícias para publicação de documentos acadêmicos em repositórios institucionais",
+          "year": "2020",
+          "url": "https://legislacao-ficticia.gov.br/lei-99999"
         }
       ]
     },
     "appendix": {
+      "contentType": "SECTIONED",
       "items": [
         {
-          "title": "Questionário de Validação",
+          "title": "Questionário de Validação Visual",
           "sections": [
             {
-              "id": "apx-s1",
+              "id": "apx-a-s1",
+              "level": 1,
+              "title": "Objetivo do instrumento",
+              "blocks": [
+                {
+                  "type": "PARAGRAPH",
+                  "text": "Este questionário foi aplicado a cinco especialistas em normas ABNT com o objetivo de avaliar a conformidade visual dos documentos gerados pelo motor proposto em relação ao padrão normativo. Os avaliadores receberam pares de documentos — um gerado pelo motor e um formatado manualmente — sem identificação de origem, para minimizar viés de confirmação."
+                }
+              ]
+            },
+            {
+              "id": "apx-a-s2",
               "level": 1,
               "title": "Questões aplicadas",
               "blocks": [
                 {
                   "type": "PARAGRAPH",
-                  "text": "Questão 1: O documento gerado atende aos requisitos visuais da ABNT?"
+                  "text": "Questão 1: As margens do documento estão em conformidade com a NBR 14724 (superior e esquerda 3 cm, inferior e direita 2 cm)?"
+                },
+                {
+                  "type": "PARAGRAPH",
+                  "text": "Questão 2: O espaçamento entre linhas no corpo textual é de 1,5 linha, conforme prescrito?"
+                },
+                {
+                  "type": "PARAGRAPH",
+                  "text": "Questão 3: As citações longas estão recuadas a 4 cm da margem esquerda, com fonte tamanho 10 e espaçamento simples?"
+                },
+                {
+                  "type": "PARAGRAPH",
+                  "text": "Questão 4: Os títulos de seção de primeiro nível estão em caixa alta e negrito, numerados progressivamente?"
+                },
+                {
+                  "type": "PARAGRAPH",
+                  "text": "Questão 5: As referências bibliográficas estão ordenadas alfabeticamente, com espaçamento simples internamente e linha em branco entre entradas?"
                 }
               ]
             }
@@ -249,18 +1357,30 @@
       ]
     },
     "annex": {
+      "contentType": "SECTIONED",
       "items": [
         {
-          "title": "Norma de Referência Utilizada",
+          "title": "Norma NBR 14724 — Síntese dos Elementos Exigidos",
           "sections": [
             {
-              "id": "anx-s1",
+              "id": "anx-a-s1",
               "level": 1,
-              "title": "NBR 14724",
+              "title": "Elementos pré-textuais obrigatórios",
               "blocks": [
                 {
                   "type": "PARAGRAPH",
-                  "text": "Norma que estabelece os princípios gerais para elaboração de trabalhos acadêmicos."
+                  "text": "A NBR 14724 estabelece como elementos pré-textuais obrigatórios: capa, folha de rosto, folha de aprovação, resumo em língua vernácula, resumo em língua estrangeira e sumário. Os demais elementos — errata, dedicatória, agradecimentos, epígrafe, listas de ilustrações e de tabelas, lista de abreviaturas e siglas, e lista de símbolos — são considerados opcionais."
+                }
+              ]
+            },
+            {
+              "id": "anx-a-s2",
+              "level": 1,
+              "title": "Elementos textuais e pós-textuais",
+              "blocks": [
+                {
+                  "type": "PARAGRAPH",
+                  "text": "O elemento textual é composto obrigatoriamente por introdução, desenvolvimento e conclusão. Os elementos pós-textuais incluem, de forma obrigatória, as referências. São opcionais: glossário, apêndice(s), anexo(s) e índice."
                 }
               ]
             }
@@ -269,11 +1389,22 @@
       ]
     },
     "glossary": {
-      "terms": ["ABNT", "TCC", "Perfil"],
+      "contentType": "FLOW_TEXTUAL",
+      "terms": [
+        "ABNT",
+        "Bloco textual",
+        "Componente",
+        "Perfil institucional",
+        "Renderização",
+        "TCC"
+      ],
       "definitions": [
-        "Associação Brasileira de Normas Técnicas.",
-        "Trabalho de Conclusão de Curso.",
-        "Conjunto declarativo de regras que governa a formatação de um tipo de documento."
+        "Associação Brasileira de Normas Técnicas. Entidade responsável pela normalização técnica no Brasil.",
+        "Unidade atômica de conteúdo no corpo textual de um documento. Exemplos: parágrafo, citação longa, figura, tabela, lista.",
+        "Elemento estrutural de um documento com regras declaradas no perfil. Pode ser de página única (como a capa) ou de fluxo textual (como o resumo).",
+        "Conjunto declarativo de regras que governa a formatação de um tipo de documento em uma instituição específica. O perfil determina estilos, ordem de componentes, templates de texto e comportamento de layout.",
+        "Processo de transformação do modelo de conteúdo e do perfil em saída formatada (por exemplo, um arquivo DOCX). O motor de renderização não contém lógica condicional de perfil.",
+        "Trabalho de Conclusão de Curso. Documento acadêmico exigido para a obtenção de título de graduação, regulado pela ABNT NBR 14724."
       ]
     }
   }

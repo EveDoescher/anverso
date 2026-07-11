@@ -22,6 +22,12 @@ export default function Home() {
           >
             Criar Conta
           </Link>
+          <Link
+            href="/explore"
+            className="px-6 py-3 bg-indigo-600 text-white rounded font-medium hover:bg-indigo-700 shadow-md shadow-indigo-600/20 transition-all flex items-center gap-2"
+          >
+            Explorar Comunidade
+          </Link>
         </div>
       </main>
     </div>
