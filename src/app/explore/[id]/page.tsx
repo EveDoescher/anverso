@@ -20,7 +20,8 @@ export default function ProfileDetailsPage() {
   const [rating, setRating] = useState('0.0');
   const [reviewsCount, setReviewsCount] = useState(0);
   const [usageCount, setUsageCount] = useState(0);
-  const [authorName, setAuthorName] = useState('Anverso Official');
+  const [authorName, setAuthorName] = useState('');
+  const [authorPhoto, setAuthorPhoto] = useState<string | null>(null);
   const [comments, setComments] = useState<any[]>([]);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [newReviewText, setNewReviewText] = useState('');
@@ -81,7 +82,9 @@ export default function ProfileDetailsPage() {
             try {
               const userRes = await fetchApi(`/api/users/${data.ownerId}/public`);
               const userData = await userRes.json();
-              setAuthorName(userData.name || 'Anverso Official');
+              const fullName = [userData.firstName, userData.lastName].filter(Boolean).join(' ');
+              setAuthorName(fullName);
+              setAuthorPhoto(userData.profilePictureUrl || null);
             } catch { /* fallback to default */ }
           }
         } else {
@@ -96,7 +99,20 @@ export default function ProfileDetailsPage() {
         const revResponse = await fetchApi(`/api/v1/profiles/${id}/reviews`);
         if (revResponse.ok) {
           const revData = await revResponse.json();
-          setComments(revData);
+          const enriched = await Promise.all(revData.map(async (rev: any) => {
+            if (!rev.userId) return rev;
+            try {
+              const uRes = await fetchApi(`/api/users/${rev.userId}/public`);
+              if (!uRes.ok) return rev;
+              const u = await uRes.json();
+              return {
+                ...rev,
+                userName: [u.firstName, u.lastName].filter(Boolean).join(' ') || rev.userName,
+                userPhoto: u.profilePictureUrl || null,
+              };
+            } catch { return rev; }
+          }));
+          setComments(enriched);
         }
         
         // Fetch versions
@@ -163,10 +179,23 @@ export default function ProfileDetailsPage() {
       });
       setShowReviewForm(false);
       setNewReviewText('');
-      // Recarregar avaliações
       const revResponse = await fetchApi(`/api/v1/profiles/${id}/reviews`);
       if (revResponse.ok) {
-        setComments(await revResponse.json());
+        const revData = await revResponse.json();
+        const enriched = await Promise.all(revData.map(async (rev: any) => {
+          if (!rev.userId) return rev;
+          try {
+            const uRes = await fetchApi(`/api/users/${rev.userId}/public`);
+            if (!uRes.ok) return rev;
+            const u = await uRes.json();
+            return {
+              ...rev,
+              userName: [u.firstName, u.lastName].filter(Boolean).join(' ') || rev.userName,
+              userPhoto: u.profilePictureUrl || null,
+            };
+          } catch { return rev; }
+        }));
+        setComments(enriched);
       }
     } catch (e) {
       showAlert('Erro', 'Erro ao enviar avaliação.', 'error');
@@ -233,9 +262,13 @@ export default function ProfileDetailsPage() {
 
               <div className="flex items-center gap-4 text-sm text-slate-600 mb-8 pb-8 border-b border-slate-100">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-500">
-                    {authorName.charAt(0)}
-                  </div>
+                  {authorPhoto ? (
+                    <img src={authorPhoto} alt={authorName} className="w-8 h-8 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-500">
+                      {authorName.charAt(0)}
+                    </div>
+                  )}
                   <div>
                     <p className="text-xs text-slate-400">Criado por</p>
                     <p className="font-semibold text-slate-700">{authorName}</p>
@@ -281,7 +314,7 @@ export default function ProfileDetailsPage() {
 
 
                 <button 
-                  onClick={() => requireAuth(() => router.push('/submit-work'))}
+                  onClick={() => requireAuth(() => router.push(`/submit-work?profileId=${profile?.id}`))}
                   className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-xl font-bold shadow-lg shadow-indigo-600/20 transition-all active:scale-[0.98] mb-3 flex items-center justify-center gap-2"
                 >
                   <LayoutTemplate size={20} />
@@ -471,9 +504,13 @@ export default function ProfileDetailsPage() {
             ) : (
               comments.map((comment: any) => (
                 <div key={comment.id} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex gap-4">
-                  <div className="w-12 h-12 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-lg shrink-0">
-                    {comment.userName ? comment.userName.charAt(0).toUpperCase() : 'U'}
-                  </div>
+                  {comment.userPhoto ? (
+                    <img src={comment.userPhoto} alt={comment.userName} className="w-12 h-12 rounded-full object-cover shrink-0" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-lg shrink-0">
+                      {comment.userName ? comment.userName.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                  )}
                   <div className="flex-1">
                     <div className="flex items-start justify-between mb-2">
                       <div>
