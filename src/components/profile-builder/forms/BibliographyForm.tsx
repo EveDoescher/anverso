@@ -2,6 +2,7 @@
 
 import { ComponentState, BibRefType, BibEntryPart, StyleRule } from '@/lib/profileSerializer';
 import * as Accordion from '@radix-ui/react-accordion';
+import { Check, AlertTriangle } from 'lucide-react';
 
 interface Props {
   comp: ComponentState;
@@ -98,7 +99,6 @@ export function BibliographyForm({ comp, onChange, styleRules }: Props) {
     etAlThreshold: 3,
   };
   const entryFormats = comp.entryFormats ?? {};
-  const styleIds = styleRules.map(r => r.id);
 
   function setAf<K extends keyof typeof af>(key: K, value: (typeof af)[K]) {
     onChange({ ...comp, authorFormat: { ...af, [key]: value } });
@@ -122,17 +122,17 @@ export function BibliographyForm({ comp, onChange, styleRules }: Props) {
           <select className="w-full border border-slate-300 rounded p-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500"
             value={comp.headingStyleId ?? ''}
             onChange={e => onChange({ ...comp, headingStyleId: e.target.value || undefined })}>
-            <option value="">(padrão: {comp.id}.heading)</option>
-            {styleIds.map(id => <option key={id} value={id}>{id}</option>)}
+            <option value="">(usar padrão automático)</option>
+            {styleRules.map(r => <option key={r.id} value={r.id}>{r.displayName || r.id}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Estilo da entrada</label>
+          <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Estilo de cada referência</label>
           <select className="w-full border border-slate-300 rounded p-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500"
             value={comp.entryStyleId ?? ''}
             onChange={e => onChange({ ...comp, entryStyleId: e.target.value || undefined })}>
-            <option value="">(padrão: {comp.id}.entry)</option>
-            {styleIds.map(id => <option key={id} value={id}>{id}</option>)}
+            <option value="">(usar padrão automático)</option>
+            {styleRules.map(r => <option key={r.id} value={r.id}>{r.displayName || r.id}</option>)}
           </select>
         </div>
       </div>
@@ -233,8 +233,8 @@ export function BibliographyForm({ comp, onChange, styleRules }: Props) {
             <Accordion.Trigger className="w-full flex items-center justify-between px-3 py-2.5 text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 transition border-t border-slate-100">
               {rt.label}
               {entryFormats[rt.value]?.length
-                ? <span className="text-green-500 text-[10px]">✓ {entryFormats[rt.value]!.length} partes</span>
-                : <span className="text-orange-400 text-[10px]">não configurado ⚠</span>
+                ? <span className="text-green-500 text-[10px] flex items-center gap-0.5"><Check size={10} /> {entryFormats[rt.value]!.length} partes</span>
+                : <span className="text-orange-400 text-[10px] flex items-center gap-0.5"><AlertTriangle size={10} /> não configurado</span>
               }
             </Accordion.Trigger>
             <Accordion.Content className="p-3 border-t border-slate-100">

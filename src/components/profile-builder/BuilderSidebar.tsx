@@ -1,6 +1,7 @@
 'use client';
 
 import { BuilderSection } from '@/app/create-profile/[[...id]]/page';
+import { AlertTriangle } from 'lucide-react';
 
 interface SidebarProps {
   activeSection: BuilderSection;
@@ -43,7 +44,7 @@ export function BuilderSidebar({ activeSection, onSectionChange, errors, onSave,
             >
               <span>{s.label}</span>
               {hasError && (
-                <span className="text-orange-500 text-xs font-bold" title={sectionErrors.join(', ')}>⚠</span>
+                <span title={sectionErrors.join(', ')}><AlertTriangle size={13} className="text-orange-500 shrink-0" /></span>
               )}
             </button>
           );

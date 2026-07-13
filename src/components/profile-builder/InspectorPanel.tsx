@@ -44,10 +44,6 @@ export function InspectorPanel({
     onUpdateComponent({ ...component!, slots });
   }
 
-  const bodyContentIds = allComponents
-    .filter(c => c.ruleType === 'BODY_CONTENT')
-    .map(c => c.id);
-
   return (
     <div className="w-96 shrink-0 flex flex-col border-l border-slate-200 overflow-hidden">
       <div className="px-4 py-2.5 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
@@ -76,7 +72,6 @@ export function InspectorPanel({
         ) : (
           <ComponentInspector
             component={component}
-            bodyContentIds={bodyContentIds}
             styleRules={styleRules}
             allComponents={allComponents}
             onUpdate={onUpdateComponent}
@@ -89,9 +84,8 @@ export function InspectorPanel({
   );
 }
 
-function ComponentInspector({ component, bodyContentIds, styleRules, allComponents, onUpdate, onAddStyleRule, onDeleteComponent }: {
+function ComponentInspector({ component, styleRules, allComponents, onUpdate, onAddStyleRule, onDeleteComponent }: {
   component: ComponentState;
-  bodyContentIds: string[];
   styleRules: StyleRule[];
   allComponents: ComponentState[];
   onUpdate: (c: ComponentState) => void;
@@ -125,7 +119,7 @@ function ComponentInspector({ component, bodyContentIds, styleRules, allComponen
         </div>
       )}
       {component.ruleType === 'SECTIONED' && (
-        <SectionedForm comp={component} onChange={onUpdate} bodyContentIds={bodyContentIds} styleRules={styleRules} />
+        <SectionedForm comp={component} onChange={onUpdate} allComponents={allComponents} styleRules={styleRules} />
       )}
       {component.ruleType === 'ELEMENT_INDEX' && (
         <ElementIndexForm comp={component} onChange={onUpdate} styleRules={styleRules} allComponents={allComponents} />

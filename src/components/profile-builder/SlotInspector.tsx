@@ -191,15 +191,15 @@ export function SlotInspector({ component, slot, styleRules, onUpdateSlot, onAdd
       {/* groupId — só para SINGLE_PAGE */}
       {component.ruleType === 'SINGLE_PAGE' && (
         <div className="pt-3 border-t border-slate-100">
-          <label className="block text-sm font-semibold text-slate-700 mb-1">Grupo de layout</label>
+          <label className="block text-sm font-semibold text-slate-700 mb-1">Agrupar com outros campos</label>
           <input
             type="text"
-            className="w-full border border-slate-300 rounded-lg p-2.5 text-sm font-mono focus:ring-2 focus:ring-indigo-500"
+            className="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500"
             value={slot.groupId ?? ''}
-            onChange={e => set('groupId', e.target.value || undefined)}
-            placeholder="ex: cover.titleBlock"
+            onChange={e => set('groupId', e.target.value.trim().toLowerCase().replace(/\s+/g, '-') || undefined)}
+            placeholder="Ex: bloco-titulo"
           />
-          <p className="text-xs text-slate-400 mt-0.5">Campos com o mesmo ID ficam no mesmo grupo de layout (sem gap entre eles)</p>
+          <p className="text-xs text-slate-400 mt-0.5">Campos com o mesmo nome de grupo ficam colados verticalmente, sem espaço entre eles</p>
         </div>
       )}
 

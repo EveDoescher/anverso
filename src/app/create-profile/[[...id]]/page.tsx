@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+import { AlertTriangle } from 'lucide-react';
 import { fetchApi } from '@/lib/api';
 import {
   BuilderState,
@@ -45,31 +46,32 @@ function validate(state: BuilderState): Partial<Record<BuilderSection, string[]>
 
   const bodyCount = state.components.filter(c => c.ruleType === 'BODY_CONTENT').length;
   if (state.components.length > 0 && bodyCount === 0) {
-    add('components', 'Nenhum componente de Corpo do Texto. Adicione um BODY_CONTENT.');
+    add('components', 'Nenhuma seção de Corpo do Texto criada. Adicione um componente do tipo "Corpo do Texto (Capítulos)".');
   }
   if (bodyCount > 1) {
-    add('components', 'Apenas um componente BODY_CONTENT é permitido.');
+    add('components', 'Apenas um Corpo do Texto é permitido por perfil.');
   }
 
   for (const comp of state.components) {
+    const name = comp.displayName || comp.id;
     if (comp.ruleType === 'BIBLIOGRAPHY') {
       const formats = comp.entryFormats ?? {};
       if (Object.keys(formats).length === 0) {
-        add('components', `Componente "${comp.id}": configure ao menos um formato de entrada.`);
+        add('components', `"${name}": configure ao menos um formato de referência.`);
       }
     }
     if (comp.ruleType === 'ELEMENT_INDEX' || comp.ruleType === 'SECTION_INDEX') {
       if (!comp.headingText?.trim()) {
-        add('components', `Componente "${comp.id}": título não pode estar vazio.`);
+        add('components', `"${name}": o título da página não pode estar vazio.`);
       }
       if (!comp.sourceComponentId?.trim()) {
-        add('components', `Componente "${comp.id}": sourceComponentId obrigatório (selecione o corpo do texto).`);
+        add('components', `"${name}": selecione o corpo do texto de origem.`);
       }
     }
     if (comp.ruleType === 'SINGLE_PAGE') {
       for (const slot of comp.slots ?? []) {
         if (slot.required && !slot.styleId) {
-          add('components', `Slot obrigatório "${slot.id}" (${comp.id}) sem estilo definido.`);
+          add('components', `"${name}": o campo "${slot.displayName || slot.id}" é obrigatório e não tem estilo definido.`);
         }
       }
     }
@@ -83,17 +85,17 @@ function componentErrors(state: BuilderState): Record<string, string[]> {
   for (const comp of state.components) {
     const errs: string[] = [];
     if (comp.ruleType === 'BIBLIOGRAPHY' && Object.keys(comp.entryFormats ?? {}).length === 0) {
-      errs.push('Sem formatos de entrada configurados.');
+      errs.push('Nenhum formato de referência configurado.');
     }
     if ((comp.ruleType === 'ELEMENT_INDEX' || comp.ruleType === 'SECTION_INDEX') && !comp.headingText?.trim()) {
-      errs.push('Título vazio.');
+      errs.push('Título da página vazio.');
     }
     if ((comp.ruleType === 'ELEMENT_INDEX' || comp.ruleType === 'SECTION_INDEX') && !comp.sourceComponentId?.trim()) {
-      errs.push('sourceComponentId não configurado.');
+      errs.push('Corpo do texto de origem não selecionado.');
     }
     if (comp.ruleType === 'SINGLE_PAGE') {
       for (const slot of comp.slots ?? []) {
-        if (slot.required && !slot.styleId) errs.push(`Slot "${slot.id}" obrigatório sem estilo.`);
+        if (slot.required && !slot.styleId) errs.push(`Campo "${slot.displayName || slot.id}" sem estilo definido.`);
       }
     }
     if (errs.length > 0) out[comp.id] = errs;
@@ -473,70 +475,92 @@ export default function CreateProfile() {
         </section>
 
         <section>
-          <h2 className="text-base font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">Papéis de fonte</h2>
-          <p className="text-xs text-slate-500 mb-3">Cada papel define uma família de fonte padrão e os estilos que a utilizam. O papel <code>baseFont</code> é obrigatório.</p>
+          <h2 className="text-base font-bold text-slate-800 mb-1 border-b border-slate-100 pb-2">Famílias de fonte</h2>
+          <p className="text-xs text-slate-500 mb-3">Defina qual família tipográfica usar para o corpo do texto, títulos e código. O papel "Fonte principal" é obrigatório.</p>
           <div className="space-y-3">
-            {page.fontRoles.roles.map((role, ri) => (
-              <div key={ri} className="border border-slate-200 rounded-lg p-3 space-y-2 bg-white">
-                <div className="flex items-center gap-2">
-                  <div className="flex-1">
-                    <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Chave do papel</label>
-                    <input type="text" className="w-full border border-slate-300 rounded p-1.5 text-xs font-mono focus:ring-2 focus:ring-blue-500"
-                      value={role.key}
-                      onChange={e => {
-                        const roles = page.fontRoles.roles.map((r, i) => i === ri ? { ...r, key: e.target.value } : r);
-                        updatePage('fontRoles', { roles });
-                      }} />
+            {page.fontRoles.roles.map((role, ri) => {
+              const FONT_ROLE_LABELS: Record<string, string> = {
+                baseFont: 'Fonte principal (corpo do texto)',
+                headingFont: 'Fonte de títulos',
+                codeFont: 'Fonte de código',
+              };
+              const roleLabel = FONT_ROLE_LABELS[role.key] ?? role.key;
+              const isBase = role.key === 'baseFont';
+              return (
+                <div key={ri} className="border border-slate-200 rounded-lg p-3 space-y-3 bg-white">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Papel</label>
+                      <select
+                        className="w-full border border-slate-300 rounded p-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500"
+                        value={role.key}
+                        disabled={isBase}
+                        onChange={e => {
+                          const roles = page.fontRoles.roles.map((r, i) => i === ri ? { ...r, key: e.target.value } : r);
+                          updatePage('fontRoles', { roles });
+                        }}
+                      >
+                        <option value="baseFont">Fonte principal (corpo do texto)</option>
+                        <option value="headingFont">Fonte de títulos</option>
+                        <option value="codeFont">Fonte de código</option>
+                        {!['baseFont', 'headingFont', 'codeFont'].includes(role.key) && (
+                          <option value={role.key}>{role.key}</option>
+                        )}
+                      </select>
+                      {isBase && <p className="text-[10px] text-slate-400 mt-0.5">Obrigatório — não pode ser removido</p>}
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Família padrão</label>
+                      <select className="w-full border border-slate-300 rounded p-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500"
+                        value={role.defaultFamily}
+                        onChange={e => {
+                          const roles = page.fontRoles.roles.map((r, i) => i === ri ? { ...r, defaultFamily: e.target.value } : r);
+                          updatePage('fontRoles', { roles });
+                        }}>
+                        {['Times New Roman', 'Arial', 'Calibri', 'Georgia', 'Verdana', 'Courier New'].map(f => <option key={f} value={f}>{f}</option>)}
+                      </select>
+                    </div>
+                    {!isBase && (
+                      <button
+                        className="mt-4 text-red-400 hover:text-red-600 text-lg font-bold px-1"
+                        onClick={() => updatePage('fontRoles', { roles: page.fontRoles.roles.filter((_, i) => i !== ri) })}
+                      >×</button>
+                    )}
                   </div>
-                  <div className="flex-1">
-                    <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Família padrão</label>
-                    <select className="w-full border border-slate-300 rounded p-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500"
-                      value={role.defaultFamily}
-                      onChange={e => {
-                        const roles = page.fontRoles.roles.map((r, i) => i === ri ? { ...r, defaultFamily: e.target.value } : r);
-                        updatePage('fontRoles', { roles });
-                      }}>
-                      {['Times New Roman', 'Arial', 'Calibri', 'Georgia', 'Verdana', 'Courier New'].map(f => <option key={f} value={f}>{f}</option>)}
-                    </select>
-                  </div>
-                  {page.fontRoles.roles.length > 1 && (
-                    <button
-                      className="mt-4 text-red-400 hover:text-red-600 text-lg font-bold px-1"
-                      onClick={() => updatePage('fontRoles', { roles: page.fontRoles.roles.filter((_, i) => i !== ri) })}
-                    >×</button>
+
+                  {state.styleRules.length > 0 && (
+                    <div>
+                      <label className="block text-[10px] font-semibold text-slate-500 mb-1">Estilos que usam {roleLabel.split(' ')[0].toLowerCase() === 'fonte' ? 'esta' : 'este'} {roleLabel.split(' ').slice(0, 2).join(' ').toLowerCase()}</label>
+                      <div className="grid grid-cols-2 gap-1">
+                        {state.styleRules.map(r => (
+                          <label key={r.id} className="flex items-center gap-1.5 cursor-pointer text-xs text-slate-700 hover:text-slate-900">
+                            <input
+                              type="checkbox"
+                              className="w-3.5 h-3.5 text-blue-600 rounded border-slate-300"
+                              checked={role.styleIds.includes(r.id)}
+                              onChange={e => {
+                                const styleIds = e.target.checked
+                                  ? [...role.styleIds, r.id]
+                                  : role.styleIds.filter(id => id !== r.id);
+                                const roles = page.fontRoles.roles.map((ro, i) => i === ri ? { ...ro, styleIds } : ro);
+                                updatePage('fontRoles', { roles });
+                              }}
+                            />
+                            {r.displayName || r.id}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
-                <div>
-                  <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Famílias permitidas (separadas por vírgula)</label>
-                  <input type="text" className="w-full border border-slate-300 rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500"
-                    value={role.allowedFamilies.join(', ')}
-                    onChange={e => {
-                      const roles = page.fontRoles.roles.map((r, i) => i === ri
-                        ? { ...r, allowedFamilies: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }
-                        : r);
-                      updatePage('fontRoles', { roles });
-                    }} />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Estilos que usam este papel (IDs separados por vírgula)</label>
-                  <input type="text" className="w-full border border-slate-300 rounded p-1.5 text-xs font-mono focus:ring-2 focus:ring-blue-500"
-                    value={role.styleIds.join(', ')}
-                    onChange={e => {
-                      const roles = page.fontRoles.roles.map((r, i) => i === ri
-                        ? { ...r, styleIds: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }
-                        : r);
-                      updatePage('fontRoles', { roles });
-                    }}
-                    placeholder={state.styleRules.map(r => r.id).join(', ')} />
-                </div>
-              </div>
-            ))}
+              );
+            })}
             <button
               className="text-blue-600 text-sm hover:underline"
               onClick={() => updatePage('fontRoles', {
-                roles: [...page.fontRoles.roles, { key: 'novoRole', defaultFamily: 'Times New Roman', allowedFamilies: [], styleIds: [] }]
+                roles: [...page.fontRoles.roles, { key: 'headingFont', defaultFamily: 'Arial', allowedFamilies: [], styleIds: [] }]
               })}
-            >+ Adicionar papel de fonte</button>
+            >+ Adicionar família de fonte</button>
           </div>
         </section>
 
@@ -704,7 +728,8 @@ export default function CreateProfile() {
                 <select className="w-full border border-slate-300 rounded p-2 text-xs bg-white focus:ring-2 focus:ring-blue-500"
                   value={pp.tableContinuationLabels.labelStyleId}
                   onChange={e => updatePostProcessing('tableContinuationLabels', { ...pp.tableContinuationLabels, labelStyleId: e.target.value })}>
-                  {state.styleRules.map(r => <option key={r.id} value={r.id}>{r.id}</option>)}
+                  <option value="">— Selecione —</option>
+                  {state.styleRules.map(r => <option key={r.id} value={r.id}>{r.displayName || r.id}</option>)}
                 </select>
               </div>
             </div>
@@ -854,8 +879,8 @@ export default function CreateProfile() {
             placeholder="Nome do perfil..."
           />
           {hasErrors && (
-            <span className="text-xs text-orange-500 font-medium bg-orange-50 border border-orange-200 px-2 py-0.5 rounded-full">
-              ⚠ {Object.values(errors).flat().length} problema(s)
+            <span className="text-xs text-orange-500 font-medium bg-orange-50 border border-orange-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+              <AlertTriangle size={12} /> {Object.values(errors).flat().length} problema(s)
             </span>
           )}
         </div>

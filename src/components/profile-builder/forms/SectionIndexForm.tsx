@@ -19,7 +19,6 @@ const DEFAULT_ENTRY_TEMPLATE = '{number}  {title} ......... {page}';
 
 export function SectionIndexForm({ comp, onChange, styleRules, allComponents }: Props) {
   const entryTemplate = comp.entryTemplate ?? DEFAULT_ENTRY_TEMPLATE;
-  const styleIds = styleRules.map(r => r.id);
   const bodyContentComponents = allComponents.filter(c => c.ruleType === 'BODY_CONTENT');
 
   function renderLevelPreview(level: typeof LEVEL_SAMPLES[0]): string {
@@ -39,23 +38,23 @@ export function SectionIndexForm({ comp, onChange, styleRules, allComponents }: 
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-slate-600 mb-1">Componente de origem</label>
+        <label className="block text-xs font-semibold text-slate-600 mb-1">Corpo do texto de origem</label>
         <select className="w-full border border-slate-300 rounded p-2 text-xs bg-white focus:ring-2 focus:ring-blue-500"
           value={comp.sourceComponentId ?? ''}
           onChange={e => onChange({ ...comp, sourceComponentId: e.target.value || undefined })}>
-          <option value="">— Selecione o corpo do texto —</option>
+          <option value="">— Selecione —</option>
           {bodyContentComponents.map(c => <option key={c.id} value={c.id}>{c.displayName || c.id}</option>)}
         </select>
-        <p className="text-[10px] text-slate-400 mt-0.5">O componente BODY_CONTENT de onde as seções serão coletadas</p>
+        <p className="text-[10px] text-slate-400 mt-0.5">Seção do documento de onde os títulos de capítulos serão coletados</p>
       </div>
 
       <div>
-        <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Estilo do título</label>
+        <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Estilo do título da página</label>
         <select className="w-full border border-slate-300 rounded p-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500"
           value={comp.headingStyleId ?? ''}
           onChange={e => onChange({ ...comp, headingStyleId: e.target.value || undefined })}>
-          <option value="">(padrão: {comp.id}.heading)</option>
-          {styleIds.map(id => <option key={id} value={id}>{id}</option>)}
+          <option value="">(usar padrão automático)</option>
+          {styleRules.map(r => <option key={r.id} value={r.id}>{r.displayName || r.id}</option>)}
         </select>
       </div>
 
@@ -96,7 +95,10 @@ export function SectionIndexForm({ comp, onChange, styleRules, allComponents }: 
         <input type="checkbox" className="w-4 h-4 text-blue-600 rounded border-slate-300"
           checked={comp.useTocField ?? true}
           onChange={e => onChange({ ...comp, useTocField: e.target.checked })} />
-        <span className="text-xs font-medium text-slate-700">Usar campo TOC automático do Word</span>
+        <div>
+          <p className="text-xs font-medium text-slate-700">Sumário clicável</p>
+          <p className="text-[10px] text-slate-400">Gera links que navegam direto para cada seção no Word</p>
+        </div>
       </label>
     </div>
   );

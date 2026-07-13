@@ -5,26 +5,18 @@ import { ComponentState, StyleRule } from '@/lib/profileSerializer';
 interface Props {
   comp: ComponentState;
   onChange: (updated: ComponentState) => void;
-  bodyContentIds: string[];
+  allComponents: ComponentState[];
   styleRules: StyleRule[];
 }
 
-export function SectionedForm({ comp, onChange, bodyContentIds, styleRules }: Props) {
+export function SectionedForm({ comp, onChange, allComponents, styleRules }: Props) {
   const preview = (comp.headingTemplate ?? '{letter} — {title}')
     .replace('{letter}', 'A')
     .replace('{number}', '1')
     .replace('{title}', 'Meu Apêndice');
 
-  const styleIds = styleRules.map(r => r.id);
-
   return (
     <div className="space-y-4">
-      <div>
-        <label className="block text-xs font-semibold text-slate-600 mb-1">ID do componente</label>
-        <input type="text" className="w-full border border-slate-300 rounded p-2 text-xs font-mono focus:ring-2 focus:ring-blue-500"
-          value={comp.id} onChange={e => onChange({ ...comp, id: e.target.value.replace(/[^a-zA-Z0-9_-]/g, '') })} />
-      </div>
-
       <div>
         <label className="block text-xs font-semibold text-slate-600 mb-1">
           Template do título
@@ -54,18 +46,20 @@ export function SectionedForm({ comp, onChange, bodyContentIds, styleRules }: Pr
           value={comp.paragraphStyleId ?? ''}
           onChange={e => onChange({ ...comp, paragraphStyleId: e.target.value || undefined })}>
           <option value="">— Selecione —</option>
-          {styleIds.map(id => <option key={id} value={id}>{id}</option>)}
+          {styleRules.map(r => <option key={r.id} value={r.id}>{r.displayName || r.id}</option>)}
         </select>
       </div>
 
-      {bodyContentIds.length > 0 && (
+      {allComponents.some(c => c.ruleType === 'BODY_CONTENT') && (
         <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1">Componente de corpo vinculado</label>
+          <label className="block text-xs font-semibold text-slate-600 mb-1">Corpo do texto vinculado</label>
           <select className="w-full border border-slate-300 rounded p-2 text-xs bg-white focus:ring-2 focus:ring-blue-500"
             value={comp.bodyContentComponentId ?? ''}
             onChange={e => onChange({ ...comp, bodyContentComponentId: e.target.value })}>
             <option value="">— Nenhum —</option>
-            {bodyContentIds.map(id => <option key={id} value={id}>{id}</option>)}
+            {allComponents
+              .filter(c => c.ruleType === 'BODY_CONTENT')
+              .map(c => <option key={c.id} value={c.id}>{c.displayName || c.id}</option>)}
           </select>
         </div>
       )}

@@ -69,15 +69,6 @@ export function SinglePageForm({ comp, onChange }: Props) {
   return (
     <div className="space-y-4">
       <div>
-        <label className="block text-xs font-semibold text-slate-600 mb-1">ID do componente</label>
-        <input
-          type="text"
-          className="w-full border border-slate-300 rounded p-2 text-xs text-slate-800 font-mono focus:ring-2 focus:ring-blue-500"
-          value={comp.id}
-          onChange={e => onChange({ ...comp, id: e.target.value.replace(/[^a-zA-Z0-9_-]/g, '') })}
-        />
-      </div>
-      <div>
         <label className="block text-xs font-semibold text-slate-600 mb-1">Nome de exibição</label>
         <input
           type="text"

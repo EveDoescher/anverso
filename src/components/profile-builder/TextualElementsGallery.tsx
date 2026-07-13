@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import {
   BodyContentState,
   ElementFormatState,
@@ -11,6 +11,10 @@ import {
   LongDirectCitationState,
   FootnoteState,
 } from '@/lib/profileSerializer';
+import {
+  Image, Table2, LayoutDashboard, BarChart2, Sigma, Code2,
+  Quote, MessageSquare, Superscript,
+} from 'lucide-react';
 
 interface Props {
   state: BodyContentState;
@@ -163,7 +167,7 @@ const ALIGN_OPTS = [
 interface CardDef {
   id: string;
   label: string;
-  icon: string;
+  Icon: React.ComponentType<{ size?: number; className?: string }>;
   description: string;
   schema: (state: BodyContentState) => React.ReactNode;
   editor: (state: BodyContentState, onChange: (s: BodyContentState) => void) => React.ReactNode;
@@ -173,7 +177,7 @@ const CARDS: CardDef[] = [
   {
     id: 'figure',
     label: 'Figura',
-    icon: '🖼',
+    Icon: Image,
     description: 'Imagens, fotos, mapas e ilustrações',
     schema: (s) => <FigureSchema captionTemplate={s.figure.captionTemplate} label={s.figure.label} />,
     editor: (s, onChange) => {
@@ -207,7 +211,7 @@ const CARDS: CardDef[] = [
   {
     id: 'table',
     label: 'Tabela',
-    icon: '📊',
+    Icon: Table2,
     description: 'Tabelas com dados numéricos e textuais',
     schema: (s) => <TableSchema captionTemplate={s.table.captionTemplate} label={s.table.label} />,
     editor: (s, onChange) => {
@@ -252,7 +256,7 @@ const CARDS: CardDef[] = [
   {
     id: 'frame',
     label: 'Quadro',
-    icon: '🔲',
+    Icon: LayoutDashboard,
     description: 'Quadros com bordas completas (dados qualitativos)',
     schema: (s) => <TableSchema captionTemplate={s.frame.captionTemplate} label={s.frame.label} />,
     editor: (s, onChange) => {
@@ -282,7 +286,7 @@ const CARDS: CardDef[] = [
   {
     id: 'chart',
     label: 'Gráfico',
-    icon: '📈',
+    Icon: BarChart2,
     description: 'Gráficos de barras, linhas, pizza e outros',
     schema: (s) => <FigureSchema captionTemplate={s.chart.captionTemplate} label={s.chart.label} />,
     editor: (s, onChange) => {
@@ -305,7 +309,7 @@ const CARDS: CardDef[] = [
   {
     id: 'equation',
     label: 'Equação',
-    icon: '∑',
+    Icon: Sigma,
     description: 'Fórmulas e expressões matemáticas',
     schema: (s) => <EquationSchema numberingTemplate={s.equation.numberingTemplate} label={s.equation.label} />,
     editor: (s, onChange) => {
@@ -337,7 +341,7 @@ const CARDS: CardDef[] = [
   {
     id: 'codeListing',
     label: 'Listagem de Código',
-    icon: '</> ',
+    Icon: Code2,
     description: 'Trechos de código-fonte',
     schema: () => <CodeSchema />,
     editor: (s, onChange) => {
@@ -360,7 +364,7 @@ const CARDS: CardDef[] = [
   {
     id: 'directCitation',
     label: 'Citação Direta Curta',
-    icon: '"…"',
+    Icon: Quote,
     description: 'Citações de até 3 linhas — inseridas no corpo do parágrafo entre aspas',
     schema: (s) => <DirectCitationSchema state={s.directCitation} />,
     editor: (s, onChange) => {
@@ -386,7 +390,7 @@ const CARDS: CardDef[] = [
   {
     id: 'longDirectCitation',
     label: 'Citação Direta Longa',
-    icon: '⸢⸣',
+    Icon: Quote,
     description: 'Citações com mais de 3 linhas — recuadas, fonte menor',
     schema: (s) => <LongDirectCitationSchema state={s.longDirectCitation} />,
     editor: (s, onChange) => {
@@ -422,7 +426,7 @@ const CARDS: CardDef[] = [
   {
     id: 'indirectCitation',
     label: 'Citação Indireta',
-    icon: '(…)',
+    Icon: MessageSquare,
     description: 'Paráfrase — sem aspas, com referência parentética',
     schema: () => (
       <div className="text-[10px] text-slate-600 leading-relaxed text-left">
@@ -458,7 +462,7 @@ const CARDS: CardDef[] = [
   {
     id: 'footnote',
     label: 'Nota de Rodapé',
-    icon: '¹',
+    Icon: Superscript,
     description: 'Notas numeradas na parte inferior da página',
     schema: (s) => <FootnoteSchema state={s.footnote} />,
     editor: (s, onChange) => {
@@ -498,7 +502,7 @@ function ElementCard({ card, state, onChange }: { card: CardDef; state: BodyCont
         onClick={() => setExpanded(e => !e)}
         className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${expanded ? 'bg-blue-50' : 'bg-white hover:bg-slate-50'}`}
       >
-        <span className="text-lg shrink-0 w-7 text-center" aria-hidden>{card.icon}</span>
+        <card.Icon size={17} className="shrink-0 text-slate-500" />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-slate-800">{card.label}</p>
           <p className="text-[10px] text-slate-400 truncate">{card.description}</p>

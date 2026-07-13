@@ -1,6 +1,6 @@
 'use client';
 
-import { StyleRule } from '@/lib/profileSerializer';
+import { StyleRule, displayNameToStyleId, styleIdToDisplayName } from '@/lib/profileSerializer';
 
 interface StyleRuleEditorProps {
   rule: StyleRule;
@@ -45,14 +45,17 @@ export function StyleRuleEditor({ rule, onChange }: StyleRuleEditorProps) {
   return (
     <div className="space-y-4 p-4 bg-slate-50 border border-slate-200 rounded-lg">
       <div className="grid grid-cols-2 gap-3">
-        {field('ID do estilo',
+        {field('Nome do estilo',
           <input
             type="text"
-            className="w-full border border-slate-300 rounded p-2 text-xs text-slate-800 font-mono focus:ring-2 focus:ring-blue-500"
-            value={rule.id}
-            onChange={e => set('id', e.target.value.replace(/\s+/g, '-').toLowerCase())}
+            className="w-full border border-slate-300 rounded p-2 text-xs text-slate-800 focus:ring-2 focus:ring-blue-500"
+            value={rule.displayName ?? styleIdToDisplayName(rule.id)}
+            onChange={e => {
+              const name = e.target.value;
+              onChange({ ...rule, displayName: name, id: displayNameToStyleId(name) || rule.id });
+            }}
           />,
-          'Slug único, ex: cover.title'
+          'Ex: Título da Capa, Parágrafo Normal'
         )}
         {field('Tipo',
           <select

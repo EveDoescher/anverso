@@ -1,7 +1,7 @@
 'use client';
 
+import React, { useState } from 'react';
 import { ComponentState, SlotState, SlotType, StyleRule, StyleRuleType, BibEntryPart, BibRefType, defaultStyleRule, defaultBodyContentState } from '@/lib/profileSerializer';
-import { useState } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -18,6 +18,10 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { StyleRuleEditor } from './StyleRuleEditor';
+import {
+  BookOpen, BookMarked, Newspaper, Globe, Scale, GraduationCap, FileText, ClipboardList, Ruler,
+  Check, AlertTriangle,
+} from 'lucide-react';
 
 interface Props {
   component: ComponentState | null;
@@ -322,16 +326,16 @@ function BodyHierarchyPanel({ component, styleRules, onUpdateComponent, onAddSty
 
 // ── BIBLIOGRAPHY: Rich reference editor ──
 
-const BIB_REF_TYPES: { value: BibRefType; label: string; icon: string }[] = [
-  { value: 'BOOK', label: 'Livro', icon: '📕' },
-  { value: 'BOOK_CHAPTER', label: 'Capítulo de Livro', icon: '📖' },
-  { value: 'JOURNAL', label: 'Artigo de Periódico', icon: '📰' },
-  { value: 'WEBSITE', label: 'Website', icon: '🌐' },
-  { value: 'LEGISLATION', label: 'Legislação', icon: '⚖️' },
-  { value: 'THESIS', label: 'Tese / Dissertação', icon: '🎓' },
-  { value: 'CONFERENCE_PAPER', label: 'Artigo de Conferência', icon: '📋' },
-  { value: 'REPORT', label: 'Relatório Técnico', icon: '📄' },
-  { value: 'STANDARD', label: 'Norma Técnica', icon: '📐' },
+const BIB_REF_TYPES: { value: BibRefType; label: string; Icon: React.ComponentType<{ size?: number; className?: string }> }[] = [
+  { value: 'BOOK', label: 'Livro', Icon: BookMarked },
+  { value: 'BOOK_CHAPTER', label: 'Capítulo de Livro', Icon: BookOpen },
+  { value: 'JOURNAL', label: 'Artigo de Periódico', Icon: Newspaper },
+  { value: 'WEBSITE', label: 'Website', Icon: Globe },
+  { value: 'LEGISLATION', label: 'Legislação', Icon: Scale },
+  { value: 'THESIS', label: 'Tese / Dissertação', Icon: GraduationCap },
+  { value: 'CONFERENCE_PAPER', label: 'Artigo de Conferência', Icon: ClipboardList },
+  { value: 'REPORT', label: 'Relatório Técnico', Icon: FileText },
+  { value: 'STANDARD', label: 'Norma Técnica', Icon: Ruler },
 ];
 
 const BIB_SAMPLE_DATA: Record<string, string> = {
@@ -454,13 +458,13 @@ function BibliographyRichPanel({ component, onUpdateComponent }: {
                 onClick={() => setSelectedType(rt.value)}
                 className={`w-full flex items-center gap-2 px-3 py-2.5 text-left border-b border-slate-100 transition-colors ${isSelected ? 'bg-blue-50 border-l-2 border-l-blue-500' : 'hover:bg-slate-50'}`}
               >
-                <span className="text-base shrink-0">{rt.icon}</span>
+                <rt.Icon size={15} className="shrink-0 text-slate-500" />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-slate-700 truncate">{rt.label}</p>
                   {isConfigured ? (
-                    <p className="text-[9px] text-green-600">✓ {parts.length} partes</p>
+                    <p className="text-[9px] text-green-600 flex items-center gap-0.5"><Check size={9} /> {parts.length} partes</p>
                   ) : (
-                    <p className="text-[9px] text-amber-500">⚠ não configurado</p>
+                    <p className="text-[9px] text-amber-500 flex items-center gap-0.5"><AlertTriangle size={9} /> não configurado</p>
                   )}
                 </div>
               </button>

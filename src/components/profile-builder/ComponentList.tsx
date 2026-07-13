@@ -16,6 +16,7 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { AlertTriangle } from 'lucide-react';
 
 interface Props {
   components: ComponentState[];
@@ -82,7 +83,7 @@ function SortableItem({ comp, isSelected, onSelect, hasError }: {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
           <span className="text-xs font-semibold text-slate-700 truncate">{comp.displayName || comp.id}</span>
-          {hasError && <span className="text-orange-500 text-[10px]">⚠</span>}
+          {hasError && <AlertTriangle size={11} className="text-orange-500 shrink-0" />}
         </div>
         <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${RULE_TYPE_COLORS[comp.ruleType]}`}>
           {RULE_TYPE_LABELS[comp.ruleType]}

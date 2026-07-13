@@ -12,6 +12,7 @@ export type StyleRuleType =
 
 export interface StyleRule {
   id: string;
+  displayName?: string;
   type: StyleRuleType;
   fontFamily: string;
   fontSizePt: number;
@@ -364,9 +365,25 @@ export interface BuilderState {
 // Default values
 // ──────────────────────────────────────────
 
+export function styleIdToDisplayName(id: string): string {
+  return id
+    .replace(/[._-]+/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase())
+    .trim();
+}
+
+export function displayNameToStyleId(name: string): string {
+  return name
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '.')
+    .replace(/^\.|\.$/, '');
+}
+
 export function defaultStyleRule(id: string, overrides: Partial<StyleRule> = {}): StyleRule {
   return {
     id,
+    displayName: styleIdToDisplayName(id),
     type: 'PARAGRAPH',
     fontFamily: 'Times New Roman',
     fontSizePt: 12,

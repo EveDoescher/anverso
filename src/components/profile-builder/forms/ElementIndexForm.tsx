@@ -24,7 +24,6 @@ export function ElementIndexForm({ comp, onChange, styleRules, allComponents }: 
     .replace('{caption}', 'Mapa das regiões do Brasil')
     .replace('{page}', '42');
 
-  const styleIds = styleRules.map(r => r.id);
   const bodyContentComponents = allComponents.filter(c => c.ruleType === 'BODY_CONTENT');
 
   return (
@@ -39,14 +38,14 @@ export function ElementIndexForm({ comp, onChange, styleRules, allComponents }: 
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-slate-600 mb-1">Componente de origem</label>
+        <label className="block text-xs font-semibold text-slate-600 mb-1">Corpo do texto de origem</label>
         <select className="w-full border border-slate-300 rounded p-2 text-xs bg-white focus:ring-2 focus:ring-blue-500"
           value={comp.sourceComponentId ?? ''}
           onChange={e => onChange({ ...comp, sourceComponentId: e.target.value || undefined })}>
-          <option value="">— Selecione o corpo do texto —</option>
+          <option value="">— Selecione —</option>
           {bodyContentComponents.map(c => <option key={c.id} value={c.id}>{c.displayName || c.id}</option>)}
         </select>
-        <p className="text-[10px] text-slate-400 mt-0.5">O componente BODY_CONTENT de onde os elementos serão coletados</p>
+        <p className="text-[10px] text-slate-400 mt-0.5">Seção do documento de onde os elementos serão coletados para a lista</p>
       </div>
 
       <div>
@@ -62,17 +61,17 @@ export function ElementIndexForm({ comp, onChange, styleRules, allComponents }: 
           <select className="w-full border border-slate-300 rounded p-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500"
             value={comp.headingStyleId ?? ''}
             onChange={e => onChange({ ...comp, headingStyleId: e.target.value || undefined })}>
-            <option value="">(padrão: {comp.id}.heading)</option>
-            {styleIds.map(id => <option key={id} value={id}>{id}</option>)}
+            <option value="">(usar padrão automático)</option>
+            {styleRules.map(r => <option key={r.id} value={r.id}>{r.displayName || r.id}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Estilo da entrada</label>
+          <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Estilo de cada entrada</label>
           <select className="w-full border border-slate-300 rounded p-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500"
             value={comp.entryStyleId ?? ''}
             onChange={e => onChange({ ...comp, entryStyleId: e.target.value || undefined })}>
-            <option value="">(padrão: {comp.id}.entry)</option>
-            {styleIds.map(id => <option key={id} value={id}>{id}</option>)}
+            <option value="">(usar padrão automático)</option>
+            {styleRules.map(r => <option key={r.id} value={r.id}>{r.displayName || r.id}</option>)}
           </select>
         </div>
       </div>
