@@ -11,6 +11,7 @@ import {
   StyleRule,
   PageState,
   PostProcessingState,
+  FontRole,
   defaultBuilderState,
   defaultBodyContentState,
   defaultStyleRule,
@@ -61,6 +62,9 @@ function validate(state: BuilderState): Partial<Record<BuilderSection, string[]>
       if (!comp.headingText?.trim()) {
         add('components', `Componente "${comp.id}": título não pode estar vazio.`);
       }
+      if (!comp.sourceComponentId?.trim()) {
+        add('components', `Componente "${comp.id}": sourceComponentId obrigatório (selecione o corpo do texto).`);
+      }
     }
     if (comp.ruleType === 'SINGLE_PAGE') {
       for (const slot of comp.slots ?? []) {
@@ -83,6 +87,9 @@ function componentErrors(state: BuilderState): Record<string, string[]> {
     }
     if ((comp.ruleType === 'ELEMENT_INDEX' || comp.ruleType === 'SECTION_INDEX') && !comp.headingText?.trim()) {
       errs.push('Título vazio.');
+    }
+    if ((comp.ruleType === 'ELEMENT_INDEX' || comp.ruleType === 'SECTION_INDEX') && !comp.sourceComponentId?.trim()) {
+      errs.push('sourceComponentId não configurado.');
     }
     if (comp.ruleType === 'SINGLE_PAGE') {
       for (const slot of comp.slots ?? []) {
@@ -466,17 +473,70 @@ export default function CreateProfile() {
         </section>
 
         <section>
-          <h2 className="text-base font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">Fonte base</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <FormField label="Família padrão">
-              <select
-                className="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500"
-                value={page.fontRoles.defaultFamily}
-                onChange={e => updatePage('fontRoles', { ...page.fontRoles, defaultFamily: e.target.value })}
-              >
-                {['Times New Roman', 'Arial', 'Calibri', 'Georgia', 'Verdana'].map(f => <option key={f} value={f}>{f}</option>)}
-              </select>
-            </FormField>
+          <h2 className="text-base font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">Papéis de fonte</h2>
+          <p className="text-xs text-slate-500 mb-3">Cada papel define uma família de fonte padrão e os estilos que a utilizam. O papel <code>baseFont</code> é obrigatório.</p>
+          <div className="space-y-3">
+            {page.fontRoles.roles.map((role, ri) => (
+              <div key={ri} className="border border-slate-200 rounded-lg p-3 space-y-2 bg-white">
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Chave do papel</label>
+                    <input type="text" className="w-full border border-slate-300 rounded p-1.5 text-xs font-mono focus:ring-2 focus:ring-blue-500"
+                      value={role.key}
+                      onChange={e => {
+                        const roles = page.fontRoles.roles.map((r, i) => i === ri ? { ...r, key: e.target.value } : r);
+                        updatePage('fontRoles', { roles });
+                      }} />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Família padrão</label>
+                    <select className="w-full border border-slate-300 rounded p-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500"
+                      value={role.defaultFamily}
+                      onChange={e => {
+                        const roles = page.fontRoles.roles.map((r, i) => i === ri ? { ...r, defaultFamily: e.target.value } : r);
+                        updatePage('fontRoles', { roles });
+                      }}>
+                      {['Times New Roman', 'Arial', 'Calibri', 'Georgia', 'Verdana', 'Courier New'].map(f => <option key={f} value={f}>{f}</option>)}
+                    </select>
+                  </div>
+                  {page.fontRoles.roles.length > 1 && (
+                    <button
+                      className="mt-4 text-red-400 hover:text-red-600 text-lg font-bold px-1"
+                      onClick={() => updatePage('fontRoles', { roles: page.fontRoles.roles.filter((_, i) => i !== ri) })}
+                    >×</button>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Famílias permitidas (separadas por vírgula)</label>
+                  <input type="text" className="w-full border border-slate-300 rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500"
+                    value={role.allowedFamilies.join(', ')}
+                    onChange={e => {
+                      const roles = page.fontRoles.roles.map((r, i) => i === ri
+                        ? { ...r, allowedFamilies: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }
+                        : r);
+                      updatePage('fontRoles', { roles });
+                    }} />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Estilos que usam este papel (IDs separados por vírgula)</label>
+                  <input type="text" className="w-full border border-slate-300 rounded p-1.5 text-xs font-mono focus:ring-2 focus:ring-blue-500"
+                    value={role.styleIds.join(', ')}
+                    onChange={e => {
+                      const roles = page.fontRoles.roles.map((r, i) => i === ri
+                        ? { ...r, styleIds: e.target.value.split(',').map(s => s.trim()).filter(Boolean) }
+                        : r);
+                      updatePage('fontRoles', { roles });
+                    }}
+                    placeholder={state.styleRules.map(r => r.id).join(', ')} />
+                </div>
+              </div>
+            ))}
+            <button
+              className="text-blue-600 text-sm hover:underline"
+              onClick={() => updatePage('fontRoles', {
+                roles: [...page.fontRoles.roles, { key: 'novoRole', defaultFamily: 'Times New Roman', allowedFamilies: [], styleIds: [] }]
+              })}
+            >+ Adicionar papel de fonte</button>
           </div>
         </section>
 
@@ -526,8 +586,8 @@ export default function CreateProfile() {
                 </select>
               </FormField>
               <div className="grid grid-cols-2 gap-2">
-                <NumberInput label="Dist. da borda vertical (cm)" value={pn.verticalDistanceFromEdgeCm} onChange={v => updatePageNumbering('verticalDistanceFromEdgeCm', v)} />
-                <NumberInput label="Dist. da borda horizontal (cm)" value={pn.horizontalDistanceFromEdgeCm} onChange={v => updatePageNumbering('horizontalDistanceFromEdgeCm', v)} />
+                <NumberInput label="Dist. da borda vertical (cm)" value={pn.verticalDistanceFromPageEdgeCm} onChange={v => updatePageNumbering('verticalDistanceFromPageEdgeCm', v)} />
+                <NumberInput label="Dist. da borda horizontal (cm)" value={pn.horizontalDistanceFromPageEdgeCm} onChange={v => updatePageNumbering('horizontalDistanceFromPageEdgeCm', v)} />
               </div>
             </div>
           )}
@@ -624,19 +684,29 @@ export default function CreateProfile() {
             </Switch.Root>
           </div>
           {pp.tableContinuationLabels.enabled && (
-            <div className="grid grid-cols-3 gap-3">
-              {([
-                { key: 'continuesLabel', label: 'Início (continua)' },
-                { key: 'continuationLabel', label: 'Meio (continuação)' },
-                { key: 'conclusionLabel', label: 'Fim (conclusão)' },
-              ] as const).map(({ key, label }) => (
-                <div key={key}>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">{label}</label>
-                  <input type="text" className="w-full border border-slate-300 rounded p-2 text-xs focus:ring-2 focus:ring-blue-500"
-                    value={pp.tableContinuationLabels[key]}
-                    onChange={e => updatePostProcessing('tableContinuationLabels', { ...pp.tableContinuationLabels, [key]: e.target.value })} />
-                </div>
-              ))}
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-3">
+                {([
+                  { key: 'continuesLabel', label: 'Início (continua)' },
+                  { key: 'continuationLabel', label: 'Meio (continuação)' },
+                  { key: 'conclusionLabel', label: 'Fim (conclusão)' },
+                ] as const).map(({ key, label }) => (
+                  <div key={key}>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">{label}</label>
+                    <input type="text" className="w-full border border-slate-300 rounded p-2 text-xs focus:ring-2 focus:ring-blue-500"
+                      value={pp.tableContinuationLabels[key]}
+                      onChange={e => updatePostProcessing('tableContinuationLabels', { ...pp.tableContinuationLabels, [key]: e.target.value })} />
+                  </div>
+                ))}
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">Estilo do rótulo</label>
+                <select className="w-full border border-slate-300 rounded p-2 text-xs bg-white focus:ring-2 focus:ring-blue-500"
+                  value={pp.tableContinuationLabels.labelStyleId}
+                  onChange={e => updatePostProcessing('tableContinuationLabels', { ...pp.tableContinuationLabels, labelStyleId: e.target.value })}>
+                  {state.styleRules.map(r => <option key={r.id} value={r.id}>{r.id}</option>)}
+                </select>
+              </div>
             </div>
           )}
         </div>

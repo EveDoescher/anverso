@@ -1,10 +1,12 @@
 'use client';
 
-import { ComponentState } from '@/lib/profileSerializer';
+import { ComponentState, StyleRule } from '@/lib/profileSerializer';
 
 interface Props {
   comp: ComponentState;
   onChange: (updated: ComponentState) => void;
+  styleRules: StyleRule[];
+  allComponents: ComponentState[];
 }
 
 const LEVEL_SAMPLES = [
@@ -15,8 +17,10 @@ const LEVEL_SAMPLES = [
 
 const DEFAULT_ENTRY_TEMPLATE = '{number}  {title} ......... {page}';
 
-export function SectionIndexForm({ comp, onChange }: Props) {
+export function SectionIndexForm({ comp, onChange, styleRules, allComponents }: Props) {
   const entryTemplate = comp.entryTemplate ?? DEFAULT_ENTRY_TEMPLATE;
+  const styleIds = styleRules.map(r => r.id);
+  const bodyContentComponents = allComponents.filter(c => c.ruleType === 'BODY_CONTENT');
 
   function renderLevelPreview(level: typeof LEVEL_SAMPLES[0]): string {
     return entryTemplate
@@ -32,6 +36,27 @@ export function SectionIndexForm({ comp, onChange }: Props) {
         <input type="text" className="w-full border border-slate-300 rounded p-2 text-xs focus:ring-2 focus:ring-blue-500"
           value={comp.headingText ?? 'SUMÁRIO'}
           onChange={e => onChange({ ...comp, headingText: e.target.value })} />
+      </div>
+
+      <div>
+        <label className="block text-xs font-semibold text-slate-600 mb-1">Componente de origem</label>
+        <select className="w-full border border-slate-300 rounded p-2 text-xs bg-white focus:ring-2 focus:ring-blue-500"
+          value={comp.sourceComponentId ?? ''}
+          onChange={e => onChange({ ...comp, sourceComponentId: e.target.value || undefined })}>
+          <option value="">— Selecione o corpo do texto —</option>
+          {bodyContentComponents.map(c => <option key={c.id} value={c.id}>{c.displayName || c.id}</option>)}
+        </select>
+        <p className="text-[10px] text-slate-400 mt-0.5">O componente BODY_CONTENT de onde as seções serão coletadas</p>
+      </div>
+
+      <div>
+        <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Estilo do título</label>
+        <select className="w-full border border-slate-300 rounded p-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500"
+          value={comp.headingStyleId ?? ''}
+          onChange={e => onChange({ ...comp, headingStyleId: e.target.value || undefined })}>
+          <option value="">(padrão: {comp.id}.heading)</option>
+          {styleIds.map(id => <option key={id} value={id}>{id}</option>)}
+        </select>
       </div>
 
       <div>

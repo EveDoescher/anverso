@@ -1,6 +1,6 @@
 'use client';
 
-import { BodyContentState, defaultBodyContentState } from '@/lib/profileSerializer';
+import { BodyContentState } from '@/lib/profileSerializer';
 import * as Accordion from '@radix-ui/react-accordion';
 
 interface Props {
@@ -60,6 +60,8 @@ const ALIGNMENTS: { value: 'CENTER' | 'LEFT' | 'RIGHT'; label: string }[] = [
   { value: 'RIGHT', label: 'Direita' },
 ];
 
+const HEADING_LEVELS = [1, 2, 3, 4, 5, 6];
+
 export function BodyContentForm({ state, onChange }: Props) {
   const bc = state;
 
@@ -94,6 +96,14 @@ export function BodyContentForm({ state, onChange }: Props) {
     onChange({ ...bc, equation: { ...bc.equation, [k]: v } });
   }
 
+  const inlineHeadingLevels = bc.layout.inlineHeadingLevels ?? [];
+  function toggleInlineLevel(level: number, checked: boolean) {
+    const next = checked
+      ? [...inlineHeadingLevels, level].sort((a, b) => a - b)
+      : inlineHeadingLevels.filter(l => l !== level);
+    setLayout('inlineHeadingLevels', next.length > 0 ? next : undefined);
+  }
+
   return (
     <div className="space-y-2">
       <Accordion.Root type="multiple" className="space-y-2">
@@ -110,9 +120,23 @@ export function BodyContentForm({ state, onChange }: Props) {
               {tf('Sufixo primário', bc.numbering.primarySuffix, v => setNb('primarySuffix', v))}
             </div>
             {ck('Quebra de página antes de seção nível 1', bc.layout.pageBreakBeforePrimarySection, v => setLayout('pageBreakBeforePrimarySection', v))}
+            {ck('Manter título junto ao parágrafo seguinte', bc.layout.keepWithNextOnHeadings, v => setLayout('keepWithNextOnHeadings', v))}
             <div className="grid grid-cols-2 gap-2">
               {nf('Linhas em branco antes do título', bc.layout.blankLinesBeforeSectionTitleWhenPrecededByContent, v => setLayout('blankLinesBeforeSectionTitleWhenPrecededByContent', v))}
               {nf('Linhas em branco após o título', bc.layout.blankLinesAfterSectionTitle, v => setLayout('blankLinesAfterSectionTitle', v))}
+            </div>
+            <div>
+              <label className="block text-[10px] font-semibold text-slate-500 mb-1">Títulos inline (run-in heading) — APA níveis 4 e 5</label>
+              <div className="flex gap-3 flex-wrap">
+                {HEADING_LEVELS.map(level => (
+                  <label key={level} className="flex items-center gap-1.5 cursor-pointer text-xs text-slate-700">
+                    <input type="checkbox" className="w-3.5 h-3.5 text-blue-600 rounded border-slate-300"
+                      checked={inlineHeadingLevels.includes(level)}
+                      onChange={e => toggleInlineLevel(level, e.target.checked)} />
+                    Nível {level}
+                  </label>
+                ))}
+              </div>
             </div>
           </Accordion.Content>
         </Accordion.Item>
@@ -174,6 +198,7 @@ export function BodyContentForm({ state, onChange }: Props) {
               {nf('Largura máx. (cm)', bc.figure.maxWidthCm ?? 16, v => setFig('maxWidthCm', v), 0.5)}
               {nf('Altura máx. (cm)', bc.figure.maxHeightCm ?? 20, v => setFig('maxHeightCm', v), 0.5)}
             </div>
+            <p className="text-[9px] text-slate-400 mt-2">Tokens: <code>{'{number}'}</code> = número, <code>{'{caption}'}</code> = legenda, <code>{'{source}'}</code> = fonte</p>
           </Accordion.Content>
         </Accordion.Item>
 
@@ -192,6 +217,7 @@ export function BodyContentForm({ state, onChange }: Props) {
               {nf('Largura (%)', bc.table.widthPercent, v => setTbl('widthPercent', v))}
             </div>
             {ck('Repetir cabeçalho em quebra de página', bc.table.repeatHeaderOnPageBreak, v => setTbl('repeatHeaderOnPageBreak', v))}
+            <p className="text-[9px] text-slate-400">Tokens: <code>{'{number}'}</code>, <code>{'{caption}'}</code>, <code>{'{source}'}</code></p>
           </Accordion.Content>
         </Accordion.Item>
 

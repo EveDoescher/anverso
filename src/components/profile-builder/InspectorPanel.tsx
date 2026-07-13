@@ -78,6 +78,7 @@ export function InspectorPanel({
             component={component}
             bodyContentIds={bodyContentIds}
             styleRules={styleRules}
+            allComponents={allComponents}
             onUpdate={onUpdateComponent}
             onAddStyleRule={onAddStyleRule}
             onDeleteComponent={() => {/* handled in parent */}}
@@ -88,10 +89,11 @@ export function InspectorPanel({
   );
 }
 
-function ComponentInspector({ component, bodyContentIds, styleRules, onUpdate, onAddStyleRule, onDeleteComponent }: {
+function ComponentInspector({ component, bodyContentIds, styleRules, allComponents, onUpdate, onAddStyleRule, onDeleteComponent }: {
   component: ComponentState;
   bodyContentIds: string[];
   styleRules: StyleRule[];
+  allComponents: ComponentState[];
   onUpdate: (c: ComponentState) => void;
   onAddStyleRule: (r: StyleRule) => void;
   onDeleteComponent: () => void;
@@ -109,7 +111,7 @@ function ComponentInspector({ component, bodyContentIds, styleRules, onUpdate, o
         <FlowTextualForm comp={component} onChange={onUpdate} />
       )}
       {component.ruleType === 'BIBLIOGRAPHY' && (
-        <BibliographyForm comp={component} onChange={onUpdate} />
+        <BibliographyForm comp={component} onChange={onUpdate} styleRules={styleRules} />
       )}
       {component.ruleType === 'BODY_CONTENT' && (
         <div className="space-y-3">
@@ -123,13 +125,13 @@ function ComponentInspector({ component, bodyContentIds, styleRules, onUpdate, o
         </div>
       )}
       {component.ruleType === 'SECTIONED' && (
-        <SectionedForm comp={component} onChange={onUpdate} bodyContentIds={bodyContentIds} />
+        <SectionedForm comp={component} onChange={onUpdate} bodyContentIds={bodyContentIds} styleRules={styleRules} />
       )}
       {component.ruleType === 'ELEMENT_INDEX' && (
-        <ElementIndexForm comp={component} onChange={onUpdate} />
+        <ElementIndexForm comp={component} onChange={onUpdate} styleRules={styleRules} allComponents={allComponents} />
       )}
       {component.ruleType === 'SECTION_INDEX' && (
-        <SectionIndexForm comp={component} onChange={onUpdate} />
+        <SectionIndexForm comp={component} onChange={onUpdate} styleRules={styleRules} allComponents={allComponents} />
       )}
     </div>
   );

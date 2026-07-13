@@ -174,6 +174,35 @@ export function SlotInspector({ component, slot, styleRules, onUpdateSlot, onAdd
         </div>
       )}
 
+      {/* SIGNATURE_BLOCK_LIST — knownFieldNames */}
+      {slot.type === 'SIGNATURE_BLOCK_LIST' && (
+        <div className="space-y-2 p-3 bg-violet-50 border border-violet-200 rounded-lg">
+          <p className="text-xs font-bold text-violet-800">Campos reconhecidos pelo Formatter</p>
+          <p className="text-[10px] text-slate-500">Um por linha. Ex: name, title, institutionName, role</p>
+          <textarea
+            className="w-full border border-violet-200 rounded-lg p-2 text-xs"
+            rows={3}
+            value={(slot.knownFieldNames ?? []).join('\n')}
+            onChange={e => set('knownFieldNames', e.target.value.split('\n').map(s => s.trim()).filter(Boolean))}
+          />
+        </div>
+      )}
+
+      {/* groupId — só para SINGLE_PAGE */}
+      {component.ruleType === 'SINGLE_PAGE' && (
+        <div className="pt-3 border-t border-slate-100">
+          <label className="block text-sm font-semibold text-slate-700 mb-1">Grupo de layout</label>
+          <input
+            type="text"
+            className="w-full border border-slate-300 rounded-lg p-2.5 text-sm font-mono focus:ring-2 focus:ring-indigo-500"
+            value={slot.groupId ?? ''}
+            onChange={e => set('groupId', e.target.value || undefined)}
+            placeholder="ex: cover.titleBlock"
+          />
+          <p className="text-xs text-slate-400 mt-0.5">Campos com o mesmo ID ficam no mesmo grupo de layout (sem gap entre eles)</p>
+        </div>
+      )}
+
       {/* Posicionamento (apenas SINGLE_PAGE) */}
       {component.ruleType === 'SINGLE_PAGE' && (
         <div className="space-y-3 pt-3 border-t border-slate-100">

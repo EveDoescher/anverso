@@ -1,18 +1,21 @@
 'use client';
 
-import { ComponentState } from '@/lib/profileSerializer';
+import { ComponentState, StyleRule } from '@/lib/profileSerializer';
 
 interface Props {
   comp: ComponentState;
   onChange: (updated: ComponentState) => void;
   bodyContentIds: string[];
+  styleRules: StyleRule[];
 }
 
-export function SectionedForm({ comp, onChange, bodyContentIds }: Props) {
+export function SectionedForm({ comp, onChange, bodyContentIds, styleRules }: Props) {
   const preview = (comp.headingTemplate ?? '{letter} — {title}')
     .replace('{letter}', 'A')
     .replace('{number}', '1')
     .replace('{title}', 'Meu Apêndice');
+
+  const styleIds = styleRules.map(r => r.id);
 
   return (
     <div className="space-y-4">
@@ -42,6 +45,16 @@ export function SectionedForm({ comp, onChange, bodyContentIds }: Props) {
           onChange={e => onChange({ ...comp, indexingStyle: e.target.value as 'ALPHABETIC' | 'NUMERIC' })}>
           <option value="ALPHABETIC">Alfabético (A, B, C...)</option>
           <option value="NUMERIC">Numérico (1, 2, 3...)</option>
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-xs font-semibold text-slate-600 mb-1">Estilo de parágrafo</label>
+        <select className="w-full border border-slate-300 rounded p-2 text-xs bg-white focus:ring-2 focus:ring-blue-500"
+          value={comp.paragraphStyleId ?? ''}
+          onChange={e => onChange({ ...comp, paragraphStyleId: e.target.value || undefined })}>
+          <option value="">— Selecione —</option>
+          {styleIds.map(id => <option key={id} value={id}>{id}</option>)}
         </select>
       </div>
 

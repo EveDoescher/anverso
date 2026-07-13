@@ -375,7 +375,7 @@ function BibEntryEditor({ parts, onChange }: { parts: BibEntryPart[]; onChange: 
     onChange(parts.map((p, i) => i === idx ? { ...p, [key]: value } : p));
   }
   function add() {
-    onChange([...parts, { source: 'title', bold: false, prefix: '', suffix: '. ', optional: false }]);
+    onChange([...parts, { source: 'title', bold: false, italic: false, prefix: '', suffix: '. ', optional: false }]);
   }
   function remove(idx: number) {
     onChange(parts.filter((_, i) => i !== idx));

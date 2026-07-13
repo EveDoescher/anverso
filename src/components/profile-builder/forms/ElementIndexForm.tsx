@@ -1,10 +1,12 @@
 'use client';
 
-import { ComponentState } from '@/lib/profileSerializer';
+import { ComponentState, StyleRule } from '@/lib/profileSerializer';
 
 interface Props {
   comp: ComponentState;
   onChange: (updated: ComponentState) => void;
+  styleRules: StyleRule[];
+  allComponents: ComponentState[];
 }
 
 const ELEMENT_TYPES: { value: NonNullable<ComponentState['elementType']>; label: string }[] = [
@@ -15,12 +17,15 @@ const ELEMENT_TYPES: { value: NonNullable<ComponentState['elementType']>; label:
   { value: 'CODE_LISTING', label: 'Listagens de Código' },
 ];
 
-export function ElementIndexForm({ comp, onChange }: Props) {
+export function ElementIndexForm({ comp, onChange, styleRules, allComponents }: Props) {
   const template = comp.entryTemplate ?? '{number} — {caption}';
   const entryPreview = template
     .replace('{number}', '1')
     .replace('{caption}', 'Mapa das regiões do Brasil')
     .replace('{page}', '42');
+
+  const styleIds = styleRules.map(r => r.id);
+  const bodyContentComponents = allComponents.filter(c => c.ruleType === 'BODY_CONTENT');
 
   return (
     <div className="space-y-4">
@@ -34,10 +39,42 @@ export function ElementIndexForm({ comp, onChange }: Props) {
       </div>
 
       <div>
+        <label className="block text-xs font-semibold text-slate-600 mb-1">Componente de origem</label>
+        <select className="w-full border border-slate-300 rounded p-2 text-xs bg-white focus:ring-2 focus:ring-blue-500"
+          value={comp.sourceComponentId ?? ''}
+          onChange={e => onChange({ ...comp, sourceComponentId: e.target.value || undefined })}>
+          <option value="">— Selecione o corpo do texto —</option>
+          {bodyContentComponents.map(c => <option key={c.id} value={c.id}>{c.displayName || c.id}</option>)}
+        </select>
+        <p className="text-[10px] text-slate-400 mt-0.5">O componente BODY_CONTENT de onde os elementos serão coletados</p>
+      </div>
+
+      <div>
         <label className="block text-xs font-semibold text-slate-600 mb-1">Título da página</label>
         <input type="text" className="w-full border border-slate-300 rounded p-2 text-xs focus:ring-2 focus:ring-blue-500"
           value={comp.headingText ?? 'LISTA'}
           onChange={e => onChange({ ...comp, headingText: e.target.value })} />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Estilo do título</label>
+          <select className="w-full border border-slate-300 rounded p-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500"
+            value={comp.headingStyleId ?? ''}
+            onChange={e => onChange({ ...comp, headingStyleId: e.target.value || undefined })}>
+            <option value="">(padrão: {comp.id}.heading)</option>
+            {styleIds.map(id => <option key={id} value={id}>{id}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Estilo da entrada</label>
+          <select className="w-full border border-slate-300 rounded p-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500"
+            value={comp.entryStyleId ?? ''}
+            onChange={e => onChange({ ...comp, entryStyleId: e.target.value || undefined })}>
+            <option value="">(padrão: {comp.id}.entry)</option>
+            {styleIds.map(id => <option key={id} value={id}>{id}</option>)}
+          </select>
+        </div>
       </div>
 
       <div>

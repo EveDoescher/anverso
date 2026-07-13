@@ -41,6 +41,7 @@ export interface SlotState {
   signatureLineEnabled?: boolean;
   signatureLineText?: string;
   lineTemplates?: string[];
+  knownFieldNames?: string[];
   // StyleRule inline
   styleId?: string;
   styleRule?: StyleRule;
@@ -50,8 +51,10 @@ export interface SlotState {
   customRightMarginCm?: number;
   blankLinesAfter?: number;
   maxVisualLinesPerValue?: number;
-  // gapWeight para SINGLE_PAGE (proporcional ao espaço vertical)
+  // gapWeight: peso do gap ANTES deste grupo (só relevante no primeiro slot do grupo)
   gapWeight?: number;
+  // groupId: slots com mesmo groupId ficam no mesmo grupo de layout
+  groupId?: string;
 }
 
 export type ComponentRuleType =
@@ -105,6 +108,7 @@ export interface FlowItem {
 export interface BibEntryPart {
   source: string;
   bold: boolean;
+  italic: boolean;
   prefix: string;
   suffix: string;
   optional: boolean;
@@ -132,6 +136,8 @@ export interface BodyContentState {
     blankLinesBeforeSectionTitleWhenPrecededByContent: number;
     blankLinesAfterSectionTitle: number;
     pageBreakBeforePrimarySection: boolean;
+    keepWithNextOnHeadings: boolean;
+    inlineHeadingLevels?: number[];
   };
   citationFormatting: {
     pagePrefix: string;
@@ -225,6 +231,14 @@ export interface FootnoteState {
   separatorWidthPct: number;
 }
 
+// --- Font role ---
+export interface FontRole {
+  key: string;
+  defaultFamily: string;
+  allowedFamilies: string[];
+  styleIds: string[];
+}
+
 // --- Component state ---
 export interface ComponentState {
   id: string;
@@ -256,8 +270,18 @@ export interface ComponentState {
     multiAuthorJoiner: string;
     etAlLabel: string;
     etAlThreshold: number;
+    lastAuthorJoiner?: string;
+    nameOrder?: 'SURNAME_FIRST' | 'GIVEN_FIRST';
+    initialsOnly?: boolean;
+    initialsDotted?: boolean;
+    initialsSpaced?: boolean;
   };
   entryFormats?: Partial<Record<BibRefType, BibEntryPart[]>>;
+  noteFormats?: Partial<Record<BibRefType, BibEntryPart[]>>;
+  shortNoteFormats?: Partial<Record<BibRefType, BibEntryPart[]>>;
+  ibidEnabled?: boolean;
+  headingStyleId?: string;
+  entryStyleId?: string;
 
   // BODY_CONTENT (configurado na seção Corpo do Texto)
   bodyContent?: BodyContentState;
@@ -267,11 +291,13 @@ export interface ComponentState {
   indexingStyle?: 'ALPHABETIC' | 'NUMERIC';
   bodyContentComponentId?: string;
   sectionTitleStyleIdsByLevel?: string[];
+  paragraphStyleId?: string;
 
   // ELEMENT_INDEX
   elementType?: 'FIGURE' | 'TABLE' | 'FRAME' | 'CHART' | 'CODE_LISTING';
   entryTemplate?: string;
   pageReferenceEnabled?: boolean;
+  sourceComponentId?: string;
 
   // SECTION_INDEX
   useTocField?: boolean;
@@ -280,7 +306,7 @@ export interface ComponentState {
 
 // --- Page state ---
 export interface PageState {
-  paperFormat: 'A4' | 'A3' | 'A5' | 'Letter' | 'Legal' | 'Tabloid' | 'Custom';
+  paperFormat: 'A4' | 'A3' | 'A5' | 'Letter' | 'Legal' | 'Tabloid' | 'Custom'; // UI only, not serialized
   widthCm: number;
   heightCm: number;
   orientation: 'PORTRAIT' | 'LANDSCAPE';
@@ -289,16 +315,15 @@ export interface PageState {
   marginLeftCm: number;
   marginRightCm: number;
   fontRoles: {
-    defaultFamily: string;
-    allowedFamilies: string[];
+    roles: FontRole[];
   };
   pageNumbering: {
     enabled: boolean;
     placement: 'HEADER_RIGHT' | 'HEADER_CENTER' | 'FOOTER_RIGHT' | 'FOOTER_CENTER';
     countFromComponentId: string;
     visibleFromComponentId: string;
-    verticalDistanceFromEdgeCm: number;
-    horizontalDistanceFromEdgeCm: number;
+    verticalDistanceFromPageEdgeCm: number;
+    horizontalDistanceFromPageEdgeCm: number;
   };
 }
 
@@ -309,6 +334,7 @@ export interface PostProcessingState {
     continuesLabel: string;
     continuationLabel: string;
     conclusionLabel: string;
+    labelStyleId: string;
   };
   integrityCheck: {
     enabled: boolean;
@@ -373,16 +399,20 @@ export function defaultBuilderState(): BuilderState {
       marginLeftCm: 3,
       marginRightCm: 2,
       fontRoles: {
-        defaultFamily: 'Times New Roman',
-        allowedFamilies: ['Times New Roman', 'Arial', 'Calibri'],
+        roles: [{
+          key: 'baseFont',
+          defaultFamily: 'Times New Roman',
+          allowedFamilies: ['Times New Roman', 'Arial', 'Calibri'],
+          styleIds: [],
+        }],
       },
       pageNumbering: {
         enabled: true,
         placement: 'HEADER_RIGHT',
         countFromComponentId: '',
         visibleFromComponentId: '',
-        verticalDistanceFromEdgeCm: 2,
-        horizontalDistanceFromEdgeCm: 2,
+        verticalDistanceFromPageEdgeCm: 2,
+        horizontalDistanceFromPageEdgeCm: 2,
       },
     },
     components: [],
@@ -397,6 +427,7 @@ export function defaultBuilderState(): BuilderState {
         continuesLabel: 'continua',
         continuationLabel: 'continuação',
         conclusionLabel: 'conclusão',
+        labelStyleId: 'bodyContent.table.header',
       },
       integrityCheck: {
         enabled: true,
@@ -416,6 +447,7 @@ export function defaultBodyContentState(): BodyContentState {
       blankLinesBeforeSectionTitleWhenPrecededByContent: 1,
       blankLinesAfterSectionTitle: 1,
       pageBreakBeforePrimarySection: true,
+      keepWithNextOnHeadings: false,
     },
     citationFormatting: {
       pagePrefix: 'p.',
@@ -442,7 +474,7 @@ export function defaultBodyContentState(): BodyContentState {
       equationLabel: 'Equação',
     },
     figure: {
-      captionTemplate: 'Figura {num} – {title}',
+      captionTemplate: 'Figura {number} – {caption}',
       sourceTemplate: 'Fonte: {source}',
       alignment: 'CENTER',
       fontSizePt: 10,
@@ -452,7 +484,7 @@ export function defaultBodyContentState(): BodyContentState {
       maxHeightCm: 20,
     },
     table: {
-      captionTemplate: 'Tabela {num} – {title}',
+      captionTemplate: 'Tabela {number} – {caption}',
       sourceTemplate: 'Fonte: {source}',
       alignment: 'CENTER',
       fontSizePt: 10,
@@ -463,7 +495,7 @@ export function defaultBodyContentState(): BodyContentState {
       repeatHeaderOnPageBreak: true,
     },
     frame: {
-      captionTemplate: 'Quadro {num} – {title}',
+      captionTemplate: 'Quadro {number} – {caption}',
       sourceTemplate: 'Fonte: {source}',
       alignment: 'CENTER',
       fontSizePt: 10,
@@ -474,7 +506,7 @@ export function defaultBodyContentState(): BodyContentState {
       repeatHeaderOnPageBreak: false,
     },
     chart: {
-      captionTemplate: 'Gráfico {num} – {title}',
+      captionTemplate: 'Gráfico {number} – {caption}',
       sourceTemplate: 'Fonte: {source}',
       alignment: 'CENTER',
       fontSizePt: 10,
@@ -484,7 +516,7 @@ export function defaultBodyContentState(): BodyContentState {
       maxHeightCm: 20,
     },
     codeListing: {
-      captionTemplate: 'Listagem {num} – {title}',
+      captionTemplate: 'Listagem {number} – {caption}',
       sourceTemplate: 'Fonte: {source}',
       fontFamily: 'Courier New',
       fontSizePt: 10,
@@ -500,8 +532,8 @@ export function defaultBodyContentState(): BodyContentState {
       label: 'Equação',
     },
     directCitation: {
-      openQuote: '“',
-      closeQuote: '”',
+      openQuote: '"',
+      closeQuote: '"',
     },
     longDirectCitation: {
       leftIndentCm: 4,
@@ -530,17 +562,57 @@ export function defaultBodyContentState(): BodyContentState {
 }
 
 // ──────────────────────────────────────────
+// Helpers
+// ──────────────────────────────────────────
+
+function inferPaperFormat(widthCm: number, heightCm: number): PageState['paperFormat'] {
+  const presets: Array<[PageState['paperFormat'], number, number]> = [
+    ['A4', 21, 29.7],
+    ['A3', 29.7, 42],
+    ['A5', 14.8, 21],
+    ['Letter', 21.59, 27.94],
+    ['Legal', 21.59, 35.56],
+    ['Tabloid', 27.94, 43.18],
+  ];
+  for (const [fmt, w, h] of presets) {
+    if (Math.abs(widthCm - w) < 0.1 && Math.abs(heightCm - h) < 0.1) return fmt;
+  }
+  return 'Custom';
+}
+
+// ──────────────────────────────────────────
 // Serializer: BuilderState → contrato JSON
 // ──────────────────────────────────────────
 
-function serializeSinglePage(comp: ComponentState, styleRules: StyleRule[]): Record<string, unknown> {
+function serializeSinglePage(comp: ComponentState, _styleRules: StyleRule[]): Record<string, unknown> {
   const slots: Record<string, unknown> = {};
   const styleMapping: Record<string, string> = {};
   const groups: unknown[] = [];
   const gapRules: unknown[] = [];
 
   const compSlots = comp.slots ?? [];
-  compSlots.forEach((slot, idx) => {
+
+  // Group slots by groupId; slots without groupId each get their own group
+  type GroupBucket = { id: string; slots: SlotState[] };
+  const groupBuckets: GroupBucket[] = [];
+  for (const slot of compSlots) {
+    if (slot.groupId) {
+      const existing = groupBuckets.find(g => g.id === slot.groupId);
+      if (existing) {
+        existing.slots.push(slot);
+        continue;
+      }
+      groupBuckets.push({ id: slot.groupId, slots: [slot] });
+    } else {
+      groupBuckets.push({ id: `${comp.id}.${slot.id}Block`, slots: [slot] });
+    }
+  }
+
+  // Build slots map and styleMapping
+  compSlots.forEach(slot => {
+    const sId = slot.styleId ?? `${comp.id}.${slot.id}`;
+    styleMapping[slot.id] = sId;
+
     slots[slot.id] = {
       type: slot.type,
       required: slot.required,
@@ -552,17 +624,20 @@ function serializeSinglePage(comp: ComponentState, styleRules: StyleRule[]): Rec
         signatureLineEnabled: slot.signatureLineEnabled ?? true,
         signatureLineText: slot.signatureLineText ?? '________________________________________',
         lineTemplates: slot.lineTemplates ?? ['{title} {name}', '{institutionName}', '{role}'],
+        knownFieldNames: slot.knownFieldNames ?? [],
       }),
     };
+  });
 
-    const sId = slot.styleId ?? `${comp.id}.${slot.id}`;
-    styleMapping[slot.id] = sId;
+  // Build groups and gapRules
+  for (let gi = 0; gi < groupBuckets.length; gi++) {
+    const bucket = groupBuckets[gi];
+    const firstSlot = bucket.slots[0];
 
-    const groupId = `${comp.id}.${slot.id}Block`;
     groups.push({
-      id: groupId,
-      required: slot.required,
-      items: [{
+      id: bucket.id,
+      required: bucket.slots.some(s => s.required),
+      items: bucket.slots.map(slot => ({
         id: slot.id,
         required: slot.required,
         horizontalPlacement: slot.horizontalPlacement === 'CUSTOM'
@@ -570,20 +645,21 @@ function serializeSinglePage(comp: ComponentState, styleRules: StyleRule[]): Rec
           : { strategy: slot.horizontalPlacement ?? 'FULL_CONTENT_WIDTH' },
         blankLinesAfter: slot.blankLinesAfter ?? 0,
         ...(slot.maxVisualLinesPerValue !== undefined && { maxVisualLinesPerValue: slot.maxVisualLinesPerValue }),
-      }],
+      })),
     });
 
-    if (idx > 0) {
-      const prevSlot = compSlots[idx - 1];
+    if (gi > 0) {
+      const prevBucket = groupBuckets[gi - 1];
       gapRules.push({
-        fromGroupId: `${comp.id}.${prevSlot.id}Block`,
-        toGroupId: groupId,
-        weight: prevSlot.gapWeight ?? 10,
+        fromGroupId: prevBucket.id,
+        toGroupId: bucket.id,
+        weight: firstSlot.gapWeight ?? 10,
       });
     }
-  });
+  }
 
   return {
+    ruleType: 'SINGLE_PAGE',
     componentId: comp.id,
     slots,
     styleMapping,
@@ -602,7 +678,39 @@ function serializeSinglePage(comp: ComponentState, styleRules: StyleRule[]): Rec
 
 function serializeBodyContent(comp: ComponentState): Record<string, unknown> {
   const bc = comp.bodyContent ?? defaultBodyContentState();
+  const layout = {
+    ...bc.layout,
+    blankLineStyleId: bc.paragraphStyleId,
+  } as Record<string, unknown>;
+  // Remove internal UI field that shouldn't go to contract
+  delete layout.keepWithNextOnHeadings;
+  delete layout.inlineHeadingLevels;
+  // Add contract fields
+  layout.keepWithNextOnHeadings = bc.layout.keepWithNextOnHeadings;
+  if (bc.layout.inlineHeadingLevels && bc.layout.inlineHeadingLevels.length > 0) {
+    layout.inlineHeadingLevels = bc.layout.inlineHeadingLevels;
+  }
+
+  const imageRuleBase = {
+    captionStyleId: 'bodyContent.figure.caption',
+    sourceStyleId: 'bodyContent.figure.source',
+    captionTemplate: bc.chart.captionTemplate,
+    sourceTemplate: bc.chart.sourceTemplate,
+    continuationLabels: { first: 'continua', middle: 'continuação', last: 'conclusão' },
+    sourcePlacement: 'LAST_PART_ONLY',
+    imageAlignment: bc.chart.alignment,
+    maxWidthCm: bc.chart.maxWidthCm ?? 16,
+    maxHeightCm: bc.chart.maxHeightCm ?? 18,
+    defaultDpi: 96,
+    maxImageBytes: 2000000,
+    urlFetchTimeoutSeconds: 10,
+    fitPolicy: 'SCALE_DOWN_PRESERVE_ASPECT_RATIO',
+    numberingStrategy: bc.chart.numberingStrategy,
+    label: bc.chart.label,
+  };
+
   return {
+    ruleType: 'BODY_CONTENT',
     componentId: comp.id,
     styleMapping: {
       sectionTitleStyleIdsByLevel: bc.sectionTitleStyleIdsByLevel,
@@ -618,7 +726,7 @@ function serializeBodyContent(comp: ComponentState): Record<string, unknown> {
       footnoteTextStyleId: 'bodyContent.footnoteText',
     },
     numbering: bc.numbering,
-    layout: { ...bc.layout, blankLineStyleId: bc.paragraphStyleId },
+    layout,
     citationFormatting: bc.citationFormatting,
     crossReferenceLabels: bc.crossReferenceLabels,
     figure: {
@@ -626,11 +734,7 @@ function serializeBodyContent(comp: ComponentState): Record<string, unknown> {
       sourceStyleId: 'bodyContent.figure.source',
       captionTemplate: bc.figure.captionTemplate,
       sourceTemplate: bc.figure.sourceTemplate,
-      continuationLabels: {
-        first: bc.table.captionTemplate.includes('continua') ? 'continua' : 'continua',
-        middle: 'continuação',
-        last: 'conclusão',
-      },
+      continuationLabels: { first: 'continua', middle: 'continuação', last: 'conclusão' },
       sourcePlacement: 'LAST_PART_ONLY',
       imageAlignment: bc.figure.alignment,
       maxWidthCm: bc.figure.maxWidthCm ?? 16,
@@ -693,11 +797,9 @@ function serializeBodyContent(comp: ComponentState): Record<string, unknown> {
       sourceTemplate: bc.chart.sourceTemplate,
       continuationLabels: { first: 'continua', middle: 'continuação', last: 'conclusão' },
       sourcePlacement: 'LAST_PART_ONLY',
-      imageAlignment: bc.chart.alignment,
-      maxWidthCm: bc.chart.maxWidthCm ?? 16,
-      maxHeightCm: bc.chart.maxHeightCm ?? 20,
       numberingStrategy: bc.chart.numberingStrategy,
       label: bc.chart.label,
+      imageRule: imageRuleBase,
     },
     equation: {
       captionStyleId: 'bodyContent.equation.caption',
@@ -722,7 +824,6 @@ export function serializeState(state: BuilderState, existingId?: string): Record
     switch (comp.ruleType) {
       case 'SINGLE_PAGE': {
         componentRules[comp.id] = serializeSinglePage(comp, state.styleRules);
-        // Auto-generate style rules for slots that have inline styleRule
         for (const slot of comp.slots ?? []) {
           if (slot.styleRule) {
             extraStyleRules.push(slot.styleRule);
@@ -734,9 +835,10 @@ export function serializeState(state: BuilderState, existingId?: string): Record
       }
       case 'FLOW_TEXTUAL': {
         componentRules[comp.id] = {
+          ruleType: 'FLOW_TEXTUAL',
           componentId: comp.id,
           items: (comp.flowItems ?? []).map(item => {
-            const base: Record<string, unknown> = { type: item.type };
+            const base: Record<string, unknown> = { itemType: item.type };
             if (item.styleId) base.styleId = item.styleId;
             if (item.type === 'HEADING') base.text = item.text ?? '';
             if (item.type === 'BLANK_LINES') base.count = item.count ?? 1;
@@ -769,25 +871,36 @@ export function serializeState(state: BuilderState, existingId?: string): Record
         break;
       }
       case 'BIBLIOGRAPHY': {
+        const af = comp.authorFormat;
+        const authorFormat: Record<string, unknown> = {
+          surnameUppercase: af?.surnameUppercase ?? true,
+          surnameGivenSeparator: af?.surnameGivenSeparator ?? ', ',
+          nameTerminator: af?.nameTerminator ?? '.',
+          multiAuthorJoiner: af?.multiAuthorJoiner ?? '; ',
+          etAlLabel: af?.etAlLabel ?? 'et al.',
+          etAlThreshold: af?.etAlThreshold ?? 3,
+        };
+        if (af?.lastAuthorJoiner !== undefined) authorFormat.lastAuthorJoiner = af.lastAuthorJoiner;
+        if (af?.nameOrder !== undefined) authorFormat.nameOrder = af.nameOrder;
+        if (af?.initialsOnly !== undefined) authorFormat.initialsOnly = af.initialsOnly;
+        if (af?.initialsDotted !== undefined) authorFormat.initialsDotted = af.initialsDotted;
+        if (af?.initialsSpaced !== undefined) authorFormat.initialsSpaced = af.initialsSpaced;
+
+        const formattingRule: Record<string, unknown> = { authorFormat, entryFormats: comp.entryFormats ?? {} };
+        if (comp.noteFormats) formattingRule.noteFormats = comp.noteFormats;
+        if (comp.shortNoteFormats) formattingRule.shortNoteFormats = comp.shortNoteFormats;
+        if (comp.ibidEnabled !== undefined) formattingRule.ibidEnabled = comp.ibidEnabled;
+
         componentRules[comp.id] = {
+          ruleType: 'BIBLIOGRAPHY',
           componentId: comp.id,
-          headingStyleId: `${comp.id}.heading`,
-          entryStyleId: `${comp.id}.entry`,
+          headingStyleId: comp.headingStyleId ?? `${comp.id}.heading`,
+          entryStyleId: comp.entryStyleId ?? `${comp.id}.entry`,
           headingText: comp.headingText ?? 'REFERÊNCIAS',
           blankLinesAfterHeading: comp.blankLinesAfterHeading ?? 2,
           blankLinesBetweenEntries: comp.blankLinesBetweenEntries ?? 1,
           sortOrder: comp.sortOrder ?? 'ALPHABETICAL',
-          formattingRule: {
-            authorFormat: {
-              surnameUppercase: comp.authorFormat?.surnameUppercase ?? true,
-              surnameGivenSeparator: comp.authorFormat?.surnameGivenSeparator ?? ', ',
-              nameTerminator: comp.authorFormat?.nameTerminator ?? '.',
-              multiAuthorJoiner: comp.authorFormat?.multiAuthorJoiner ?? '; ',
-              etAlLabel: comp.authorFormat?.etAlLabel ?? 'et al.',
-              etAlThreshold: comp.authorFormat?.etAlThreshold ?? 3,
-            },
-            entryFormats: comp.entryFormats ?? {},
-          },
+          formattingRule,
         };
         break;
       }
@@ -797,36 +910,42 @@ export function serializeState(state: BuilderState, existingId?: string): Record
       }
       case 'SECTIONED': {
         componentRules[comp.id] = {
+          ruleType: 'SECTIONED',
           componentId: comp.id,
           headingTemplate: comp.headingTemplate ?? '{letter} — {title}',
           indexingStyle: comp.indexingStyle ?? 'ALPHABETIC',
-          headingStyleId: `${comp.id}.heading`,
+          headingStyleId: comp.headingStyleId ?? `${comp.id}.heading`,
           bodyContentComponentId: comp.bodyContentComponentId ?? '',
           sectionTitleStyleIdsByLevel: comp.sectionTitleStyleIdsByLevel ?? ['bodyContent.heading1', 'bodyContent.heading2'],
+          paragraphStyleId: comp.paragraphStyleId ?? '',
         };
         break;
       }
       case 'ELEMENT_INDEX': {
         componentRules[comp.id] = {
+          ruleType: 'ELEMENT_INDEX',
           componentId: comp.id,
           elementType: comp.elementType ?? 'FIGURE',
-          headingStyleId: `${comp.id}.heading`,
-          entryStyleId: `${comp.id}.entry`,
+          headingStyleId: comp.headingStyleId ?? `${comp.id}.heading`,
+          entryStyleId: comp.entryStyleId ?? `${comp.id}.entry`,
           headingText: comp.headingText ?? 'LISTA',
           entryTemplate: comp.entryTemplate ?? '{number} — {caption}',
           blankLinesAfterHeading: comp.blankLinesAfterHeading ?? 1,
           pageReferenceEnabled: comp.pageReferenceEnabled ?? true,
+          sourceComponentId: comp.sourceComponentId ?? '',
         };
         break;
       }
       case 'SECTION_INDEX': {
         componentRules[comp.id] = {
+          ruleType: 'SECTION_INDEX',
           componentId: comp.id,
-          headingStyleId: `${comp.id}.heading`,
+          headingStyleId: comp.headingStyleId ?? `${comp.id}.heading`,
           headingText: comp.headingText ?? 'SUMÁRIO',
           useTocField: comp.useTocField ?? true,
           blankLinesAfterHeading: comp.blankLinesAfterHeading ?? 1,
           entryStyleIdsByLevel: comp.entryStyleIdsByLevel ?? Array(6).fill(`${comp.id}.entry`),
+          sourceComponentId: comp.sourceComponentId ?? '',
         };
         break;
       }
@@ -838,31 +957,33 @@ export function serializeState(state: BuilderState, existingId?: string): Record
     ...extraStyleRules.filter(r => !state.styleRules.find(s => s.id === r.id)),
   ];
 
-  const pageLayout = state.page;
-  const pn = pageLayout.pageNumbering;
+  const page = state.page;
+  const pn = page.pageNumbering;
+
+  // Serialize fontRoles as map of roles (contract format)
+  const fontRolesOut: Record<string, unknown> = {};
+  for (const role of page.fontRoles.roles) {
+    fontRolesOut[role.key] = {
+      default: role.defaultFamily,
+      allowedValues: role.allowedFamilies,
+      styleIds: role.styleIds,
+    };
+  }
 
   return {
     id: generatedId,
     displayName: state.name,
     componentOrder,
-    pageLayout: {
-      paperSize: {
-        format: pageLayout.paperFormat === 'Custom' ? 'CUSTOM' : pageLayout.paperFormat.toUpperCase(),
-        widthCm: pageLayout.widthCm,
-        heightCm: pageLayout.heightCm,
-      },
-      orientation: pageLayout.orientation,
-      margins: {
-        topCm: pageLayout.marginTopCm,
-        bottomCm: pageLayout.marginBottomCm,
-        leftCm: pageLayout.marginLeftCm,
-        rightCm: pageLayout.marginRightCm,
-      },
+    pageRule: {
+      widthCm: page.widthCm,
+      heightCm: page.heightCm,
+      marginTopCm: page.marginTopCm,
+      marginRightCm: page.marginRightCm,
+      marginBottomCm: page.marginBottomCm,
+      marginLeftCm: page.marginLeftCm,
+      orientation: page.orientation,
     },
-    fontRoles: {
-      defaultFamily: pageLayout.fontRoles.defaultFamily,
-      allowedFamilies: pageLayout.fontRoles.allowedFamilies,
-    },
+    fontRoles: fontRolesOut,
     ...(pn.enabled && pn.countFromComponentId && pn.visibleFromComponentId && {
       pageNumbering: {
         enabled: true,
@@ -870,14 +991,17 @@ export function serializeState(state: BuilderState, existingId?: string): Record
         visibleFromComponentId: pn.visibleFromComponentId,
         styleId: 'pageNumber',
         placement: pn.placement,
-        verticalDistanceFromEdgeCm: pn.verticalDistanceFromEdgeCm,
-        horizontalDistanceFromEdgeCm: pn.horizontalDistanceFromEdgeCm,
+        verticalDistanceFromPageEdgeCm: pn.verticalDistanceFromPageEdgeCm,
+        horizontalDistanceFromPageEdgeCm: pn.horizontalDistanceFromPageEdgeCm,
       },
     }),
     postProcessing: {
       tableContinuationLabels: {
-        ...state.postProcessing.tableContinuationLabels,
-        labelStyleId: 'bodyContent.paragraph',
+        enabled: state.postProcessing.tableContinuationLabels.enabled,
+        continuesLabel: state.postProcessing.tableContinuationLabels.continuesLabel,
+        continuationLabel: state.postProcessing.tableContinuationLabels.continuationLabel,
+        conclusionLabel: state.postProcessing.tableContinuationLabels.conclusionLabel,
+        labelStyleId: state.postProcessing.tableContinuationLabels.labelStyleId,
       },
       orphanTitleCorrection: { enabled: state.postProcessing.orphanTitleEnabled },
       integrityCheck: state.postProcessing.integrityCheck,
@@ -893,6 +1017,9 @@ export function serializeState(state: BuilderState, existingId?: string): Record
 // ──────────────────────────────────────────
 
 function detectRuleType(compId: string, rule: Record<string, unknown>): ComponentRuleType {
+  // Prefer explicit ruleType discriminator
+  if (typeof rule.ruleType === 'string') return rule.ruleType as ComponentRuleType;
+  // Fallback heuristics
   if (rule.slots) return 'SINGLE_PAGE';
   if (rule.items && Array.isArray(rule.items)) return 'FLOW_TEXTUAL';
   if (rule.formattingRule) return 'BIBLIOGRAPHY';
@@ -911,9 +1038,20 @@ export function deserializeContract(raw: Record<string, unknown>): BuilderState 
   state.description = '';
   state.isPublic = true;
 
-  // Page layout
+  // Page: try pageRule (contract format) first, fallback to legacy pageLayout
+  const pr = raw.pageRule as Record<string, unknown> | undefined;
   const pl = raw.pageLayout as Record<string, unknown> | undefined;
-  if (pl) {
+
+  if (pr) {
+    if (typeof pr.widthCm === 'number') state.page.widthCm = pr.widthCm;
+    if (typeof pr.heightCm === 'number') state.page.heightCm = pr.heightCm;
+    if (typeof pr.orientation === 'string') state.page.orientation = pr.orientation as 'PORTRAIT' | 'LANDSCAPE';
+    if (typeof pr.marginTopCm === 'number') state.page.marginTopCm = pr.marginTopCm;
+    if (typeof pr.marginBottomCm === 'number') state.page.marginBottomCm = pr.marginBottomCm;
+    if (typeof pr.marginLeftCm === 'number') state.page.marginLeftCm = pr.marginLeftCm;
+    if (typeof pr.marginRightCm === 'number') state.page.marginRightCm = pr.marginRightCm;
+    state.page.paperFormat = inferPaperFormat(state.page.widthCm, state.page.heightCm);
+  } else if (pl) {
     const ps = pl.paperSize as Record<string, unknown> | undefined;
     if (ps) {
       const fmt = (ps.format as string) ?? 'A4';
@@ -937,11 +1075,36 @@ export function deserializeContract(raw: Record<string, unknown>): BuilderState 
     }
   }
 
-  // fontRoles
+  // fontRoles: try contract format (map of roles), fallback to legacy {defaultFamily, allowedFamilies}
   const fr = raw.fontRoles as Record<string, unknown> | undefined;
   if (fr) {
-    if (typeof fr.defaultFamily === 'string') state.page.fontRoles.defaultFamily = fr.defaultFamily;
-    if (Array.isArray(fr.allowedFamilies)) state.page.fontRoles.allowedFamilies = fr.allowedFamilies as string[];
+    const roles: FontRole[] = [];
+    for (const [key, roleVal] of Object.entries(fr)) {
+      if (key === 'defaultFamily' || key === 'allowedFamilies') continue; // legacy keys
+      if (typeof roleVal !== 'object' || roleVal === null) continue;
+      const rv = roleVal as Record<string, unknown>;
+      roles.push({
+        key,
+        defaultFamily: (rv.default as string) ?? 'Times New Roman',
+        allowedFamilies: Array.isArray(rv.allowedValues) ? (rv.allowedValues as string[]) : [],
+        styleIds: Array.isArray(rv.styleIds) ? (rv.styleIds as string[]) : [],
+      });
+    }
+    if (roles.length > 0) {
+      state.page.fontRoles.roles = roles;
+    } else {
+      // Legacy format: {defaultFamily, allowedFamilies}
+      const legacyDefault = fr.defaultFamily as string | undefined;
+      const legacyAllowed = fr.allowedFamilies as string[] | undefined;
+      if (legacyDefault) {
+        state.page.fontRoles.roles = [{
+          key: 'baseFont',
+          defaultFamily: legacyDefault,
+          allowedFamilies: legacyAllowed ?? [],
+          styleIds: [],
+        }];
+      }
+    }
   }
 
   // Page numbering
@@ -951,8 +1114,11 @@ export function deserializeContract(raw: Record<string, unknown>): BuilderState 
     if (typeof pn.placement === 'string') state.page.pageNumbering.placement = pn.placement as PageState['pageNumbering']['placement'];
     if (typeof pn.countFromComponentId === 'string') state.page.pageNumbering.countFromComponentId = pn.countFromComponentId;
     if (typeof pn.visibleFromComponentId === 'string') state.page.pageNumbering.visibleFromComponentId = pn.visibleFromComponentId;
-    if (typeof pn.verticalDistanceFromEdgeCm === 'number') state.page.pageNumbering.verticalDistanceFromEdgeCm = pn.verticalDistanceFromEdgeCm;
-    if (typeof pn.horizontalDistanceFromEdgeCm === 'number') state.page.pageNumbering.horizontalDistanceFromEdgeCm = pn.horizontalDistanceFromEdgeCm;
+    // Support both field name variants
+    const vd = pn.verticalDistanceFromPageEdgeCm ?? pn.verticalDistanceFromEdgeCm;
+    if (typeof vd === 'number') state.page.pageNumbering.verticalDistanceFromPageEdgeCm = vd;
+    const hd = pn.horizontalDistanceFromPageEdgeCm ?? pn.horizontalDistanceFromEdgeCm;
+    if (typeof hd === 'number') state.page.pageNumbering.horizontalDistanceFromPageEdgeCm = hd;
   }
 
   // StyleRules
@@ -972,6 +1138,7 @@ export function deserializeContract(raw: Record<string, unknown>): BuilderState 
         continuesLabel: (tc.continuesLabel as string) ?? 'continua',
         continuationLabel: (tc.continuationLabel as string) ?? 'continuação',
         conclusionLabel: (tc.conclusionLabel as string) ?? 'conclusão',
+        labelStyleId: (tc.labelStyleId as string) ?? 'bodyContent.table.header',
       };
     }
     const ic = pp.integrityCheck as Record<string, unknown> | undefined;
@@ -990,8 +1157,6 @@ export function deserializeContract(raw: Record<string, unknown>): BuilderState 
   // Components
   const order = raw.componentOrder as string[] | undefined;
   const rules = raw.componentRules as Record<string, Record<string, unknown>> | undefined;
-
-  // Legacy: top-level component rules (old format without componentRules wrapper)
   const allComponentIds = order ?? [];
 
   for (const compId of allComponentIds) {
@@ -1018,10 +1183,10 @@ export function deserializeContract(raw: Record<string, unknown>): BuilderState 
           safetyPolicy: 'MARGIN_BASED',
         };
 
-        // Build ordered slots from layoutRule.groups
         const groups = lr?.groups as Array<Record<string, unknown>> | undefined;
         const gapRules = lr?.gapRules as Array<Record<string, unknown>> | undefined;
 
+        // gapByFromGroup[groupId] = gap weight leading FROM that group to next
         const gapByFromGroup: Record<string, number> = {};
         for (const gr of gapRules ?? []) {
           gapByFromGroup[gr.fromGroupId as string] = (gr.weight as number) ?? 10;
@@ -1030,8 +1195,12 @@ export function deserializeContract(raw: Record<string, unknown>): BuilderState 
         const slots: SlotState[] = [];
         if (groups) {
           for (const group of groups) {
+            const groupId = group.id as string;
             const items = group.items as Array<Record<string, unknown>> | undefined;
-            for (const item of items ?? []) {
+            const hasMultipleItems = (items?.length ?? 0) > 1;
+
+            for (let itemIdx = 0; itemIdx < (items?.length ?? 0); itemIdx++) {
+              const item = items![itemIdx];
               const slotId = item.id as string;
               const rawSlot = rawSlots?.[slotId];
               if (!rawSlot) continue;
@@ -1059,18 +1228,20 @@ export function deserializeContract(raw: Record<string, unknown>): BuilderState 
                 signatureLineEnabled: rawSlot.signatureLineEnabled as boolean | undefined,
                 signatureLineText: rawSlot.signatureLineText as string | undefined,
                 lineTemplates: rawSlot.lineTemplates as string[] | undefined,
+                knownFieldNames: rawSlot.knownFieldNames as string[] | undefined,
                 styleId: sm?.[slotId],
                 horizontalPlacement: placement,
                 customLeftMarginCm: customLeft,
                 customRightMarginCm: customRight,
                 blankLinesAfter: (item.blankLinesAfter as number) ?? 0,
                 maxVisualLinesPerValue: item.maxVisualLinesPerValue as number | undefined,
-                gapWeight: gapByFromGroup[group.id as string] ?? 10,
+                // First slot of a multi-slot group gets gapWeight; single-slot groups always get it
+                gapWeight: itemIdx === 0 ? (gapByFromGroup[groupId] ?? 10) : undefined,
+                groupId: hasMultipleItems ? groupId : undefined,
               });
             }
           }
         } else if (rawSlots) {
-          // Fallback sem layoutRule
           for (const [slotId, rawSlot] of Object.entries(rawSlots)) {
             slots.push({
               id: slotId,
@@ -1087,7 +1258,11 @@ export function deserializeContract(raw: Record<string, unknown>): BuilderState 
         break;
       }
       case 'FLOW_TEXTUAL': {
-        comp.flowItems = (rule.items as FlowItem[]) ?? [];
+        // Map itemType → type for items from contract JSON
+        comp.flowItems = ((rule.items as Array<Record<string, unknown>>) ?? []).map(item => ({
+          ...item,
+          type: ((item.itemType ?? item.type) as FlowItemType),
+        })) as FlowItem[];
         break;
       }
       case 'BIBLIOGRAPHY': {
@@ -1095,6 +1270,8 @@ export function deserializeContract(raw: Record<string, unknown>): BuilderState 
         comp.blankLinesAfterHeading = rule.blankLinesAfterHeading as number ?? 2;
         comp.blankLinesBetweenEntries = rule.blankLinesBetweenEntries as number ?? 1;
         comp.sortOrder = (rule.sortOrder as 'ALPHABETICAL' | 'NONE') ?? 'ALPHABETICAL';
+        if (typeof rule.headingStyleId === 'string') comp.headingStyleId = rule.headingStyleId;
+        if (typeof rule.entryStyleId === 'string') comp.entryStyleId = rule.entryStyleId;
         const fr2 = rule.formattingRule as Record<string, unknown> | undefined;
         if (fr2) {
           const af = fr2.authorFormat as Record<string, unknown> | undefined;
@@ -1106,9 +1283,17 @@ export function deserializeContract(raw: Record<string, unknown>): BuilderState 
               multiAuthorJoiner: (af.multiAuthorJoiner as string) ?? '; ',
               etAlLabel: (af.etAlLabel as string) ?? 'et al.',
               etAlThreshold: (af.etAlThreshold as number) ?? 3,
+              lastAuthorJoiner: af.lastAuthorJoiner as string | undefined,
+              nameOrder: af.nameOrder as 'SURNAME_FIRST' | 'GIVEN_FIRST' | undefined,
+              initialsOnly: af.initialsOnly as boolean | undefined,
+              initialsDotted: af.initialsDotted as boolean | undefined,
+              initialsSpaced: af.initialsSpaced as boolean | undefined,
             };
           }
           comp.entryFormats = (fr2.entryFormats as ComponentState['entryFormats']) ?? {};
+          if (fr2.noteFormats) comp.noteFormats = fr2.noteFormats as ComponentState['noteFormats'];
+          if (fr2.shortNoteFormats) comp.shortNoteFormats = fr2.shortNoteFormats as ComponentState['shortNoteFormats'];
+          if (typeof fr2.ibidEnabled === 'boolean') comp.ibidEnabled = fr2.ibidEnabled;
         }
         break;
       }
@@ -1122,11 +1307,99 @@ export function deserializeContract(raw: Record<string, unknown>): BuilderState 
         const nb = rule.numbering as Record<string, unknown> | undefined;
         if (nb) bc.numbering = { ...bc.numbering, ...nb as Partial<BodyContentState['numbering']> };
         const layout2 = rule.layout as Record<string, unknown> | undefined;
-        if (layout2) bc.layout = { ...bc.layout, ...(layout2 as Partial<BodyContentState['layout']>) };
+        if (layout2) {
+          bc.layout = {
+            ...bc.layout,
+            blankLinesBeforeSectionTitleWhenPrecededByContent: (layout2.blankLinesBeforeSectionTitleWhenPrecededByContent as number) ?? bc.layout.blankLinesBeforeSectionTitleWhenPrecededByContent,
+            blankLinesAfterSectionTitle: (layout2.blankLinesAfterSectionTitle as number) ?? bc.layout.blankLinesAfterSectionTitle,
+            pageBreakBeforePrimarySection: (layout2.pageBreakBeforePrimarySection as boolean) ?? bc.layout.pageBreakBeforePrimarySection,
+            keepWithNextOnHeadings: (layout2.keepWithNextOnHeadings as boolean) ?? bc.layout.keepWithNextOnHeadings,
+            inlineHeadingLevels: Array.isArray(layout2.inlineHeadingLevels) ? (layout2.inlineHeadingLevels as number[]) : undefined,
+          };
+        }
         const cf = rule.citationFormatting as Record<string, unknown> | undefined;
         if (cf) bc.citationFormatting = { ...bc.citationFormatting, ...cf as Partial<BodyContentState['citationFormatting']> };
         const crl = rule.crossReferenceLabels as Record<string, unknown> | undefined;
         if (crl) bc.crossReferenceLabels = { ...bc.crossReferenceLabels, ...crl as Partial<BodyContentState['crossReferenceLabels']> };
+
+        // Deserialize figure
+        const fig = rule.figure as Record<string, unknown> | undefined;
+        if (fig) {
+          bc.figure = {
+            captionTemplate: (fig.captionTemplate as string) ?? bc.figure.captionTemplate,
+            sourceTemplate: (fig.sourceTemplate as string) ?? bc.figure.sourceTemplate,
+            alignment: (fig.imageAlignment as 'CENTER' | 'LEFT' | 'RIGHT') ?? bc.figure.alignment,
+            fontSizePt: bc.figure.fontSizePt,
+            numberingStrategy: (fig.numberingStrategy as 'GLOBAL_SEQUENTIAL' | 'BY_CHAPTER') ?? bc.figure.numberingStrategy,
+            label: (fig.label as string) ?? bc.figure.label,
+            maxWidthCm: (fig.maxWidthCm as number) ?? bc.figure.maxWidthCm,
+            maxHeightCm: (fig.maxHeightCm as number) ?? bc.figure.maxHeightCm,
+          };
+        }
+
+        // Deserialize table
+        const tbl = rule.table as Record<string, unknown> | undefined;
+        if (tbl) {
+          bc.table = {
+            captionTemplate: (tbl.captionTemplate as string) ?? bc.table.captionTemplate,
+            sourceTemplate: (tbl.sourceTemplate as string) ?? bc.table.sourceTemplate,
+            alignment: (tbl.tableAlignment as 'CENTER' | 'LEFT' | 'RIGHT') ?? bc.table.alignment,
+            fontSizePt: bc.table.fontSizePt,
+            numberingStrategy: (tbl.numberingStrategy as 'GLOBAL_SEQUENTIAL' | 'BY_CHAPTER') ?? bc.table.numberingStrategy,
+            label: (tbl.label as string) ?? bc.table.label,
+            maxWidthCm: bc.table.maxWidthCm,
+            widthPercent: (tbl.widthPercent as number) ?? bc.table.widthPercent,
+            repeatHeaderOnPageBreak: (tbl.repeatHeaderOnPageBreak as boolean) ?? bc.table.repeatHeaderOnPageBreak,
+          };
+        }
+
+        // Deserialize frame
+        const frm = rule.frame as Record<string, unknown> | undefined;
+        if (frm) {
+          bc.frame = {
+            captionTemplate: (frm.captionTemplate as string) ?? bc.frame.captionTemplate,
+            sourceTemplate: (frm.sourceTemplate as string) ?? bc.frame.sourceTemplate,
+            alignment: (frm.tableAlignment as 'CENTER' | 'LEFT' | 'RIGHT') ?? bc.frame.alignment,
+            fontSizePt: bc.frame.fontSizePt,
+            numberingStrategy: (frm.numberingStrategy as 'GLOBAL_SEQUENTIAL' | 'BY_CHAPTER') ?? bc.frame.numberingStrategy,
+            label: (frm.label as string) ?? bc.frame.label,
+            maxWidthCm: bc.frame.maxWidthCm,
+            widthPercent: (frm.widthPercent as number) ?? bc.frame.widthPercent,
+            repeatHeaderOnPageBreak: (frm.repeatHeaderOnPageBreak as boolean) ?? bc.frame.repeatHeaderOnPageBreak,
+          };
+        }
+
+        // Deserialize codeListing
+        const code = rule.codeListing as Record<string, unknown> | undefined;
+        if (code) {
+          bc.codeListing = {
+            captionTemplate: (code.captionTemplate as string) ?? bc.codeListing.captionTemplate,
+            sourceTemplate: (code.sourceTemplate as string) ?? bc.codeListing.sourceTemplate,
+            fontFamily: (code.fontFamily as string) ?? bc.codeListing.fontFamily,
+            fontSizePt: bc.codeListing.fontSizePt,
+            numberingStrategy: (code.numberingStrategy as 'GLOBAL_SEQUENTIAL' | 'BY_CHAPTER') ?? bc.codeListing.numberingStrategy,
+            label: (code.label as string) ?? bc.codeListing.label,
+            widthPercent: (code.widthPercent as number) ?? bc.codeListing.widthPercent,
+            repeatHeaderOnPageBreak: (code.repeatHeaderOnPageBreak as boolean) ?? bc.codeListing.repeatHeaderOnPageBreak,
+          };
+        }
+
+        // Deserialize chart (reads imageRule for image-specific fields)
+        const chart = rule.chart as Record<string, unknown> | undefined;
+        if (chart) {
+          const imgRule = chart.imageRule as Record<string, unknown> | undefined;
+          bc.chart = {
+            captionTemplate: (chart.captionTemplate as string) ?? bc.chart.captionTemplate,
+            sourceTemplate: (chart.sourceTemplate as string) ?? bc.chart.sourceTemplate,
+            alignment: ((imgRule?.imageAlignment ?? chart.imageAlignment) as 'CENTER' | 'LEFT' | 'RIGHT') ?? bc.chart.alignment,
+            fontSizePt: bc.chart.fontSizePt,
+            numberingStrategy: (chart.numberingStrategy as 'GLOBAL_SEQUENTIAL' | 'BY_CHAPTER') ?? bc.chart.numberingStrategy,
+            label: (chart.label as string) ?? bc.chart.label,
+            maxWidthCm: ((imgRule?.maxWidthCm ?? chart.maxWidthCm) as number) ?? bc.chart.maxWidthCm,
+            maxHeightCm: ((imgRule?.maxHeightCm ?? chart.maxHeightCm) as number) ?? bc.chart.maxHeightCm,
+          };
+        }
+
         comp.bodyContent = bc;
         break;
       }
@@ -1135,6 +1408,8 @@ export function deserializeContract(raw: Record<string, unknown>): BuilderState 
         comp.indexingStyle = (rule.indexingStyle as 'ALPHABETIC' | 'NUMERIC') ?? 'ALPHABETIC';
         comp.bodyContentComponentId = rule.bodyContentComponentId as string ?? '';
         comp.sectionTitleStyleIdsByLevel = rule.sectionTitleStyleIdsByLevel as string[] ?? [];
+        if (typeof rule.headingStyleId === 'string') comp.headingStyleId = rule.headingStyleId;
+        if (typeof rule.paragraphStyleId === 'string') comp.paragraphStyleId = rule.paragraphStyleId;
         break;
       }
       case 'ELEMENT_INDEX': {
@@ -1143,6 +1418,9 @@ export function deserializeContract(raw: Record<string, unknown>): BuilderState 
         comp.entryTemplate = rule.entryTemplate as string ?? '{number} — {caption}';
         comp.blankLinesAfterHeading = rule.blankLinesAfterHeading as number ?? 1;
         comp.pageReferenceEnabled = (rule.pageReferenceEnabled as boolean) ?? true;
+        if (typeof rule.headingStyleId === 'string') comp.headingStyleId = rule.headingStyleId;
+        if (typeof rule.entryStyleId === 'string') comp.entryStyleId = rule.entryStyleId;
+        if (typeof rule.sourceComponentId === 'string') comp.sourceComponentId = rule.sourceComponentId;
         break;
       }
       case 'SECTION_INDEX': {
@@ -1150,6 +1428,8 @@ export function deserializeContract(raw: Record<string, unknown>): BuilderState 
         comp.useTocField = (rule.useTocField as boolean) ?? true;
         comp.blankLinesAfterHeading = rule.blankLinesAfterHeading as number ?? 1;
         comp.entryStyleIdsByLevel = rule.entryStyleIdsByLevel as string[] ?? [];
+        if (typeof rule.headingStyleId === 'string') comp.headingStyleId = rule.headingStyleId;
+        if (typeof rule.sourceComponentId === 'string') comp.sourceComponentId = rule.sourceComponentId;
         break;
       }
     }

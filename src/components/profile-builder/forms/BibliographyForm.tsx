@@ -1,11 +1,12 @@
 'use client';
 
-import { ComponentState, BibRefType, BibEntryPart } from '@/lib/profileSerializer';
+import { ComponentState, BibRefType, BibEntryPart, StyleRule } from '@/lib/profileSerializer';
 import * as Accordion from '@radix-ui/react-accordion';
 
 interface Props {
   comp: ComponentState;
   onChange: (updated: ComponentState) => void;
+  styleRules: StyleRule[];
 }
 
 const REF_TYPES: { value: BibRefType; label: string }[] = [
@@ -37,7 +38,7 @@ function EntryFormatEditor({ parts, onChange }: { parts: BibEntryPart[]; onChang
     onChange(next);
   }
   function add() {
-    onChange([...parts, { source: 'title', bold: false, prefix: '', suffix: '', optional: false }]);
+    onChange([...parts, { source: 'title', bold: false, italic: false, prefix: '', suffix: '', optional: false }]);
   }
   function remove(idx: number) {
     onChange(parts.filter((_, i) => i !== idx));
@@ -67,9 +68,13 @@ function EntryFormatEditor({ parts, onChange }: { parts: BibEntryPart[]; onChang
             value={p.suffix}
             onChange={e => update(i, 'suffix', e.target.value)}
           />
-          <label className="flex items-center gap-0.5 cursor-pointer">
+          <label className="flex items-center gap-0.5 cursor-pointer" title="Negrito">
             <input type="checkbox" className="w-3 h-3" checked={p.bold} onChange={e => update(i, 'bold', e.target.checked)} />
             <span className="font-bold">B</span>
+          </label>
+          <label className="flex items-center gap-0.5 cursor-pointer" title="Itálico">
+            <input type="checkbox" className="w-3 h-3" checked={p.italic} onChange={e => update(i, 'italic', e.target.checked)} />
+            <span className="italic">I</span>
           </label>
           <label className="flex items-center gap-0.5 cursor-pointer">
             <input type="checkbox" className="w-3 h-3" checked={p.optional} onChange={e => update(i, 'optional', e.target.checked)} />
@@ -83,7 +88,7 @@ function EntryFormatEditor({ parts, onChange }: { parts: BibEntryPart[]; onChang
   );
 }
 
-export function BibliographyForm({ comp, onChange }: Props) {
+export function BibliographyForm({ comp, onChange, styleRules }: Props) {
   const af = comp.authorFormat ?? {
     surnameUppercase: true,
     surnameGivenSeparator: ', ',
@@ -93,8 +98,9 @@ export function BibliographyForm({ comp, onChange }: Props) {
     etAlThreshold: 3,
   };
   const entryFormats = comp.entryFormats ?? {};
+  const styleIds = styleRules.map(r => r.id);
 
-  function setAf<K extends keyof typeof af>(key: K, value: typeof af[K]) {
+  function setAf<K extends keyof typeof af>(key: K, value: (typeof af)[K]) {
     onChange({ ...comp, authorFormat: { ...af, [key]: value } });
   }
   function setEntryFormat(type: BibRefType, parts: BibEntryPart[]) {
@@ -108,6 +114,27 @@ export function BibliographyForm({ comp, onChange }: Props) {
         <input type="text" className="w-full border border-slate-300 rounded p-2 text-xs focus:ring-2 focus:ring-blue-500"
           value={comp.headingText ?? 'REFERÊNCIAS'}
           onChange={e => onChange({ ...comp, headingText: e.target.value })} />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Estilo do título</label>
+          <select className="w-full border border-slate-300 rounded p-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500"
+            value={comp.headingStyleId ?? ''}
+            onChange={e => onChange({ ...comp, headingStyleId: e.target.value || undefined })}>
+            <option value="">(padrão: {comp.id}.heading)</option>
+            {styleIds.map(id => <option key={id} value={id}>{id}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Estilo da entrada</label>
+          <select className="w-full border border-slate-300 rounded p-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500"
+            value={comp.entryStyleId ?? ''}
+            onChange={e => onChange({ ...comp, entryStyleId: e.target.value || undefined })}>
+            <option value="">(padrão: {comp.id}.entry)</option>
+            {styleIds.map(id => <option key={id} value={id}>{id}</option>)}
+          </select>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -153,6 +180,11 @@ export function BibliographyForm({ comp, onChange }: Props) {
                 <input type="text" className="w-full border border-slate-200 rounded p-1.5 text-xs"
                   value={af.multiAuthorJoiner} onChange={e => setAf('multiAuthorJoiner', e.target.value)} />
               )}
+              {small('Junção último autor',
+                <input type="text" className="w-full border border-slate-200 rounded p-1.5 text-xs"
+                  placeholder="ex: , & (APA)"
+                  value={af.lastAuthorJoiner ?? ''} onChange={e => setAf('lastAuthorJoiner', e.target.value || undefined)} />
+              )}
               {small('Rótulo et al.',
                 <input type="text" className="w-full border border-slate-200 rounded p-1.5 text-xs"
                   value={af.etAlLabel} onChange={e => setAf('etAlLabel', e.target.value)} />
@@ -162,11 +194,37 @@ export function BibliographyForm({ comp, onChange }: Props) {
                   value={af.etAlThreshold} onChange={e => setAf('etAlThreshold', parseInt(e.target.value))} />
               )}
             </div>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" className="w-4 h-4 text-blue-600 rounded border-slate-300"
-                checked={af.surnameUppercase} onChange={e => setAf('surnameUppercase', e.target.checked)} />
-              <span className="text-xs font-medium text-slate-700">Sobrenome em maiúsculas</span>
-            </label>
+            {small('Ordem do nome',
+              <select className="w-full border border-slate-200 rounded p-1.5 text-xs bg-white"
+                value={af.nameOrder ?? ''}
+                onChange={e => setAf('nameOrder', (e.target.value as 'SURNAME_FIRST' | 'GIVEN_FIRST') || undefined)}>
+                <option value="">— padrão do perfil —</option>
+                <option value="SURNAME_FIRST">Sobrenome primeiro (ABNT)</option>
+                <option value="GIVEN_FIRST">Nome primeiro</option>
+              </select>
+            )}
+            <div className="space-y-1.5 pt-1">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" className="w-4 h-4 text-blue-600 rounded border-slate-300"
+                  checked={af.surnameUppercase} onChange={e => setAf('surnameUppercase', e.target.checked)} />
+                <span className="text-xs font-medium text-slate-700">Sobrenome em maiúsculas</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" className="w-4 h-4 text-blue-600 rounded border-slate-300"
+                  checked={af.initialsOnly ?? false} onChange={e => setAf('initialsOnly', e.target.checked)} />
+                <span className="text-xs font-medium text-slate-700">Apenas iniciais do prenome (APA)</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" className="w-4 h-4 text-blue-600 rounded border-slate-300"
+                  checked={af.initialsDotted ?? false} onChange={e => setAf('initialsDotted', e.target.checked)} />
+                <span className="text-xs font-medium text-slate-700">Iniciais com ponto (C. E.)</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" className="w-4 h-4 text-blue-600 rounded border-slate-300"
+                  checked={af.initialsSpaced ?? false} onChange={e => setAf('initialsSpaced', e.target.checked)} />
+                <span className="text-xs font-medium text-slate-700">Espaço entre iniciais (C. E. vs C.E.)</span>
+              </label>
+            </div>
           </Accordion.Content>
         </Accordion.Item>
 
