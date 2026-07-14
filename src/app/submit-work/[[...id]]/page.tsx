@@ -6,8 +6,83 @@ import { fetchApi } from '@/lib/api';
 import Link from 'next/link';
 import BodyEditor from '@/components/body-editor/BodyEditor';
 import SectionedEditor from '@/components/body-editor/SectionedEditor';
-import { ChevronRight, ChevronLeft, Save, CheckCircle, FileText, ArrowLeft, Loader2, FileCheck2, Share2, Bookmark } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Save, CheckCircle, FileText, ArrowLeft, Loader2, FileCheck2, Share2, Bookmark, X } from 'lucide-react';
 import { AlertModal, AlertModalType } from '@/components/ui/AlertModal';
+
+const componentLabels: Record<string, string> = {
+  cover: 'Capa',
+  titlePage: 'Folha de Rosto',
+  resumo: 'Resumo em Português',
+  abstract: 'Abstract (Inglês)',
+  foreignAbstract: 'Abstract (Inglês)',
+  dedication: 'Dedicatória',
+  acknowledgments: 'Agradecimentos',
+  epigraph: 'Epígrafe',
+  listOfAbbreviations: 'Lista de Abreviaturas',
+  listOfSymbols: 'Lista de Símbolos',
+  listOfFigures: 'Lista de Figuras',
+  listOfTables: 'Lista de Tabelas',
+  summary: 'Sumário',
+  bodyContent: 'Conteúdo do Trabalho',
+  references: 'Referências Bibliográficas',
+  appendix: 'Apêndices',
+  annex: 'Anexos',
+};
+
+const slotLabels: Record<string, string> = {
+  institutionalLines: 'Linhas da Instituição',
+  authors: 'Autor(es)',
+  author: 'Autor',
+  title: 'Título',
+  subtitle: 'Subtítulo',
+  nature: 'Natureza do Trabalho',
+  objective: 'Objetivo',
+  purpose: 'Finalidade',
+  advisor: 'Orientador(a)',
+  coadvisor: 'Coorientador(a)',
+  city: 'Cidade',
+  local: 'Local',
+  year: 'Ano',
+  date: 'Data',
+  institution: 'Instituição',
+  department: 'Departamento',
+  course: 'Curso',
+  text: 'Texto',
+  keywords: 'Palavras-chave',
+  items: 'Itens',
+  entries: 'Entradas',
+  label: 'Rótulo',
+  terms: 'Termos',
+  definitions: 'Definições',
+  rows: 'Linhas',
+};
+
+const slotHints: Record<string, string> = {
+  keywords: 'Ex: Aprendizado de Máquina, Redes Neurais, Visão Computacional',
+  institutionalLines: 'Ex: Universidade Federal de Brasília · Faculdade de Tecnologia',
+  nature: 'Ex: Trabalho de Conclusão de Curso apresentado como requisito parcial para obtenção do título de Bacharel...',
+  authors: 'Um autor por linha ou separados por vírgula',
+  advisor: 'Ex: Prof. Dr. João da Silva',
+  coadvisor: 'Ex: Prof.ª Dr.ª Maria Souza',
+};
+
+function formatLabel(name: string): string {
+  return slotLabels[name] ?? name.replace(/([A-Z])/g, ' $1').replace(/^(.)/, s => s.toUpperCase()).trim();
+}
+
+function formatComponentLabel(id: string): string {
+  return componentLabels[id] ?? id.replace(/([A-Z])/g, ' $1').replace(/^(.)/, s => s.toUpperCase()).trim();
+}
+
+const REQUIRED_COMPONENTS = new Set(['cover', 'titlePage', 'summary', 'bodyContent', 'references', 'resumo', 'abstract']);
+
+const componentAutoDescriptions: Record<string, string> = {
+  summary: 'O Sumário será gerado automaticamente a partir dos títulos e seções do seu Conteúdo do Trabalho.',
+  listOfFigures: 'A Lista de Figuras será preenchida automaticamente com as figuras inseridas no Conteúdo do Trabalho.',
+  listOfTables: 'A Lista de Tabelas será preenchida automaticamente com as tabelas inseridas no Conteúdo do Trabalho.',
+  listOfAbbreviations: 'Esta lista será montada automaticamente com as abreviaturas definidas ao longo do documento.',
+  listOfSymbols: 'Esta lista será montada automaticamente com os símbolos definidos ao longo do documento.',
+};
 
 export default function SubmitWork() {
   const params = useParams();
@@ -358,18 +433,29 @@ export default function SubmitWork() {
     profile?.profileData?.componentOrder?.forEach((compId: string) => {
       if (!profile.componentFields[compId]) return;
       if (!enabledComponents[compId]) return;
-      
-      selectedComponents.push(compId);
-      document[compId] = {};
-      
+
+      const compData: any = {};
       profile.componentFields[compId].forEach((field: any) => {
-        const val = formData[compId][field.name];
+        const val = formData[compId]?.[field.name];
         if (field.isArray) {
-          document[compId][field.name] = val ? val.split(',').map((s: string) => s.trim()) : [];
+          compData[field.name] = val ? val.split(',').map((s: string) => s.trim()) : [];
         } else {
-          document[compId][field.name] = val;
+          compData[field.name] = val;
         }
       });
+
+      // Não enviar no document componentes SinglePage totalmente vazios (apenas manter em selectedComponents)
+      const hasAnyValue = Object.values(compData).some((v: any) => {
+        if (v === null || v === undefined || v === '') return false;
+        if (Array.isArray(v)) return v.length > 0;
+        if (typeof v === 'object') return Object.values(v).some((vv: any) => vv && String(vv).trim() !== '');
+        return String(v).trim() !== '';
+      });
+
+      selectedComponents.push(compId);
+      if (hasAnyValue) {
+        document[compId] = compData;
+      }
     });
 
     const sanitizedName = (workName || 'meu_trabalho')
@@ -381,9 +467,9 @@ export default function SubmitWork() {
     const payload = {
       fileName: sanitizedName,
       profileId: profile.id,
-      options: { 
+      options: {
         selectedComponents,
-        fontFamily
+        fonts: { default: fontFamily }
       },
       document
     };
@@ -431,7 +517,7 @@ export default function SubmitWork() {
         id: workId,
         profileId: profile.id,
         fileName: workName || 'meu_trabalho',
-        options: { selectedComponents, fontFamily },
+        options: { selectedComponents, fonts: { default: fontFamily } },
         document
       };
 
@@ -479,6 +565,26 @@ export default function SubmitWork() {
         showAlert('Erro', 'Não foi possível compartilhar no momento.', 'error');
       }
     }
+  };
+
+  const getSectionStatus = (compId: string): 'empty' | 'partial' | 'complete' => {
+    const fields = profile?.componentFields?.[compId] || [];
+    if (fields.length === 0) return 'complete';
+    const data = formData[compId] || {};
+    const hasValue = (f: any) => {
+      const val = data[f.name];
+      if (val === null || val === undefined) return false;
+      if (Array.isArray(val)) return val.length > 0;
+      if (typeof val === 'object') return Object.values(val).some((v: any) => v && String(v).trim() !== '');
+      return String(val).trim() !== '';
+    };
+    const requiredFields = fields.filter((f: any) => f.required);
+    const fieldsToCheck = requiredFields.length > 0 ? requiredFields : fields;
+    const allFilled = fieldsToCheck.every(hasValue);
+    const anyFilled = fields.some(hasValue);
+    if (allFilled) return 'complete';
+    if (anyFilled) return 'partial';
+    return 'empty';
   };
 
   const componentOrder = profile?.profileData?.componentOrder?.filter((c: string) => profile.componentFields[c]) || [];
@@ -584,7 +690,27 @@ export default function SubmitWork() {
         )}
 
         {/* Step 2: Wizard Form */}
-        {profile && (
+        {profile && componentOrder.length === 0 && !loading && (
+          <div className="max-w-xl mx-auto w-full pt-16 text-center animate-in fade-in duration-500">
+            <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center mx-auto mb-5">
+              <FileText className="w-7 h-7 text-amber-500" />
+            </div>
+            <h2 className="text-xl font-bold text-slate-900 mb-2">Perfil sem seções configuradas</h2>
+            <p className="text-slate-500 text-sm mb-6">
+              O perfil <strong>{profile.name}</strong> não possui seções de preenchimento reconhecidas. Tente escolher outro perfil.
+            </p>
+            <button
+              type="button"
+              onClick={handleSwitchProfile}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Escolher outro perfil
+            </button>
+          </div>
+        )}
+
+        {profile && componentOrder.length > 0 && (
           <div className="flex flex-col md:flex-row gap-8 flex-1 animate-in fade-in duration-500 h-full">
             
             {/* Sidebar Navigation */}
@@ -593,24 +719,24 @@ export default function SubmitWork() {
                 
                 <div>
                   <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Identificação</h3>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Nome do Arquivo (sem acentos)</label>
-                  <input 
-                    type="text" 
-                    value={workName} 
-                    onChange={(e) => { setWorkName(e.target.value); setHasUnsavedChanges(true); }} 
-                    placeholder="ex: tcc_joao_silva"
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">Nome do Trabalho</label>
+                  <input
+                    type="text"
+                    value={workName}
+                    onChange={(e) => { setWorkName(e.target.value); setHasUnsavedChanges(true); }}
+                    placeholder="ex: meu_tcc_2025"
                     className="w-full text-sm p-2 bg-white border border-slate-300 rounded-lg focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-shadow"
                   />
+                  <p className="text-[11px] text-slate-400 mt-1">Use apenas letras, números e underline.</p>
                 </div>
 
                 <div className="h-px bg-slate-200 w-full" />
 
                 <div>
-                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Configurações</h3>
-                  
+                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Documento</h3>
                   <div className="mb-3">
                     <label className="block text-xs font-semibold text-slate-600 mb-1">Fonte Principal</label>
-                    <select 
+                    <select
                       value={fontFamily}
                       onChange={(e) => { setFontFamily(e.target.value); setHasUnsavedChanges(true); }}
                       className="w-full text-sm p-2 bg-white border border-slate-300 rounded-lg focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-shadow cursor-pointer"
@@ -619,22 +745,50 @@ export default function SubmitWork() {
                       <option value="Arial">Arial</option>
                     </select>
                   </div>
+                </div>
 
-                  <label className="flex items-center gap-2 p-2 bg-indigo-50/50 rounded-lg cursor-pointer hover:bg-indigo-50 transition-colors border border-indigo-100/50">
-                    <input 
-                      type="checkbox" 
+                <div>
+                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Comportamento</h3>
+                  <label
+                    className="flex items-center gap-2 p-2 bg-indigo-50/50 rounded-lg cursor-pointer hover:bg-indigo-50 transition-colors border border-indigo-100/50"
+                    title="Campos com o mesmo nome em seções diferentes (ex: Autor) serão preenchidos ao mesmo tempo."
+                  >
+                    <input
+                      type="checkbox"
                       className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
                       checked={autoFill}
                       onChange={(e) => { setAutoFill(e.target.checked); setHasUnsavedChanges(true); }}
                     />
-                    <span className="text-xs font-semibold text-indigo-900 leading-tight">Preencher campos iguais automaticamente</span>
+                    <span className="text-xs font-semibold text-indigo-900 leading-tight">Sincronizar campos repetidos</span>
                   </label>
                 </div>
               </div>
-              <div className="py-2 max-h-[calc(100vh-320px)] overflow-y-auto custom-scrollbar">
+              {/* Barra de progresso geral */}
+              {(() => {
+                const enabledOrder = componentOrder.filter((c: string) => enabledComponents[c] !== false);
+                const doneCount = enabledOrder.filter((c: string) => getSectionStatus(c) === 'complete').length;
+                const pct = enabledOrder.length > 0 ? Math.round((doneCount / enabledOrder.length) * 100) : 0;
+                return (
+                  <div className="px-4 py-3 border-b border-slate-100">
+                    <div className="flex justify-between items-center mb-1.5">
+                      <span className="text-[11px] font-semibold text-slate-500">Progresso</span>
+                      <span className="text-[11px] font-bold text-indigo-600">{doneCount}/{enabledOrder.length} seções</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full transition-all duration-500"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <div className="py-2 max-h-[calc(100vh-380px)] overflow-y-auto custom-scrollbar">
                 {componentOrder.map((compId: string, idx: number) => {
                   const isActive = idx === activeTab;
-                  const isDone = false; // Logic to check if required fields are filled can go here
+                  const isDisabled = enabledComponents[compId] === false;
+                  const status = isDisabled ? 'disabled' : getSectionStatus(compId);
 
                   return (
                     <button
@@ -645,13 +799,22 @@ export default function SubmitWork() {
                       `}
                     >
                       {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-600 rounded-r-full" />}
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] flex-shrink-0 transition-colors
-                        ${isActive ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'}
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors
+                        ${isActive ? 'bg-indigo-600 text-white' :
+                          status === 'complete' ? 'bg-emerald-100 text-emerald-600' :
+                          status === 'partial'  ? 'bg-amber-100 text-amber-600' :
+                          'bg-slate-100 text-slate-400'}
                       `}>
-                        {idx + 1}
+                        {status === 'complete' && !isActive ? (
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                        ) : status === 'partial' && !isActive ? (
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" /></svg>
+                        ) : (
+                          <span className="text-[10px] font-bold">{idx + 1}</span>
+                        )}
                       </div>
-                      <span className={`truncate capitalize ${!enabledComponents[compId] ? 'line-through text-slate-400 opacity-70' : ''}`}>
-                        {compId.replace(/([A-Z])/g, ' $1').trim()}
+                      <span className={`truncate ${isDisabled ? 'line-through text-slate-400 opacity-70' : ''}`}>
+                        {formatComponentLabel(compId)}
                       </span>
                     </button>
                   );
@@ -670,25 +833,38 @@ export default function SubmitWork() {
                   </div>
                   
                   <div className="flex items-center justify-between mb-2">
-                    <h2 className="text-2xl font-bold text-slate-900 capitalize">
-                      {activeComponentId?.replace(/([A-Z])/g, ' $1').trim()}
-                    </h2>
-                    
-                    {!['cover', 'titlePage', 'summary', 'bodyContent', 'references', 'resumo', 'abstract'].includes(activeComponentId) && (
+                    <div className="flex items-center gap-3">
+                      <h2 className="text-2xl font-bold text-slate-900">
+                        {formatComponentLabel(activeComponentId)}
+                      </h2>
+                      {REQUIRED_COMPONENTS.has(activeComponentId) ? (
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-100">
+                          Obrigatório
+                        </span>
+                      ) : (
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
+                          Opcional
+                        </span>
+                      )}
+                    </div>
+
+                    {!REQUIRED_COMPONENTS.has(activeComponentId) && (
                       <label className="flex items-center gap-2 cursor-pointer bg-slate-50 hover:bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 transition-colors">
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
                           checked={enabledComponents[activeComponentId] ?? true}
                           onChange={(e) => { setEnabledComponents({...enabledComponents, [activeComponentId]: e.target.checked}); setHasUnsavedChanges(true); }}
                         />
-                        <span className="text-sm font-semibold text-slate-700 select-none">Incluir no Trabalho</span>
+                        <span className="text-sm font-semibold text-slate-700 select-none">Incluir esta seção no documento</span>
                       </label>
                     )}
                   </div>
-                  
+
                   <p className="text-slate-500 text-sm">
-                    Preencha as informações necessárias para esta seção. Elas serão formatadas automaticamente no documento final.
+                    {REQUIRED_COMPONENTS.has(activeComponentId)
+                      ? 'Esta seção é parte obrigatória da estrutura do documento.'
+                      : 'Esta seção é opcional. Desative o toggle acima se não quiser incluí-la.'}
                   </p>
                 </div>
                 
@@ -701,13 +877,13 @@ export default function SubmitWork() {
                       if (el.type === 'composed') {
                         return (
                           <div key={elIdx} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                            <label className="flex items-center gap-2 text-sm font-bold mb-4 text-slate-800 capitalize">
-                              {el.name} {el.required && <span className="text-red-500">*</span>}
+                            <label className="flex items-center gap-2 text-sm font-bold mb-4 text-slate-800">
+                              {formatLabel(el.name)} {el.required && <span className="text-red-500">*</span>}
                             </label>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               {el.fields.map((fName: string) => (
                                 <div key={fName}>
-                                  <label className="block text-xs font-semibold mb-1.5 text-slate-500 capitalize">{fName}</label>
+                                  <label className="block text-xs font-semibold mb-1.5 text-slate-500">{formatLabel(fName)}</label>
                                   <input 
                                     type="text"
                                     required={el.required}
@@ -731,8 +907,8 @@ export default function SubmitWork() {
                         return (
                           <div key={elIdx} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
                             <div className="flex justify-between items-center mb-4">
-                              <label className="text-sm font-bold text-slate-800 capitalize">
-                                {el.name} (Assinaturas) {el.required && <span className="text-red-500">*</span>}
+                              <label className="text-sm font-bold text-slate-800">
+                                {formatLabel(el.name)} {el.required && <span className="text-red-500">*</span>}
                               </label>
                               <button type="button" onClick={() => {
                                 handleInputChange(activeComponentId, el.name, [...items, {}]);
@@ -743,17 +919,22 @@ export default function SubmitWork() {
                             <div className="space-y-3">
                               {items.map((item: any, itemIdx: number) => (
                                 <div key={itemIdx} className="p-4 border border-slate-200 rounded-lg bg-slate-50/50 relative group">
-                                  <button type="button" onClick={() => {
-                                    const newItems = [...items];
-                                    newItems.splice(itemIdx, 1);
-                                    handleInputChange(activeComponentId, el.name, newItems);
-                                  }} className="absolute top-3 right-3 text-slate-400 hover:text-red-500 transition-colors w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-50">
-                                    ✕
+                                  <button
+                                    type="button"
+                                    aria-label="Remover"
+                                    onClick={() => {
+                                      const newItems = [...items];
+                                      newItems.splice(itemIdx, 1);
+                                      handleInputChange(activeComponentId, el.name, newItems);
+                                    }}
+                                    className="absolute top-3 right-3 text-slate-400 hover:text-red-500 transition-colors w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-50"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
                                   </button>
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pr-8">
                                     {el.fields.map((fName: string) => (
                                       <div key={fName}>
-                                        <label className="block text-xs font-semibold mb-1.5 text-slate-500 capitalize">{fName}</label>
+                                        <label className="block text-xs font-semibold mb-1.5 text-slate-500">{formatLabel(fName)}</label>
                                         <input 
                                           type="text"
                                           className="w-full border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 p-2 rounded-md text-sm text-slate-900 transition-shadow outline-none"
@@ -816,8 +997,8 @@ export default function SubmitWork() {
                         return (
                           <div key={elIdx} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
                             <div className="flex justify-between items-center mb-4">
-                              <label className="text-sm font-bold text-slate-800 capitalize">
-                                {el.name} {el.required && <span className="text-red-500">*</span>}
+                              <label className="text-sm font-bold text-slate-800">
+                                {formatLabel(el.name)} {el.required && <span className="text-red-500">*</span>}
                               </label>
                               <button type="button" onClick={() => {
                                 handleInputChange(activeComponentId, el.name, [...items, {}]);
@@ -828,23 +1009,28 @@ export default function SubmitWork() {
                             <div className="space-y-3">
                               {items.map((item: any, itemIdx: number) => (
                                 <div key={itemIdx} className="p-4 border border-slate-200 rounded-lg bg-slate-50/50 relative">
-                                  <button type="button" onClick={() => {
-                                    const newItems = [...items];
-                                    newItems.splice(itemIdx, 1);
-                                    handleInputChange(activeComponentId, el.name, newItems);
-                                  }} className="absolute top-3 right-3 text-slate-400 hover:text-red-500 transition-colors w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-50">
-                                    ✕
+                                  <button
+                                    type="button"
+                                    aria-label="Remover"
+                                    onClick={() => {
+                                      const newItems = [...items];
+                                      newItems.splice(itemIdx, 1);
+                                      handleInputChange(activeComponentId, el.name, newItems);
+                                    }}
+                                    className="absolute top-3 right-3 text-slate-400 hover:text-red-500 transition-colors w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-50"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
                                   </button>
-                                  
+
                                   {el.group && el.group.length > 0 ? (
                                     <div className="grid grid-cols-1 gap-3 pr-8">
                                       {el.group.map((gItem: any, gIdx: number) => {
                                         if (gItem.type === 'HEADING' || gItem.type === 'BLANK_LINES') return null;
-                                        
+
                                         if (gItem.type === 'TEMPLATED_TEXT') {
                                             return gItem.fieldNames?.map((fn: string) => (
                                               <div key={fn}>
-                                                <label className="block text-xs font-semibold mb-1.5 text-slate-500 capitalize">{fn}</label>
+                                                <label className="block text-xs font-semibold mb-1.5 text-slate-500">{formatLabel(fn)}</label>
                                                 <input 
                                                   type="text"
                                                   className="w-full border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 p-2 rounded-md text-sm text-slate-900 outline-none"
@@ -864,7 +1050,7 @@ export default function SubmitWork() {
                                         
                                         return (
                                           <div key={sName}>
-                                            <label className="block text-xs font-semibold mb-1.5 text-slate-500 capitalize">{sName}</label>
+                                            <label className="block text-xs font-semibold mb-1.5 text-slate-500">{formatLabel(sName)}</label>
                                             <input 
                                               type="text"
                                               className="w-full border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 p-2 rounded-md text-sm text-slate-900 outline-none"
@@ -902,32 +1088,33 @@ export default function SubmitWork() {
 
                       // DEFAULT TEXT/ARRAY TYPE
                       const isTextarea = el.name.toLowerCase().includes('text') || el.name.toLowerCase().includes('resumo') || el.name.toLowerCase().includes('abstract');
+                      const hint = slotHints[el.name];
                       return (
                         <div key={elIdx} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                          <label className="block text-sm font-bold mb-1.5 text-slate-800 capitalize">
-                            {el.name} {el.required && <span className="text-red-500">*</span>}
+                          <label className="block text-sm font-bold mb-1.5 text-slate-800">
+                            {formatLabel(el.name)} {el.required && <span className="text-red-500">*</span>}
                           </label>
-                          {(el.isArray || el.desc) && (
-                            <p className="text-xs text-slate-500 mb-3">
-                              {el.desc || ''} {el.isArray ? (el.desc ? ' | ' : '') + 'Separe múltiplos itens por vírgula' : ''}
+                          {(el.isArray || el.desc || hint) && (
+                            <p className="text-xs text-slate-400 mb-3">
+                              {hint || el.desc || ''}{el.isArray && !hint ? (el.desc ? ' · ' : '') + 'Separe múltiplos itens por vírgula' : ''}
                             </p>
                           )}
-                          
+
                           {isTextarea && !el.isArray ? (
-                            <textarea 
+                            <textarea
                               required={el.required}
                               className="w-full border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 p-3 rounded-lg text-sm text-slate-900 transition-shadow outline-none resize-y min-h-[120px]"
                               value={formData[activeComponentId]?.[el.name] || ''}
-                              placeholder={`Digite o ${el.name}...`}
+                              placeholder={`Digite o ${formatLabel(el.name).toLowerCase()}...`}
                               onChange={(e) => handleInputChange(activeComponentId, el.name, e.target.value)}
                             />
                           ) : (
-                            <input 
+                            <input
                               type="text"
                               required={el.required}
                               className="w-full border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 p-2.5 rounded-lg text-sm text-slate-900 transition-shadow outline-none"
                               value={formData[activeComponentId]?.[el.name] || ''}
-                              placeholder={`Ex: ${el.isArray ? 'Item 1, Item 2' : 'Preencha aqui...'}`}
+                              placeholder={hint ? '' : `Ex: ${el.isArray ? 'Item 1, Item 2' : 'Preencha aqui...'}`}
                               onChange={(e) => handleInputChange(activeComponentId, el.name, e.target.value)}
                             />
                           )}
@@ -936,10 +1123,14 @@ export default function SubmitWork() {
                     })}
                     
                     {activeFields?.length === 0 && (
-                      <div className="bg-white p-8 rounded-xl border border-dashed border-slate-300 flex flex-col items-center justify-center text-center">
-                        <CheckCircle className="w-10 h-10 text-emerald-400 mb-3" />
-                        <h3 className="text-slate-800 font-semibold mb-1">Seção Automática</h3>
-                        <p className="text-slate-500 text-sm max-w-sm">Esta seção faz parte da estrutura, mas não requer preenchimento manual de dados. O Anverso cuidará dela automaticamente.</p>
+                      <div className="bg-white p-8 rounded-xl border border-dashed border-emerald-200 flex flex-col items-center justify-center text-center">
+                        <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center mb-3">
+                          <CheckCircle className="w-6 h-6 text-emerald-500" />
+                        </div>
+                        <h3 className="text-slate-800 font-semibold mb-2">Gerada automaticamente</h3>
+                        <p className="text-slate-500 text-sm max-w-sm">
+                          {componentAutoDescriptions[activeComponentId] || 'Esta seção não requer preenchimento. O Anverso cuidará de toda a formatação e estrutura automaticamente.'}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -975,7 +1166,7 @@ export default function SubmitWork() {
                       {loading ? (
                         <><Loader2 className="w-4 h-4 animate-spin" /> Submetendo...</>
                       ) : (
-                        <><Save className="w-4 h-4" /> Finalizar e Formatar</>
+                        <><FileCheck2 className="w-4 h-4" /> Finalizar e Formatar</>
                       )}
                     </button>
                   )}

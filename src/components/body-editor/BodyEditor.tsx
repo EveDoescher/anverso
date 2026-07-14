@@ -12,7 +12,7 @@ export default function BodyEditor({ value, onChange, maxDepth = 4 }: any) {
 
   const addSection = () => {
     updateSections([...sections, {
-      id: Math.random().toString(36).substr(2, 9),
+      id: crypto.randomUUID(),
       level: 1,
       title: 'Nova Seção',
       blocks: [],
@@ -129,7 +129,7 @@ export default function BodyEditor({ value, onChange, maxDepth = 4 }: any) {
                  let current = newSections;
                  for(let i=0; i<path.length-1; i++) current = current[path[i]].subsections;
                  current[path[path.length-1]].subsections.push({
-                    id: Math.random().toString(36).substr(2, 9),
+                    id: crypto.randomUUID(),
                     level: section.level + 1,
                     title: 'Nova Subseção',
                     blocks: [],
