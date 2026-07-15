@@ -8,6 +8,7 @@ import Image from 'next/image';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { Alert } from '@/components/ui/Alert';
 import { Mail, Lock, KeyRound, User } from 'lucide-react';
 
 export default function Register() {
@@ -131,8 +132,8 @@ export default function Register() {
           </div>
 
           <div className="bg-white/80 backdrop-blur-md p-8 rounded-3xl shadow-[var(--shadow-soft)] border border-[var(--color-border-soft)]">
-            {error && <div className="bg-[var(--color-error-bg-soft)] text-[var(--color-error)] border border-[var(--color-error-bg)] p-3 rounded-xl mb-6 text-sm">{error}</div>}
-            {success && <div className="bg-[var(--color-success-bg)] text-[var(--color-green)] border border-[var(--color-success-soft)] p-3 rounded-xl mb-6 text-sm">{success}</div>}
+            {error && <Alert tone="error" title={error} className="mb-6" />}
+            {success && <Alert tone="success" title={success} className="mb-6" />}
 
             {step === 'REGISTER' ? (
               <div className="space-y-5">

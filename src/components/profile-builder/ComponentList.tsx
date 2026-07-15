@@ -40,13 +40,13 @@ const RULE_TYPE_LABELS: Record<ComponentRuleType, string> = {
 };
 
 const RULE_TYPE_COLORS: Record<ComponentRuleType, string> = {
-  SINGLE_PAGE: 'bg-blue-50 text-blue-700 border-blue-200',
-  FLOW_TEXTUAL: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  BIBLIOGRAPHY: 'bg-amber-50 text-[var(--color-gold)] border-amber-200',
-  BODY_CONTENT: 'bg-purple-50 text-purple-700 border-purple-200',
-  SECTIONED: 'bg-orange-50 text-orange-700 border-orange-200',
-  ELEMENT_INDEX: 'bg-cyan-50 text-cyan-700 border-cyan-200',
-  SECTION_INDEX: 'bg-[var(--color-success-bg)] text-[var(--color-green)] border-[var(--color-success-soft)]',
+  SINGLE_PAGE:    'bg-[var(--color-success-bg)] text-[var(--color-forest)] border-[var(--color-success-soft)]',
+  BODY_CONTENT:   'bg-[var(--color-cream)] text-[var(--color-gold)] border-[rgba(181,137,42,0.28)]',
+  BIBLIOGRAPHY:   'bg-[rgba(92,51,32,0.08)] text-[var(--color-coffee)] border-[rgba(92,51,32,0.2)]',
+  FLOW_TEXTUAL:   'bg-[rgba(122,158,136,0.12)] text-[var(--color-fern)] border-[rgba(122,158,136,0.3)]',
+  SECTIONED:      'bg-[rgba(139,94,60,0.1)] text-[var(--color-mocha)] border-[rgba(139,94,60,0.25)]',
+  ELEMENT_INDEX:  'bg-[rgba(196,154,108,0.12)] text-[var(--color-latte)] border-[rgba(196,154,108,0.3)]',
+  SECTION_INDEX:  'bg-[var(--color-success-bg)] text-[var(--color-green)] border-[var(--color-success-soft)]',
 };
 
 function SortableItem({ comp, isSelected, onSelect, hasError }: {

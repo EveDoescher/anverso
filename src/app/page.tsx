@@ -146,7 +146,7 @@ export default function Home() {
                   <h3 className="font-serif text-2xl text-[var(--color-espresso)]">3. Output .DOCX</h3>
                 </div>
                 <div className="bg-white p-4 shadow-sm border border-[var(--color-border-soft)] rounded h-full flex flex-col items-center justify-center text-center">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 mb-3">
+                  <div className="w-12 h-12 bg-[var(--color-success-bg)] rounded-lg flex items-center justify-center text-[var(--color-green)] mb-3">
                     <FileText size={24} />
                   </div>
                   <span className="font-bold text-sm text-[var(--color-espresso)]">documento_abnt.docx</span>

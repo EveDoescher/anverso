@@ -6,6 +6,7 @@ import { fetchApi } from '@/lib/api';
 import Navbar from '@/components/layout/Navbar';
 import { AlertModal, AlertModalType } from '@/components/ui/AlertModal';
 import { Button } from '@/components/ui/Button';
+import { TabNavigation, TabNavigationItem } from '@/components/ui/TabNavigation';
 import { Users, BarChart, LayoutTemplate, ShieldAlert, CheckCircle2, XCircle, Trash2, ShieldCheck, User } from 'lucide-react';
 
 interface UserData {
@@ -203,44 +204,17 @@ export default function AdminDashboard() {
         </div>
 
         {/* Tabs */}
-        <div className="flex space-x-1 bg-white border border-[var(--color-border-soft)] p-2 rounded-2xl mb-10 overflow-x-auto shadow-sm w-fit">
-          <button
-            onClick={() => setActiveTab('stats')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
-              activeTab === 'stats' ? 'bg-[var(--color-gold)] text-white shadow-md' : 'text-[var(--color-neutral)] hover:bg-[var(--color-paper-soft)] hover:text-[var(--color-espresso)]'
-            }`}
-          >
-            <BarChart size={16} />
-            Visão Geral
-          </button>
-          <button
-            onClick={() => setActiveTab('users')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
-              activeTab === 'users' ? 'bg-[var(--color-gold)] text-white shadow-md' : 'text-[var(--color-neutral)] hover:bg-[var(--color-paper-soft)] hover:text-[var(--color-espresso)]'
-            }`}
-          >
-            <Users size={16} />
-            Usuários
-          </button>
-          <button
-            onClick={() => setActiveTab('profiles')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
-              activeTab === 'profiles' ? 'bg-[var(--color-gold)] text-white shadow-md' : 'text-[var(--color-neutral)] hover:bg-[var(--color-paper-soft)] hover:text-[var(--color-espresso)]'
-            }`}
-          >
-            <LayoutTemplate size={16} />
-            Perfis Globais
-          </button>
-          <button
-            onClick={() => setActiveTab('verifications')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
-              activeTab === 'verifications' ? 'bg-[var(--color-gold)] text-white shadow-md' : 'text-[var(--color-neutral)] hover:bg-[var(--color-paper-soft)] hover:text-[var(--color-espresso)]'
-            }`}
-          >
-            <ShieldAlert size={16} />
-            Verificações
-          </button>
-        </div>
+        <TabNavigation
+          items={[
+            { id: 'stats', label: 'Visão Geral', icon: BarChart },
+            { id: 'users', label: 'Usuários', icon: Users },
+            { id: 'profiles', label: 'Perfis Globais', icon: LayoutTemplate },
+            { id: 'verifications', label: 'Verificações', icon: ShieldAlert },
+          ] as TabNavigationItem[]}
+          activeId={activeTab}
+          onChange={(id) => setActiveTab(id as typeof activeTab)}
+          className="mb-10 w-fit"
+        />
 
         {/* Tab Content */}
         {activeTab === 'stats' && (
@@ -253,9 +227,9 @@ export default function AdminDashboard() {
               <p className="text-[10px] font-bold text-[var(--color-green)] uppercase tracking-widest mb-2">Contas Ativas</p>
               <h3 className="text-4xl font-serif text-[var(--color-green)]">{users.filter(u => u.active !== false).length}</h3>
             </div>
-            <div className="bg-[#FEF9C3] p-6 rounded-3xl border border-[#FEF08A]">
-              <p className="text-[10px] font-bold text-[#A16207] uppercase tracking-widest mb-2">Logados Hoje</p>
-              <h3 className="text-4xl font-serif text-[#A16207]">{stats.loggedInUsers}</h3>
+            <div className="bg-[var(--color-cream)] p-6 rounded-3xl border border-[rgba(181,137,42,0.28)]">
+              <p className="text-[10px] font-bold text-[var(--color-gold)] uppercase tracking-widest mb-2">Logados Hoje</p>
+              <h3 className="text-4xl font-serif text-[var(--color-gold)]">{stats.loggedInUsers}</h3>
             </div>
             <div className="bg-[var(--color-cream)] p-6 rounded-3xl border border-[var(--color-border-soft)]">
               <p className="text-[10px] font-bold text-[var(--color-coffee)] uppercase tracking-widest mb-2">Perfis Criados</p>

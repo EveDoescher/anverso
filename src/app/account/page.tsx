@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { fetchApi } from '@/lib/api';
 import Navbar from '@/components/layout/Navbar';
 import { User, Mail, Shield, KeyRound, Save, Edit3, ArrowLeft, CheckCircle2, GraduationCap, Camera, X } from 'lucide-react';
+import { Alert } from '@/components/ui/Alert';
 import Cropper from 'react-easy-crop';
 import { AlertModal, AlertModalType } from '@/components/ui/AlertModal';
 import { Input } from '@/components/ui/Input';
@@ -207,7 +208,7 @@ export default function AccountPage() {
           </div>
         </div>
 
-        {error && <div className="bg-[var(--color-error-bg-soft)] text-[var(--color-error)] p-4 rounded-xl border border-[var(--color-error-bg)] mb-6 text-sm">{error}</div>}
+        {error && <Alert tone="error" title={error} className="mb-6" />}
 
         <div className="bg-white rounded-[32px] border border-[var(--color-border-soft)] shadow-sm overflow-hidden mb-12">
           <div className="bg-[var(--color-forest)] h-32 relative">

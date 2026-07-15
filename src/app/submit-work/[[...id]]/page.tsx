@@ -595,13 +595,13 @@ export default function SubmitWork() {
   const activeFields = activeComponentId ? profile.componentFields[activeComponentId] : [];
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans selection:bg-[var(--color-success-soft)] selection:text-indigo-900">
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans selection:bg-[var(--color-success-soft)] selection:text-[var(--color-forest)]">
       <header className="bg-white/80 backdrop-blur-md border-b border-[var(--color-border-soft)] sticky top-0 z-30 transition-all">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <IconButton variant="ghost" icon={ArrowLeft} label="Voltar" onClick={handleBackNavigation} />
             <div className="h-5 w-px bg-[var(--color-border-soft)]"></div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent flex items-center gap-2">
+            <h1 className="text-xl font-bold text-[var(--color-forest)] flex items-center gap-2">
               <FileText className="w-5 h-5 text-[var(--color-green)]" />
               Novo Trabalho Acadêmico
             </h1>
@@ -620,7 +620,7 @@ export default function SubmitWork() {
                <button 
                  type="button" 
                  onClick={handleShareWork}
-                 className="text-xs font-medium bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-full transition-colors flex items-center gap-1.5"
+                 className="text-xs font-medium bg-[var(--color-success-bg)] hover:bg-[var(--color-success-soft)] text-[var(--color-green)] px-3 py-1.5 rounded-full transition-colors flex items-center gap-1.5"
                  title="Compartilhar Trabalho"
                >
                  <Share2 className="w-3.5 h-3.5" />
@@ -648,7 +648,7 @@ export default function SubmitWork() {
         {!profile && (
           <div className="max-w-4xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500 pt-8">
             <div className="text-center mb-10">
-              <div className="w-16 h-16 bg-[var(--color-success-soft)] rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-indigo-50">
+              <div className="w-16 h-16 bg-[var(--color-success-soft)] rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-[var(--color-success-soft)]">
                  <FileCheck2 className="w-8 h-8 text-[var(--color-green)]" />
               </div>
               <h2 className="text-3xl font-extrabold text-[var(--color-espresso)] mb-3 tracking-tight">Escolha o Padrão de Formatação</h2>
@@ -659,14 +659,14 @@ export default function SubmitWork() {
             
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20 text-[var(--color-neutral)]/70">
-                <Loader2 className="w-10 h-10 animate-spin mb-4 text-indigo-500" />
+                <Loader2 className="w-10 h-10 animate-spin mb-4 text-[var(--color-green)]" />
                 <p className="font-medium">Carregando modelos disponíveis...</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {profiles.map(p => (
                   <div key={p.id} onClick={() => selectProfile(p.id)} role="button" tabIndex={0}
-                    className="group text-left bg-white border border-[var(--color-border-soft)] rounded-2xl p-6 hover:border-indigo-300 hover:shadow-lg hover:shadow-indigo-100/50 transition-all duration-300 flex flex-col h-full focus:outline-none focus:ring-2 focus:ring-[var(--color-green)] focus:ring-offset-2"
+                    className="group text-left bg-white border border-[var(--color-border-soft)] rounded-2xl p-6 hover:border-[var(--color-green)] hover:shadow-[var(--shadow-soft)] transition-all duration-300 flex flex-col h-full focus:outline-none focus:ring-2 focus:ring-[var(--color-green)] focus:ring-offset-2"
                   >
                     <div className="flex justify-between items-start mb-4">
                        <h3 className="font-bold text-[var(--color-espresso)] text-lg group-hover:text-[var(--color-green)] transition-colors">{p.name}</h3>
@@ -684,7 +684,7 @@ export default function SubmitWork() {
                 )}
               </div>
             )}
-            {error && <div className="mt-6 bg-red-50 text-red-700 p-4 rounded-xl border border-red-100 text-sm font-medium flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-red-500" />{error}</div>}
+            {error && <div className="mt-6 bg-[var(--color-error-bg-soft)] text-[var(--color-error)] p-4 rounded-xl border border-[var(--color-error-bg)] text-sm font-medium">{error}</div>}
           </div>
         )}
 
@@ -749,7 +749,7 @@ export default function SubmitWork() {
                 <div>
                   <h3 className="text-xs font-bold text-[var(--color-neutral)] uppercase tracking-wider mb-2">Comportamento</h3>
                   <label
-                    className="flex items-center gap-2 p-2 bg-[var(--color-success-bg)]/50 rounded-lg cursor-pointer hover:bg-[var(--color-success-bg)] transition-colors border border-indigo-100/50"
+                    className="flex items-center gap-2 p-2 bg-[var(--color-success-bg)]/50 rounded-lg cursor-pointer hover:bg-[var(--color-success-bg)] transition-colors border border-[var(--color-success-soft)]"
                     title="Campos com o mesmo nome em seções diferentes (ex: Autor) serão preenchidos ao mesmo tempo."
                   >
                     <input
@@ -758,7 +758,7 @@ export default function SubmitWork() {
                       checked={autoFill}
                       onChange={(e) => { setAutoFill(e.target.checked); setHasUnsavedChanges(true); }}
                     />
-                    <span className="text-xs font-semibold text-indigo-900 leading-tight">Sincronizar campos repetidos</span>
+                    <span className="text-xs font-semibold text-[var(--color-forest)] leading-tight">Sincronizar campos repetidos</span>
                   </label>
                 </div>
               </div>
@@ -800,7 +800,7 @@ export default function SubmitWork() {
                       {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-green)] rounded-r-full" />}
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors
                         ${isActive ? 'bg-[var(--color-green)] text-white' :
-                          status === 'complete' ? 'bg-emerald-100 text-emerald-600' :
+                          status === 'complete' ? 'bg-[var(--color-success-bg)] text-[var(--color-green)]' :
                           status === 'partial'  ? 'bg-amber-100 text-amber-600' :
                           'bg-[var(--color-paper-soft)] text-[var(--color-neutral)]/70'}
                       `}>
@@ -1122,9 +1122,9 @@ export default function SubmitWork() {
                     })}
                     
                     {activeFields?.length === 0 && (
-                      <div className="bg-white p-8 rounded-xl border border-dashed border-emerald-200 flex flex-col items-center justify-center text-center">
-                        <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center mb-3">
-                          <CheckCircle className="w-6 h-6 text-emerald-500" />
+                      <div className="bg-white p-8 rounded-xl border border-dashed border-[var(--color-success-soft)] flex flex-col items-center justify-center text-center">
+                        <div className="w-12 h-12 rounded-full bg-[var(--color-success-bg)] flex items-center justify-center mb-3">
+                          <CheckCircle className="w-6 h-6 text-[var(--color-green)]" />
                         </div>
                         <h3 className="text-[var(--color-espresso)] font-semibold mb-2">Gerada automaticamente</h3>
                         <p className="text-[var(--color-neutral)] text-sm max-w-sm">
@@ -1160,7 +1160,7 @@ export default function SubmitWork() {
                     <button 
                       type="submit" 
                       disabled={loading}
-                      className="flex items-center gap-2 px-8 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm hover:shadow text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 disabled:opacity-70"
+                      className="flex items-center gap-2 px-8 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm hover:shadow text-white bg-[var(--color-green)] hover:brightness-110 disabled:opacity-70"
                     >
                       {loading ? (
                         <><Loader2 className="w-4 h-4 animate-spin" /> Submetendo...</>
