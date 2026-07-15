@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { fetchApi } from '@/lib/api';
 import Navbar from '@/components/layout/Navbar';
-import { FileText, LayoutTemplate, Heart, Plus, Download, Trash2, Star, User, Clock } from 'lucide-react';
+import { FileText, LayoutTemplate, Heart, Plus, Download, Trash2, Star, Clock } from 'lucide-react';
 import { AlertModal, AlertModalType } from '@/components/ui/AlertModal';
+import { Button } from '@/components/ui/Button';
 
 interface UserData {
   id: string;
@@ -30,7 +31,6 @@ export default function Dashboard() {
   const [workToDelete, setWorkToDelete] = useState<any>(null);
   const router = useRouter();
 
-  // Custom Modal state
   const [modalConfig, setModalConfig] = useState<{show: boolean, title: string, message: string, type: AlertModalType, onConfirm?: () => void}>({
     show: false,
     title: '',
@@ -40,10 +40,6 @@ export default function Dashboard() {
 
   const showAlert = (title: string, message: string, type: AlertModalType) => {
     setModalConfig({ show: true, title, message, type });
-  };
-
-  const showConfirm = (title: string, message: string, onConfirm: () => void) => {
-    setModalConfig({ show: true, title, message, type: 'confirm', onConfirm });
   };
 
   const closeModal = () => setModalConfig(prev => ({ ...prev, show: false }));
@@ -89,7 +85,6 @@ export default function Dashboard() {
       const res = await fetchApi('/api/v1/profiles');
       if (res.ok) {
         const all = await res.json();
-        // Filtra apenas os perfis criados pelo usuário logado
         setProfiles(all.filter((p: any) => p.ownerId === userId));
       }
     } catch (err: any) {
@@ -99,12 +94,9 @@ export default function Dashboard() {
 
   const loadFavorites = async () => {
     try {
-      // Por enquanto, vamos pegar todos os perfis e marcar os favoritados
-      // Quando tivermos um endpoint dedicado, podemos trocar
       const res = await fetchApi('/api/v1/profiles');
       if (res.ok) {
         const all = await res.json();
-        // Filtra os que o usuário favoritou (favoritesCount > 0 como placeholder até ter endpoint)
         setFavorites(all.filter((p: any) => p.favoritesCount > 0));
       }
     } catch { /* ignore */ }
@@ -131,7 +123,6 @@ export default function Dashboard() {
       URL.revokeObjectURL(url);
     } catch (err) {
       showAlert('Erro', 'Erro ao tentar gerar o JSON.', 'error');
-      console.error(err);
     }
   };
 
@@ -163,47 +154,43 @@ export default function Dashboard() {
   ];
 
   if (loading) return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+    <div className="min-h-screen bg-[var(--color-paper)] flex items-center justify-center">
       <div className="animate-pulse flex flex-col items-center">
-        <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4" />
-        <p className="text-slate-500 font-medium">Carregando...</p>
+        <div className="w-12 h-12 border-4 border-[var(--color-cream)] border-t-[var(--color-green)] rounded-full animate-spin mb-4" />
+        <p className="text-[var(--color-neutral)] font-medium text-sm uppercase tracking-widest">Carregando...</p>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
+    <div className="min-h-screen bg-[var(--color-paper)] text-[var(--color-text)] font-sans">
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        {error && <div className="bg-red-50 text-red-700 p-4 rounded-xl border border-red-200 mb-6">{error}</div>}
+      <main className="max-w-7xl mx-auto px-6 py-12">
+        {error && <div className="bg-[var(--color-error-bg-soft)] text-[var(--color-error)] p-4 rounded-xl border border-[var(--color-error-bg)] mb-6 text-sm font-medium">{error}</div>}
 
-        {/* Header com ações */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-6">
           <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Dashboard</h1>
-            <p className="text-slate-500 mt-1">Gerencie seus trabalhos, perfis e favoritos</p>
+            <h1 className="text-3xl font-serif text-[var(--color-espresso)]">Dashboard</h1>
+            <p className="text-[var(--color-neutral)] mt-1">Gerencie seus trabalhos, perfis e favoritos</p>
           </div>
           <div className="flex gap-3">
-            <Link
-              href="/create-profile"
-              className="bg-white border-2 border-slate-200 hover:border-indigo-300 text-slate-700 py-2.5 px-5 rounded-xl font-semibold transition-all flex items-center gap-2 text-sm"
-            >
-              <Plus size={18} />
-              Novo Perfil
+            <Link href="/create-profile" tabIndex={-1}>
+              <Button variant="ghost" icon={Plus}>
+                Novo Perfil
+              </Button>
             </Link>
-            <Link
-              href="/submit-work"
-              className="bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 px-5 rounded-xl font-semibold shadow-lg shadow-indigo-600/20 transition-all flex items-center gap-2 text-sm"
-            >
-              <Plus size={18} />
-              Novo Trabalho
+            <Link href="/submit-work" tabIndex={-1}>
+              <Button variant="primary" icon={Plus}>
+                Novo Trabalho
+              </Button>
             </Link>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 bg-white border border-slate-200 rounded-2xl p-1.5 mb-8 w-fit">
+        <div className="flex gap-2 bg-white border border-[var(--color-border-soft)] rounded-2xl p-2 mb-10 w-fit shadow-[var(--shadow-soft)]">
           {tabs.map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.key;
@@ -211,16 +198,16 @@ export default function Dashboard() {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   isActive
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                    ? 'bg-[var(--color-green)] text-white shadow-md'
+                    : 'text-[var(--color-neutral)] hover:text-[var(--color-espresso)] hover:bg-[var(--color-paper-soft)]'
                 }`}
               >
-                <Icon size={18} />
+                <Icon size={16} />
                 {tab.label}
-                <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-bold ${
-                  isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                <span className={`ml-2 px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                  isActive ? 'bg-white/20 text-white' : 'bg-[var(--color-border-soft)] text-[var(--color-neutral)]'
                 }`}>
                   {tab.count}
                 </span>
@@ -233,53 +220,53 @@ export default function Dashboard() {
         {activeTab === 'works' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {works.map((work) => (
-              <div key={work.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg hover:border-indigo-200 transition-all duration-300 flex flex-col">
-                <div className="h-2 bg-gradient-to-r from-indigo-500 to-purple-500" />
-                <div className="p-5 flex-1 flex flex-col">
-                  <h3 className="font-bold text-slate-900 text-lg mb-2 line-clamp-1">
+              <div key={work.id} className="bg-white rounded-3xl border border-[var(--color-border-soft)] overflow-hidden hover:shadow-[var(--shadow-soft)] hover:border-[var(--color-border)] transition-all duration-300 flex flex-col">
+                <div className="h-1.5 bg-[var(--color-gold)]" />
+                <div className="p-6 flex-1 flex flex-col">
+                  <h3 className="font-serif text-[var(--color-espresso)] text-xl mb-3 line-clamp-1">
                     {work.title || work.fileName || 'Trabalho sem título'}
                   </h3>
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                  <div className="flex items-center gap-2 mb-5">
+                    <span className={`px-2 py-1 rounded-md text-[10px] uppercase font-bold tracking-wider border ${
                       work.status === 'COMPLETED'
-                        ? 'bg-emerald-50 text-emerald-700'
+                        ? 'bg-[var(--color-success-bg)] text-[var(--color-green)] border-[var(--color-success-soft)]'
                         : work.status === 'PROCESSING'
-                        ? 'bg-amber-50 text-amber-700'
+                        ? 'bg-[#FEF9C3] text-[#A16207] border-[#FEF08A]'
                         : work.status === 'DRAFT'
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'bg-slate-100 text-slate-600'
+                        ? 'bg-[var(--color-paper-soft)] text-[var(--color-espresso)] border-[var(--color-border-soft)]'
+                        : 'bg-gray-100 text-gray-600 border-gray-200'
                     }`}>
                       {work.status === 'DRAFT' ? 'RASCUNHO' : work.status}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-400 mt-auto mb-4">
-                    <Clock size={14} />
+                  <div className="flex items-center gap-2 text-xs text-[var(--color-neutral)] mt-auto mb-5">
+                    <Clock size={12} />
                     <span>Criado em {new Date(work.createdAt).toLocaleDateString('pt-BR')}</span>
                   </div>
-                  <div className="h-px bg-slate-100 mb-4" />
+                  <div className="h-[1px] bg-[var(--color-border-soft)] mb-4 w-full" />
                   <div className="flex items-center justify-between">
                     {work.status === 'COMPLETED' && (
                       <button
                         onClick={() => handleDownloadJSON(work)}
-                        className="flex items-center gap-1.5 text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors"
+                        className="flex items-center gap-1.5 text-xs font-bold text-[var(--color-forest)] hover:opacity-70 transition-opacity"
                       >
-                        <Download size={16} />
+                        <Download size={14} />
                         Baixar JSON
                       </button>
                     )}
                     {work.status === 'DRAFT' && (
                       <Link
                         href={`/submit-work/${work.id}`}
-                        className="flex items-center gap-1.5 text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors"
+                        className="flex items-center gap-1.5 text-xs font-bold text-[var(--color-gold)] hover:opacity-70 transition-opacity"
                       >
                         Retomar Edição
                       </Link>
                     )}
                     <button
                       onClick={() => confirmDeleteWork(work)}
-                      className="flex items-center gap-1.5 text-sm font-semibold text-red-500 hover:text-red-700 transition-colors ml-auto"
+                      className="flex items-center gap-1.5 text-xs font-bold text-[var(--color-error)] hover:opacity-70 transition-opacity ml-auto"
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={14} />
                       Excluir
                     </button>
                   </div>
@@ -287,16 +274,12 @@ export default function Dashboard() {
               </div>
             ))}
             {works.length === 0 && (
-              <div className="col-span-3 text-center py-16 bg-white rounded-2xl border border-slate-200">
-                <FileText size={48} className="mx-auto text-slate-300 mb-4" />
-                <h3 className="text-xl font-bold text-slate-900 mb-2">Nenhum trabalho ainda</h3>
-                <p className="text-slate-500 mb-6">Crie seu primeiro trabalho para começar a usar o Anverso.</p>
-                <Link
-                  href="/submit-work"
-                  className="inline-flex items-center gap-2 bg-indigo-600 text-white py-2.5 px-6 rounded-xl font-semibold hover:bg-indigo-700 transition-colors"
-                >
-                  <Plus size={18} />
-                  Criar Trabalho
+              <div className="col-span-1 md:col-span-2 lg:col-span-3 text-center py-20 bg-white rounded-3xl border border-[var(--color-border-soft)] shadow-sm">
+                <FileText size={40} className="mx-auto text-[var(--color-border-strong)] mb-4" />
+                <h3 className="text-xl font-serif text-[var(--color-espresso)] mb-2">Nenhum trabalho ainda</h3>
+                <p className="text-[var(--color-neutral)] mb-6 text-sm">Crie seu primeiro trabalho para começar a usar o Anverso.</p>
+                <Link href="/submit-work">
+                  <Button variant="primary" icon={Plus}>Criar Trabalho</Button>
                 </Link>
               </div>
             )}
@@ -310,28 +293,26 @@ export default function Dashboard() {
               <Link
                 href={`/explore/${profile.id}`}
                 key={profile.id}
-                className="group bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg hover:border-indigo-200 transition-all duration-300 flex flex-col"
+                className="group bg-white rounded-3xl border border-[var(--color-border-soft)] overflow-hidden hover:shadow-[var(--shadow-soft)] hover:border-[var(--color-border)] transition-all duration-300 flex flex-col"
               >
-                <div className={`h-24 bg-gradient-to-br ${
-                  ['from-indigo-500 to-purple-600', 'from-blue-500 to-cyan-500', 'from-emerald-400 to-teal-500', 'from-orange-400 to-rose-500', 'from-violet-500 to-fuchsia-500'][idx % 5]
-                } p-4 flex items-end`}>
-                  <h3 className="text-white font-bold text-lg leading-tight drop-shadow-sm line-clamp-2">
+                <div className={`h-28 p-5 flex items-end ${['bg-[var(--color-forest)]', 'bg-[var(--color-coffee)]', 'bg-[var(--color-gold)]', 'bg-[#2A3B31]', 'bg-[#8C7A6B]'][idx % 5]}`}>
+                  <h3 className="text-white font-serif text-xl leading-tight line-clamp-2">
                     {profile.name}
                   </h3>
                 </div>
-                <div className="p-5 flex-1 flex flex-col">
-                  <p className="text-slate-600 text-sm line-clamp-2 mb-4 flex-1">
+                <div className="p-6 flex-1 flex flex-col">
+                  <p className="text-[var(--color-neutral)] text-sm line-clamp-2 mb-5 flex-1">
                     {profile.description || 'Sem descrição.'}
                   </p>
-                  <div className="flex items-center justify-between text-slate-400 text-sm">
+                  <div className="flex items-center justify-between text-[var(--color-neutral)] text-xs font-medium border-t border-[var(--color-border-soft)] pt-4 mt-auto">
                     <div className="flex items-center gap-1.5">
-                      <Star size={14} className="fill-amber-400 text-amber-400" />
-                      <span className="font-semibold text-slate-600">
+                      <Star size={12} className="fill-[var(--color-gold)] text-[var(--color-gold)]" />
+                      <span className="text-[var(--color-espresso)]">
                         {profile.rating ? profile.rating.toFixed(1) : '0.0'}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <Heart size={14} />
+                      <Heart size={12} />
                       <span>{profile.favoritesCount || 0}</span>
                     </div>
                   </div>
@@ -339,16 +320,12 @@ export default function Dashboard() {
               </Link>
             ))}
             {profiles.length === 0 && (
-              <div className="col-span-3 text-center py-16 bg-white rounded-2xl border border-slate-200">
-                <LayoutTemplate size={48} className="mx-auto text-slate-300 mb-4" />
-                <h3 className="text-xl font-bold text-slate-900 mb-2">Nenhum perfil criado</h3>
-                <p className="text-slate-500 mb-6">Crie um perfil de formatação para compartilhar com a comunidade.</p>
-                <Link
-                  href="/create-profile"
-                  className="inline-flex items-center gap-2 bg-indigo-600 text-white py-2.5 px-6 rounded-xl font-semibold hover:bg-indigo-700 transition-colors"
-                >
-                  <Plus size={18} />
-                  Criar Perfil
+              <div className="col-span-1 md:col-span-2 lg:col-span-3 text-center py-20 bg-white rounded-3xl border border-[var(--color-border-soft)] shadow-sm">
+                <LayoutTemplate size={40} className="mx-auto text-[var(--color-border-strong)] mb-4" />
+                <h3 className="text-xl font-serif text-[var(--color-espresso)] mb-2">Nenhum perfil criado</h3>
+                <p className="text-[var(--color-neutral)] mb-6 text-sm">Crie um perfil de formatação para compartilhar com a comunidade.</p>
+                <Link href="/create-profile">
+                  <Button variant="primary" icon={Plus}>Criar Perfil</Button>
                 </Link>
               </div>
             )}
@@ -362,42 +339,37 @@ export default function Dashboard() {
               <Link
                 href={`/explore/${profile.id}`}
                 key={profile.id}
-                className="group bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg hover:border-rose-200 transition-all duration-300 flex flex-col"
+                className="group bg-white rounded-3xl border border-[var(--color-border-soft)] overflow-hidden hover:shadow-[var(--shadow-soft)] hover:border-[var(--color-border)] transition-all duration-300 flex flex-col"
               >
-                <div className={`h-24 bg-gradient-to-br ${
-                  ['from-rose-400 to-pink-500', 'from-fuchsia-400 to-purple-500', 'from-amber-400 to-orange-500', 'from-teal-400 to-cyan-500', 'from-indigo-400 to-blue-500'][idx % 5]
-                } p-4 flex items-end relative`}>
-                  <Heart size={20} className="absolute top-4 right-4 fill-white text-white" />
-                  <h3 className="text-white font-bold text-lg leading-tight drop-shadow-sm line-clamp-2">
+                <div className={`h-28 p-5 flex items-end relative ${['bg-[#8C7A6B]', 'bg-[var(--color-gold)]', 'bg-[var(--color-forest)]', 'bg-[#2A3B31]', 'bg-[var(--color-coffee)]'][idx % 5]}`}>
+                  <Heart size={16} className="absolute top-4 right-4 fill-white text-white opacity-80" />
+                  <h3 className="text-white font-serif text-xl leading-tight line-clamp-2">
                     {profile.name}
                   </h3>
                 </div>
-                <div className="p-5 flex-1 flex flex-col">
-                  <p className="text-slate-600 text-sm line-clamp-2 mb-4 flex-1">
+                <div className="p-6 flex-1 flex flex-col">
+                  <p className="text-[var(--color-neutral)] text-sm line-clamp-2 mb-5 flex-1">
                     {profile.description || 'Sem descrição.'}
                   </p>
-                  <div className="flex items-center justify-between text-slate-400 text-sm">
+                  <div className="flex items-center justify-between text-[var(--color-neutral)] text-xs font-medium border-t border-[var(--color-border-soft)] pt-4 mt-auto">
                     <div className="flex items-center gap-1.5">
-                      <Star size={14} className="fill-amber-400 text-amber-400" />
-                      <span className="font-semibold text-slate-600">
+                      <Star size={12} className="fill-[var(--color-gold)] text-[var(--color-gold)]" />
+                      <span className="text-[var(--color-espresso)]">
                         {profile.rating ? profile.rating.toFixed(1) : '0.0'}
                       </span>
                     </div>
-                    <span className="text-xs text-rose-500 font-semibold">Favoritado</span>
+                    <span className="text-[10px] uppercase font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded border border-rose-100">Favoritado</span>
                   </div>
                 </div>
               </Link>
             ))}
             {favorites.length === 0 && (
-              <div className="col-span-3 text-center py-16 bg-white rounded-2xl border border-slate-200">
-                <Heart size={48} className="mx-auto text-slate-300 mb-4" />
-                <h3 className="text-xl font-bold text-slate-900 mb-2">Nenhum favorito</h3>
-                <p className="text-slate-500 mb-6">Explore a comunidade e favorite os perfis que mais gostar.</p>
-                <Link
-                  href="/explore"
-                  className="inline-flex items-center gap-2 bg-indigo-600 text-white py-2.5 px-6 rounded-xl font-semibold hover:bg-indigo-700 transition-colors"
-                >
-                  Explorar Comunidade
+              <div className="col-span-1 md:col-span-2 lg:col-span-3 text-center py-20 bg-white rounded-3xl border border-[var(--color-border-soft)] shadow-sm">
+                <Heart size={40} className="mx-auto text-[var(--color-border-strong)] mb-4" />
+                <h3 className="text-xl font-serif text-[var(--color-espresso)] mb-2">Nenhum favorito</h3>
+                <p className="text-[var(--color-neutral)] mb-6 text-sm">Explore a comunidade e favorite os perfis que mais gostar.</p>
+                <Link href="/explore">
+                  <Button variant="ghost">Explorar Comunidade</Button>
                 </Link>
               </div>
             )}
@@ -408,31 +380,23 @@ export default function Dashboard() {
 
       {/* Delete Modal */}
       {deleteModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden transform transition-all">
-            <div className="p-6">
-              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mx-auto mb-4">
-                <Trash2 className="w-6 h-6 text-red-600" />
-              </div>
-              <h3 className="text-lg font-bold text-center text-slate-900 mb-2">Excluir Trabalho?</h3>
-              <p className="text-center text-sm text-slate-500">
-                Tem certeza que deseja excluir o trabalho <strong className="text-slate-700">{workToDelete?.title || workToDelete?.fileName}</strong>?<br/>
-                Esta ação é permanente e os dados não poderão ser recuperados.
-              </p>
+        <div className="fixed inset-0 bg-[var(--color-espresso)]/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-[var(--shadow-elevated)] w-full max-w-sm overflow-hidden p-6 border border-[var(--color-border-soft)]">
+            <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-[var(--color-error-bg-soft)] mx-auto mb-5 border border-[var(--color-error-bg)]">
+              <Trash2 className="w-5 h-5 text-[var(--color-error)]" />
             </div>
-            <div className="bg-slate-50 p-4 flex gap-3 justify-end border-t border-slate-100">
-              <button 
-                onClick={() => setDeleteModalOpen(false)}
-                className="px-4 py-2 font-medium text-slate-700 hover:bg-slate-200 bg-slate-100 rounded-lg transition-colors"
-              >
+            <h3 className="text-xl font-serif text-center text-[var(--color-espresso)] mb-2">Excluir Trabalho?</h3>
+            <p className="text-center text-sm text-[var(--color-neutral)] mb-6">
+              Tem certeza que deseja excluir o trabalho <strong>{workToDelete?.title || workToDelete?.fileName}</strong>?
+              Esta ação é permanente.
+            </p>
+            <div className="flex flex-col gap-2">
+              <Button variant="danger" size="md" className="w-full justify-center" onClick={executeDeleteWork}>
+                Excluir Permanentemente
+              </Button>
+              <Button variant="quiet" size="md" className="w-full justify-center" onClick={() => setDeleteModalOpen(false)} trailingIcon={false}>
                 Cancelar
-              </button>
-              <button 
-                onClick={executeDeleteWork}
-                className="px-4 py-2 font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg shadow-sm transition-colors"
-              >
-                Sim, excluir
-              </button>
+              </Button>
             </div>
           </div>
         </div>

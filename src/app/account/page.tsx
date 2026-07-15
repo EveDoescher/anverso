@@ -8,6 +8,8 @@ import Navbar from '@/components/layout/Navbar';
 import { User, Mail, Shield, KeyRound, Save, Edit3, ArrowLeft, CheckCircle2, GraduationCap, Camera, X } from 'lucide-react';
 import Cropper from 'react-easy-crop';
 import { AlertModal, AlertModalType } from '@/components/ui/AlertModal';
+import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
 
 interface UserData {
   id: string;
@@ -38,7 +40,6 @@ export default function AccountPage() {
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
 
-  // Custom Modal state
   const [modalConfig, setModalConfig] = useState<{show: boolean, title: string, message: string, type: AlertModalType}>({
     show: false,
     title: '',
@@ -78,8 +79,6 @@ export default function AccountPage() {
     }
   };
 
-  // ...
-
   const handleSave = async () => {
     if (!user) return;
     setSaving(true);
@@ -110,7 +109,6 @@ export default function AccountPage() {
     }
   };
 
-  // Avatar Handlers
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
@@ -176,7 +174,7 @@ export default function AccountPage() {
 
       if (!res.ok) throw new Error('Erro ao enviar foto.');
       
-      const data = await res.text(); // Backend returns URL string usually, or adjust based on your response format
+      const data = await res.text(); 
       setUser({ ...user, profilePictureUrl: data });
       setAvatarSrc(null);
       showAlert('Sucesso', 'Sua foto de perfil foi atualizada!', 'success');
@@ -186,47 +184,47 @@ export default function AccountPage() {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+    <div className="min-h-screen bg-[var(--color-paper)] flex items-center justify-center">
       <div className="animate-pulse flex flex-col items-center">
-        <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4" />
-        <p className="text-slate-500 font-medium">Carregando...</p>
+        <div className="w-12 h-12 border-4 border-[var(--color-cream)] border-t-[var(--color-green)] rounded-full animate-spin mb-4" />
+        <p className="text-[var(--color-neutral)] font-medium text-sm uppercase tracking-widest">Carregando...</p>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
+    <div className="min-h-screen bg-[var(--color-paper)] text-[var(--color-text)] font-sans">
       <Navbar />
 
       <main className="max-w-4xl mx-auto px-6 py-12">
         <div className="mb-8 flex items-center gap-4">
-          <Link href="/dashboard" className="p-2 bg-white rounded-xl border border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 transition-colors">
-            <ArrowLeft size={20} />
+          <Link href="/dashboard" className="p-2.5 bg-white rounded-2xl border border-[var(--color-border-soft)] text-[var(--color-neutral)] hover:text-[var(--color-espresso)] shadow-sm transition-all hover:-translate-x-1">
+            <ArrowLeft size={18} />
           </Link>
           <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Minha Conta</h1>
-            <p className="text-slate-500 mt-1">Gerencie suas informações e configurações de conta</p>
+            <h1 className="text-3xl font-serif text-[var(--color-espresso)]">Minha Conta</h1>
+            <p className="text-[var(--color-neutral)] mt-1">Gerencie suas informações e configurações</p>
           </div>
         </div>
 
-        {error && <div className="bg-red-50 text-red-700 p-4 rounded-xl border border-red-200 mb-6">{error}</div>}
+        {error && <div className="bg-[var(--color-error-bg-soft)] text-[var(--color-error)] p-4 rounded-xl border border-[var(--color-error-bg)] mb-6 text-sm">{error}</div>}
 
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden mb-12">
-          <div className="bg-gradient-to-r from-indigo-500 to-purple-600 h-32 relative">
-            <div className="absolute -bottom-12 left-8 group">
+        <div className="bg-white rounded-[32px] border border-[var(--color-border-soft)] shadow-sm overflow-hidden mb-12">
+          <div className="bg-[var(--color-forest)] h-32 relative">
+            <div className="absolute inset-0 bg-[url('/icons/leaves.png')] opacity-10 mix-blend-color-burn" />
+            <div className="absolute -bottom-10 left-8 group">
               <label 
                 htmlFor={isEditing ? "avatar-upload" : undefined}
-                className={`w-24 h-24 bg-white rounded-2xl shadow-lg border-4 border-white flex items-center justify-center text-4xl font-bold text-indigo-600 overflow-hidden relative ${isEditing ? 'cursor-pointer' : ''}`}
+                className={`w-24 h-24 bg-[var(--color-cream)] rounded-2xl shadow-lg border-4 border-white flex items-center justify-center text-3xl font-serif text-[var(--color-coffee)] overflow-hidden relative ${isEditing ? 'cursor-pointer hover:border-[var(--color-green)] transition-colors' : ''}`}
               >
                 {user?.profilePictureUrl ? (
-                  // Usando URL local da API caso seja retornado do IAM-service
                   <img src={user.profilePictureUrl.startsWith('http') ? user.profilePictureUrl : `http://localhost:8080${user.profilePictureUrl}`} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
                   (user?.firstName || user?.email || 'U').charAt(0).toUpperCase()
                 )}
                 
                 {isEditing && (
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute inset-0 bg-[var(--color-espresso)]/40 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <Camera className="text-white" size={24} />
                   </div>
                 )}
@@ -243,102 +241,98 @@ export default function AccountPage() {
             </div>
           </div>
           
-          <div className="pt-16 px-8 pb-8">
-            <div className="flex flex-col md:flex-row justify-between gap-6 items-start md:items-center mb-8 pb-8 border-b border-slate-100">
+          <div className="pt-16 px-8 pb-10">
+            <div className="flex flex-col md:flex-row justify-between gap-6 items-start md:items-center mb-10 pb-8 border-b border-[var(--color-border-soft)]">
               <div>
-                <h2 className="text-2xl font-bold text-slate-900">{user?.firstName} {user?.lastName}</h2>
-                <div className="text-slate-500 flex items-center gap-2 mt-1">
+                <h2 className="text-2xl font-serif text-[var(--color-espresso)]">{user?.firstName} {user?.lastName}</h2>
+                <div className="text-[var(--color-neutral)] text-sm flex items-center gap-2 mt-1">
                   <Mail size={14} />
                   {user?.email}
-                  <span className="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1">
+                  <span className="bg-[var(--color-success-bg)] text-[var(--color-green)] text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider flex items-center gap-1 border border-[var(--color-success-soft)]">
                     <CheckCircle2 size={10} /> Verificado
                   </span>
                 </div>
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-3 w-full md:w-auto">
                 {!isEditing ? (
-                  <button 
-                    onClick={() => setIsEditing(true)}
-                    className="flex items-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-5 py-2.5 rounded-xl font-semibold transition-colors"
-                  >
-                    <Edit3 size={18} />
+                  <Button variant="ghost" onClick={() => setIsEditing(true)} icon={Edit3} className="w-full md:w-auto justify-center">
                     Atualizar Informações
-                  </button>
+                  </Button>
                 ) : (
                   <>
-                    <button 
-                      onClick={() => setIsEditing(false)}
-                      className="px-5 py-2.5 text-slate-500 font-semibold hover:bg-slate-50 rounded-xl transition-colors"
-                    >
+                    <Button variant="quiet" onClick={() => setIsEditing(false)} className="w-full md:w-auto justify-center" trailingIcon={false}>
                       Cancelar
-                    </button>
-                    <button 
-                      onClick={handleSave}
-                      disabled={saving}
-                      className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-indigo-600/20 transition-all active:scale-95 disabled:opacity-70"
-                    >
-                      <Save size={18} />
-                      {saving ? 'Salvando...' : 'Salvar'}
-                    </button>
+                    </Button>
+                    <Button variant="primary" onClick={handleSave} loading={saving} icon={Save} className="w-full md:w-auto justify-center" trailingIcon={false}>
+                      Salvar
+                    </Button>
                   </>
                 )}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               {/* Info Column */}
               <div className="space-y-6">
-                <h3 className="font-bold text-slate-900 text-lg flex items-center gap-2">
-                  <User size={20} className="text-indigo-500" />
+                <h3 className="font-serif text-[var(--color-espresso)] text-lg flex items-center gap-2 border-b border-[var(--color-border-soft)] pb-3">
+                  <User size={18} className="text-[var(--color-green)]" />
                   Dados Pessoais
                 </h3>
                 
-                <div className="space-y-4">
+                <div className="space-y-5">
                   <div className="flex gap-4">
                     <div className="flex-1">
-                      <label className="block text-sm font-bold text-slate-700 mb-1.5">Nome</label>
                       {isEditing ? (
-                        <input 
+                        <Input 
+                          label="Nome"
                           type="text" 
                           value={editFirstName}
                           onChange={e => setEditFirstName(e.target.value)}
-                          className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-medium text-slate-900 transition-all"
                         />
                       ) : (
-                        <div className="px-4 py-3 bg-slate-50 border-2 border-transparent rounded-xl text-slate-800 font-medium">
-                          {user?.firstName}
+                        <div>
+                          <label className="block text-[10px] uppercase tracking-widest font-bold text-[var(--color-neutral)] mb-1">Nome</label>
+                          <div className="text-[14px] text-[var(--color-espresso)] font-medium bg-[var(--color-paper-soft)] px-4 py-3 rounded-xl border border-[var(--color-border-soft)]">
+                            {user?.firstName}
+                          </div>
                         </div>
                       )}
                     </div>
                     <div className="flex-1">
-                      <label className="block text-sm font-bold text-slate-700 mb-1.5">Sobrenome</label>
                       {isEditing ? (
-                        <input 
+                        <Input 
+                          label="Sobrenome"
                           type="text" 
                           value={editLastName}
                           onChange={e => setEditLastName(e.target.value)}
-                          className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-medium text-slate-900 transition-all"
                         />
                       ) : (
-                        <div className="px-4 py-3 bg-slate-50 border-2 border-transparent rounded-xl text-slate-800 font-medium">
-                          {user?.lastName}
+                        <div>
+                          <label className="block text-[10px] uppercase tracking-widest font-bold text-[var(--color-neutral)] mb-1">Sobrenome</label>
+                          <div className="text-[14px] text-[var(--color-espresso)] font-medium bg-[var(--color-paper-soft)] px-4 py-3 rounded-xl border border-[var(--color-border-soft)]">
+                            {user?.lastName}
+                          </div>
                         </div>
                       )}
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-1.5">E-mail</label>
                     {isEditing ? (
-                      <input 
+                      <Input 
+                        label="E-mail"
                         type="email" 
                         value={editEmail}
                         onChange={e => setEditEmail(e.target.value)}
-                        className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-medium text-slate-900 transition-all"
+                        disabled
+                        helper="Não é possível alterar o e-mail no momento."
                       />
                     ) : (
-                      <div className="px-4 py-3 bg-slate-50 border-2 border-transparent rounded-xl text-slate-800 font-medium">
-                        {user?.email}
+                      <div>
+                        <label className="block text-[10px] uppercase tracking-widest font-bold text-[var(--color-neutral)] mb-1">E-mail</label>
+                        <div className="text-[14px] text-[var(--color-espresso)] font-medium bg-[var(--color-paper-soft)] px-4 py-3 rounded-xl border border-[var(--color-border-soft)]">
+                          {user?.email}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -347,62 +341,57 @@ export default function AccountPage() {
 
               {/* Security Column */}
               <div className="space-y-6">
-                <h3 className="font-bold text-slate-900 text-lg flex items-center gap-2">
-                  <Shield size={20} className="text-indigo-500" />
+                <h3 className="font-serif text-[var(--color-espresso)] text-lg flex items-center gap-2 border-b border-[var(--color-border-soft)] pb-3">
+                  <Shield size={18} className="text-[var(--color-gold)]" />
                   Segurança & Status
                 </h3>
                 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-1.5">Nível de Acesso</label>
-                    <div className="flex items-center gap-2">
-                      <span className="px-3 py-1.5 bg-indigo-50 border border-indigo-100 text-indigo-700 rounded-lg text-sm font-bold tracking-wide">
-                        {user?.role === 'ADMIN' ? 'Administrador' : 'Usuário Padrão'}
+                <div className="space-y-6">
+                  <div className="flex gap-4">
+                    <div className="flex-1">
+                      <label className="block text-[10px] uppercase tracking-widest font-bold text-[var(--color-neutral)] mb-1.5">Nível de Acesso</label>
+                      <span className="inline-flex px-3 py-1 bg-[var(--color-paper-soft)] border border-[var(--color-border-soft)] text-[var(--color-coffee)] rounded-md text-xs font-bold uppercase tracking-wider">
+                        {user?.role === 'ADMIN' ? 'Administrador' : 'Padrão'}
                       </span>
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-1.5">Status da Conta</label>
-                    <div className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <label className="block text-[10px] uppercase tracking-widest font-bold text-[var(--color-neutral)] mb-1.5">Status</label>
                       {user?.active !== false ? (
-                        <span className="px-3 py-1.5 bg-emerald-50 border border-emerald-100 text-emerald-700 rounded-lg text-sm font-bold tracking-wide">
-                          Ativa
+                        <span className="inline-flex px-3 py-1 bg-[var(--color-success-bg)] border border-[var(--color-success-soft)] text-[var(--color-green)] rounded-md text-xs font-bold uppercase tracking-wider">
+                          Ativo
                         </span>
                       ) : (
-                        <span className="px-3 py-1.5 bg-red-50 border border-red-100 text-red-700 rounded-lg text-sm font-bold tracking-wide">
-                          Inativa
+                        <span className="inline-flex px-3 py-1 bg-[var(--color-error-bg-soft)] border border-[var(--color-error-bg)] text-[var(--color-error)] rounded-md text-xs font-bold uppercase tracking-wider">
+                          Inativo
                         </span>
                       )}
                     </div>
                   </div>
 
-                  <div className="pt-4 mt-4 border-t border-slate-100">
-                    <label className="block text-sm font-bold text-slate-700 mb-3">Verificação Acadêmica</label>
-                    <button
-                      className="inline-flex items-center justify-center w-full gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-5 py-3 rounded-xl font-semibold transition-colors"
-                      onClick={() => showAlert('Em Breve', 'O fluxo de verificação de professor será implementado nas próximas atualizações.', 'info')}
-                    >
-                      <GraduationCap size={18} />
-                      Solicitar verificação de Professor
-                    </button>
-                    <p className="text-xs text-slate-400 mt-2 text-center">
-                      Professores verificados recebem um selo especial.
-                    </p>
-                  </div>
-
-                  <div className="pt-4 mt-4 border-t border-slate-100">
-                    <label className="block text-sm font-bold text-slate-700 mb-3">Senha</label>
-                    <Link
-                      href="/recover-password"
-                      className="inline-flex items-center justify-center w-full gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-5 py-3 rounded-xl font-semibold transition-colors"
-                    >
-                      <KeyRound size={18} />
-                      Redefinir Senha
-                    </Link>
-                    <p className="text-xs text-slate-400 mt-2 text-center">
-                      Você será redirecionado para o fluxo seguro.
-                    </p>
+                  <div className="pt-2">
+                    <label className="block text-[10px] uppercase tracking-widest font-bold text-[var(--color-neutral)] mb-2">Ações Rápidas</label>
+                    <div className="space-y-2">
+                      <Button
+                        variant="ghost"
+                        align="left"
+                        icon={GraduationCap}
+                        className="w-full text-[13px]"
+                        onClick={() => showAlert('Em Breve', 'O fluxo de verificação de professor será implementado nas próximas atualizações.', 'info')}
+                      >
+                        Solicitar Verificação de Docente
+                      </Button>
+                      <Link href="/recover-password" tabIndex={-1}>
+                        <Button
+                          variant="ghost"
+                          align="left"
+                          icon={KeyRound}
+                          className="w-full text-[13px] mt-2"
+                        >
+                          Redefinir Senha Segura
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -413,54 +402,47 @@ export default function AccountPage() {
 
       {/* Cropper Modal */}
       {avatarSrc && (
-        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-slate-900">Ajustar Foto</h3>
-              <button onClick={() => setAvatarSrc(null)} className="text-slate-400 hover:text-slate-600 transition-colors">
-                <X size={24} />
+        <div className="fixed inset-0 bg-[var(--color-espresso)]/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-[var(--shadow-elevated)] flex flex-col border border-[var(--color-border-soft)]">
+            <div className="p-5 border-b border-[var(--color-border-soft)] flex items-center justify-between">
+              <h3 className="font-serif text-lg text-[var(--color-espresso)]">Ajustar Foto</h3>
+              <button onClick={() => setAvatarSrc(null)} className="text-[var(--color-neutral)] hover:text-[var(--color-error)] transition-colors">
+                <X size={20} />
               </button>
             </div>
             
-            <div className="relative w-full h-80 bg-slate-900">
+            <div className="relative w-full h-72 bg-[#1A1A1A]">
               <Cropper
                 image={avatarSrc}
                 crop={crop}
                 zoom={zoom}
-                aspect={1} // Quadrado
+                aspect={1}
                 onCropChange={setCrop}
                 onCropComplete={onCropComplete}
                 onZoomChange={setZoom}
               />
             </div>
 
-            <div className="p-6 bg-slate-50 border-t border-slate-100 flex flex-col gap-4">
+            <div className="p-5 bg-white border-t border-[var(--color-border-soft)] flex flex-col gap-5">
               <div className="flex items-center gap-4">
-                <span className="text-sm font-semibold text-slate-500">Zoom</span>
+                <span className="text-xs font-bold text-[var(--color-neutral)] uppercase tracking-wider">Zoom</span>
                 <input
                   type="range"
                   value={zoom}
                   min={1}
                   max={3}
                   step={0.1}
-                  aria-labelledby="Zoom"
-                  className="w-full accent-indigo-600"
+                  className="w-full accent-[var(--color-green)]"
                   onChange={(e) => setZoom(Number(e.target.value))}
                 />
               </div>
-              <div className="flex gap-3 mt-2">
-                <button
-                  onClick={() => setAvatarSrc(null)}
-                  className="flex-1 py-3 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition-colors"
-                >
+              <div className="flex gap-2">
+                <Button variant="quiet" className="flex-1 justify-center" onClick={() => setAvatarSrc(null)} trailingIcon={false}>
                   Cancelar
-                </button>
-                <button
-                  onClick={handleUploadAvatar}
-                  className="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 transition-all active:scale-95"
-                >
+                </Button>
+                <Button variant="primary" className="flex-1 justify-center" onClick={handleUploadAvatar} trailingIcon={false}>
                   Cortar e Salvar
-                </button>
+                </Button>
               </div>
             </div>
           </div>

@@ -18,21 +18,21 @@ export function SectionedForm({ comp, onChange, allComponents, styleRules }: Pro
   return (
     <div className="space-y-4">
       <div>
-        <label className="block text-xs font-semibold text-slate-600 mb-1">
+        <label className="block text-xs font-semibold text-[var(--color-neutral)] mb-1">
           Template do título
         </label>
-        <input type="text" className="w-full border border-slate-300 rounded p-2 text-xs focus:ring-2 focus:ring-blue-500"
+        <input type="text" className="w-full border border-[var(--color-border-soft)] rounded p-2 text-xs focus:ring-2 focus:ring-blue-500"
           value={comp.headingTemplate ?? '{letter} — {title}'}
           onChange={e => onChange({ ...comp, headingTemplate: e.target.value })} />
-        <p className="text-[10px] text-slate-400 mt-0.5">Variáveis: {'{letter}'}, {'{number}'}, {'{title}'}</p>
-        <div className="mt-1 px-3 py-1.5 bg-slate-100 rounded text-xs text-slate-700 font-medium">
+        <p className="text-[10px] text-[var(--color-neutral)]/70 mt-0.5">Variáveis: {'{letter}'}, {'{number}'}, {'{title}'}</p>
+        <div className="mt-1 px-3 py-1.5 bg-[var(--color-paper-soft)] rounded text-xs text-[var(--color-espresso)] font-medium">
           Preview: {preview}
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-slate-600 mb-1">Estilo de indexação</label>
-        <select className="w-full border border-slate-300 rounded p-2 text-xs bg-white focus:ring-2 focus:ring-blue-500"
+        <label className="block text-xs font-semibold text-[var(--color-neutral)] mb-1">Estilo de indexação</label>
+        <select className="w-full border border-[var(--color-border-soft)] rounded p-2 text-xs bg-white focus:ring-2 focus:ring-blue-500"
           value={comp.indexingStyle ?? 'ALPHABETIC'}
           onChange={e => onChange({ ...comp, indexingStyle: e.target.value as 'ALPHABETIC' | 'NUMERIC' })}>
           <option value="ALPHABETIC">Alfabético (A, B, C...)</option>
@@ -41,8 +41,8 @@ export function SectionedForm({ comp, onChange, allComponents, styleRules }: Pro
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-slate-600 mb-1">Estilo de parágrafo</label>
-        <select className="w-full border border-slate-300 rounded p-2 text-xs bg-white focus:ring-2 focus:ring-blue-500"
+        <label className="block text-xs font-semibold text-[var(--color-neutral)] mb-1">Estilo de parágrafo</label>
+        <select className="w-full border border-[var(--color-border-soft)] rounded p-2 text-xs bg-white focus:ring-2 focus:ring-blue-500"
           value={comp.paragraphStyleId ?? ''}
           onChange={e => onChange({ ...comp, paragraphStyleId: e.target.value || undefined })}>
           <option value="">— Selecione —</option>
@@ -52,8 +52,8 @@ export function SectionedForm({ comp, onChange, allComponents, styleRules }: Pro
 
       {allComponents.some(c => c.ruleType === 'BODY_CONTENT') && (
         <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1">Corpo do texto vinculado</label>
-          <select className="w-full border border-slate-300 rounded p-2 text-xs bg-white focus:ring-2 focus:ring-blue-500"
+          <label className="block text-xs font-semibold text-[var(--color-neutral)] mb-1">Corpo do texto vinculado</label>
+          <select className="w-full border border-[var(--color-border-soft)] rounded p-2 text-xs bg-white focus:ring-2 focus:ring-blue-500"
             value={comp.bodyContentComponentId ?? ''}
             onChange={e => onChange({ ...comp, bodyContentComponentId: e.target.value })}>
             <option value="">— Nenhum —</option>

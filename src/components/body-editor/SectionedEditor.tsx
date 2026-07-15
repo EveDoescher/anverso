@@ -1,6 +1,8 @@
 import React from 'react';
 import BodyEditor from './BodyEditor';
 import { Trash2, Plus, Layers } from 'lucide-react';
+import { Button } from '../ui/Button';
+import { IconButton } from '../ui/IconButton';
 
 export default function SectionedEditor({ value, onChange }: any) {
   const items = value || [];
@@ -16,33 +18,41 @@ export default function SectionedEditor({ value, onChange }: any) {
   };
 
   return (
-    <div className="bg-slate-50/50 p-4 md:p-6 rounded-xl border border-slate-200">
+    <div className="bg-[var(--color-paper-soft)] p-5 md:p-8 rounded-3xl border border-[var(--color-border)] shadow-sm">
       {items.length === 0 ? (
-        <div className="text-center py-10 border-2 border-dashed border-slate-200 rounded-xl bg-white">
-          <p className="text-slate-500 mb-4 text-sm">Não há nenhum item secionado adicionado ainda.</p>
-          <button type="button" onClick={addItem} className="inline-flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-medium text-sm hover:bg-indigo-700 transition-colors shadow-sm">
-            <Plus className="w-4 h-4" /> Adicionar Primeiro Item
-          </button>
+        <div className="text-center py-16 border-2 border-dashed border-[var(--color-border-soft)] rounded-2xl bg-white shadow-sm flex flex-col items-center justify-center">
+          <div className="w-16 h-16 rounded-2xl bg-[var(--color-success-bg)] flex items-center justify-center mb-6 shadow-sm border border-[var(--color-success-soft)]">
+            <Layers className="w-8 h-8 text-[var(--color-green)]" />
+          </div>
+          <h3 className="text-xl font-bold text-[var(--color-espresso)] mb-2">Itens Secionados</h3>
+          <p className="text-[var(--color-neutral)] mb-8 max-w-sm text-center">Nenhum item adicionado ainda. Utilize itens secionados para Apêndices ou Anexos.</p>
+          <Button variant="primary" icon={Plus} size="lg" onClick={addItem}>
+            Adicionar Primeiro Item
+          </Button>
         </div>
       ) : (
         <>
-          <div className="space-y-6">
+          <div className="space-y-8">
             {items.map((item: any, idx: number) => (
-              <div key={idx} className="border border-slate-200 p-5 bg-white rounded-xl shadow-sm relative group">
-                 <button 
-                   type="button" 
-                   onClick={() => removeItem(idx)} 
-                   className="absolute top-4 right-4 text-slate-400 hover:text-red-500 p-1.5 rounded-full transition-colors hover:bg-red-50"
-                   title="Remover Item"
-                 >
-                   <Trash2 className="w-5 h-5" />
-                 </button>
-                 <div className="flex items-center gap-3 mb-5">
-                   <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-sm">
+              <div key={idx} className="border border-[var(--color-border-soft)] p-6 bg-white rounded-3xl shadow-sm relative group overflow-hidden">
+                 <div className="absolute top-0 left-0 right-0 h-1.5 bg-[var(--color-green)] opacity-80" />
+                 
+                 <div className="absolute top-5 right-5">
+                   <IconButton 
+                     variant="ghost"
+                     icon={Trash2}
+                     label="Remover Item"
+                     onClick={() => removeItem(idx)} 
+                     className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                   />
+                 </div>
+                 
+                 <div className="flex items-center gap-4 mb-6 mt-2">
+                   <div className="w-10 h-10 rounded-xl bg-[var(--color-success-bg)] flex items-center justify-center text-[var(--color-green)] font-bold text-lg border border-[var(--color-success-soft)]">
                      {idx + 1}
                    </div>
                    <input 
-                     className="font-bold text-lg border-b-2 border-transparent hover:border-slate-300 focus:border-indigo-500 outline-none px-1 pb-1 w-[80%] text-slate-800 bg-transparent transition-colors" 
+                     className="font-bold text-xl border-b-2 border-transparent hover:border-[var(--color-border-soft)] focus:border-[var(--color-green)] outline-none px-2 pb-1 w-full max-w-md text-[var(--color-espresso)] bg-transparent transition-colors" 
                      value={item.title} 
                      onChange={e => {
                         const newItems = [...items];
@@ -52,7 +62,7 @@ export default function SectionedEditor({ value, onChange }: any) {
                      placeholder="Título do Item (Ex: Apêndice A)"
                    />
                  </div>
-                 <div className="rounded-lg">
+                 <div className="rounded-2xl overflow-hidden border border-[var(--color-border-soft)] bg-white">
                    <BodyEditor 
                      value={item.sections} 
                      onChange={(sections: any) => {
@@ -65,9 +75,12 @@ export default function SectionedEditor({ value, onChange }: any) {
               </div>
             ))}
           </div>
-          <button type="button" onClick={addItem} className="mt-6 flex items-center justify-center w-full gap-2 bg-white border-2 border-dashed border-slate-300 text-slate-600 hover:border-indigo-400 hover:text-indigo-600 px-4 py-3 rounded-xl font-medium text-sm transition-colors">
-            <Layers className="w-4 h-4" /> Adicionar Novo Item Secionado
-          </button>
+          
+          <div className="mt-8 flex justify-center">
+             <Button variant="secondary" icon={Layers} size="lg" onClick={addItem}>
+               Adicionar Novo Item Secionado
+             </Button>
+          </div>
         </>
       )}
     </div>

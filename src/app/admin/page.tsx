@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { fetchApi } from '@/lib/api';
 import Navbar from '@/components/layout/Navbar';
 import { AlertModal, AlertModalType } from '@/components/ui/AlertModal';
-import { Users, BarChart, LayoutTemplate, ShieldAlert, CheckCircle2, XCircle } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { Users, BarChart, LayoutTemplate, ShieldAlert, CheckCircle2, XCircle, Trash2, ShieldCheck, User } from 'lucide-react';
 
 interface UserData {
   id: string;
@@ -176,151 +177,161 @@ export default function AdminDashboard() {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar />
-      <div className="flex-1 flex items-center justify-center">
-        <div className="animate-pulse flex flex-col items-center">
-          <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4" />
-          <p className="text-slate-500 font-medium">Carregando...</p>
-        </div>
+    <div className="min-h-screen bg-[var(--color-paper)] flex items-center justify-center">
+      <div className="animate-pulse flex flex-col items-center">
+        <div className="w-12 h-12 border-4 border-[var(--color-cream)] border-t-[var(--color-gold)] rounded-full animate-spin mb-4" />
+        <p className="text-[var(--color-neutral)] font-medium text-sm uppercase tracking-widest">Acessando sistema...</p>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
+    <div className="min-h-screen bg-[var(--color-paper)] text-[var(--color-text)] font-sans">
       <Navbar />
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        {error && <div className="bg-red-50 text-red-700 p-4 rounded-xl border border-red-200 mb-6">{error}</div>}
 
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+      <main className="max-w-7xl mx-auto px-6 py-12">
+        {error && <div className="bg-[var(--color-error-bg-soft)] text-[var(--color-error)] p-4 rounded-xl border border-[var(--color-error-bg)] mb-6 text-sm">{error}</div>}
+
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-6">
           <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Administração</h1>
-            <p className="text-slate-500 mt-1">Visão geral e controle do sistema</p>
+            <h1 className="text-3xl font-serif text-[var(--color-espresso)] flex items-center gap-3">
+              <ShieldCheck className="text-[var(--color-gold)]" size={32} />
+              Centro de Comando
+            </h1>
+            <p className="text-[var(--color-neutral)] mt-2">Visão geral e controle de usuários do sistema</p>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex space-x-1 bg-slate-200 p-1 rounded-xl mb-8 overflow-x-auto">
+        <div className="flex space-x-1 bg-white border border-[var(--color-border-soft)] p-2 rounded-2xl mb-10 overflow-x-auto shadow-sm w-fit">
           <button
             onClick={() => setActiveTab('stats')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors ${
-              activeTab === 'stats' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
+              activeTab === 'stats' ? 'bg-[var(--color-gold)] text-white shadow-md' : 'text-[var(--color-neutral)] hover:bg-[var(--color-paper-soft)] hover:text-[var(--color-espresso)]'
             }`}
           >
-            <BarChart className="w-4 h-4" />
-            Estatísticas
+            <BarChart size={16} />
+            Visão Geral
           </button>
           <button
             onClick={() => setActiveTab('users')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors ${
-              activeTab === 'users' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
+              activeTab === 'users' ? 'bg-[var(--color-gold)] text-white shadow-md' : 'text-[var(--color-neutral)] hover:bg-[var(--color-paper-soft)] hover:text-[var(--color-espresso)]'
             }`}
           >
-            <Users className="w-4 h-4" />
-            Controle de Usuários
+            <Users size={16} />
+            Usuários
           </button>
           <button
             onClick={() => setActiveTab('profiles')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors ${
-              activeTab === 'profiles' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
+              activeTab === 'profiles' ? 'bg-[var(--color-gold)] text-white shadow-md' : 'text-[var(--color-neutral)] hover:bg-[var(--color-paper-soft)] hover:text-[var(--color-espresso)]'
             }`}
           >
-            <LayoutTemplate className="w-4 h-4" />
-            Controle de Perfis
+            <LayoutTemplate size={16} />
+            Perfis Globais
           </button>
           <button
             onClick={() => setActiveTab('verifications')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors ${
-              activeTab === 'verifications' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
+              activeTab === 'verifications' ? 'bg-[var(--color-gold)] text-white shadow-md' : 'text-[var(--color-neutral)] hover:bg-[var(--color-paper-soft)] hover:text-[var(--color-espresso)]'
             }`}
           >
-            <ShieldAlert className="w-4 h-4" />
-            Verificações em Análise
+            <ShieldAlert size={16} />
+            Verificações
           </button>
         </div>
 
         {/* Tab Content */}
         {activeTab === 'stats' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-              <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Usuários Cadastrados</p>
-              <h3 className="text-4xl font-extrabold text-slate-900 mt-2">{users.length}</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+            <div className="bg-white p-6 rounded-3xl border border-[var(--color-border-soft)] shadow-[var(--shadow-soft)]">
+              <p className="text-[10px] font-bold text-[var(--color-neutral)] uppercase tracking-widest mb-2">Total de Usuários</p>
+              <h3 className="text-4xl font-serif text-[var(--color-espresso)]">{users.length}</h3>
             </div>
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-              <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Usuários Ativos</p>
-              <h3 className="text-4xl font-extrabold text-emerald-600 mt-2">{users.filter(u => u.active !== false).length}</h3>
+            <div className="bg-[var(--color-success-bg)] p-6 rounded-3xl border border-[var(--color-success-soft)]">
+              <p className="text-[10px] font-bold text-[var(--color-green)] uppercase tracking-widest mb-2">Contas Ativas</p>
+              <h3 className="text-4xl font-serif text-[var(--color-green)]">{users.filter(u => u.active !== false).length}</h3>
             </div>
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-              <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Usuários Logados</p>
-              <h3 className="text-4xl font-extrabold text-indigo-600 mt-2">{stats.loggedInUsers}</h3>
+            <div className="bg-[#FEF9C3] p-6 rounded-3xl border border-[#FEF08A]">
+              <p className="text-[10px] font-bold text-[#A16207] uppercase tracking-widest mb-2">Logados Hoje</p>
+              <h3 className="text-4xl font-serif text-[#A16207]">{stats.loggedInUsers}</h3>
             </div>
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-              <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Perfis Criados</p>
-              <h3 className="text-4xl font-extrabold text-slate-900 mt-2">{profiles.length}</h3>
+            <div className="bg-[var(--color-cream)] p-6 rounded-3xl border border-[var(--color-border-soft)]">
+              <p className="text-[10px] font-bold text-[var(--color-coffee)] uppercase tracking-widest mb-2">Perfis Criados</p>
+              <h3 className="text-4xl font-serif text-[var(--color-coffee)]">{profiles.length}</h3>
             </div>
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-              <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Trabalhos Criados</p>
-              <h3 className="text-4xl font-extrabold text-slate-900 mt-2">{stats.totalWorks}</h3>
+            <div className="bg-[var(--color-paper-soft)] p-6 rounded-3xl border border-[var(--color-border-soft)]">
+              <p className="text-[10px] font-bold text-[var(--color-neutral)] uppercase tracking-widest mb-2">Trabalhos Processados</p>
+              <h3 className="text-4xl font-serif text-[var(--color-espresso)]">{stats.totalWorks}</h3>
             </div>
           </div>
         )}
 
         {activeTab === 'users' && (
-          <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <h2 className="text-lg font-bold text-slate-900 mb-4 pb-4 border-b border-slate-100">Controle de Usuários</h2>
+          <section className="bg-white p-2 sm:p-6 rounded-3xl border border-[var(--color-border-soft)] shadow-[var(--shadow-soft)]">
+            <h2 className="text-xl font-serif text-[var(--color-espresso)] mb-6 px-4 sm:px-0">Gerenciar Usuários</h2>
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-sm">
                 <thead>
-                  <tr className="bg-slate-50">
-                    <th className="p-3 text-xs uppercase tracking-wider text-slate-400 font-bold">ID</th>
-                    <th className="p-3 text-xs uppercase tracking-wider text-slate-400 font-bold">Nome</th>
-                    <th className="p-3 text-xs uppercase tracking-wider text-slate-400 font-bold">E-mail</th>
-                    <th className="p-3 text-xs uppercase tracking-wider text-slate-400 font-bold">Status</th>
-                    <th className="p-3 text-xs uppercase tracking-wider text-slate-400 font-bold text-center">Ações</th>
+                  <tr className="border-b-2 border-[var(--color-border-soft)]">
+                    <th className="p-4 text-[10px] uppercase tracking-widest text-[var(--color-neutral)] font-bold">ID / UUID</th>
+                    <th className="p-4 text-[10px] uppercase tracking-widest text-[var(--color-neutral)] font-bold">Nome</th>
+                    <th className="p-4 text-[10px] uppercase tracking-widest text-[var(--color-neutral)] font-bold">E-mail</th>
+                    <th className="p-4 text-[10px] uppercase tracking-widest text-[var(--color-neutral)] font-bold">Status</th>
+                    <th className="p-4 text-[10px] uppercase tracking-widest text-[var(--color-neutral)] font-bold text-center">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {users.map(u => (
-                    <tr key={u.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                      <td className="p-3 text-slate-600 font-mono text-xs">{u.id}</td>
-                      <td className="p-3 font-semibold text-slate-800">{u.name || `${u.firstName || ''} ${u.lastName || ''}`}</td>
-                      <td className="p-3 text-slate-600">{u.email}</td>
-                      <td className="p-3">
+                    <tr key={u.id} className="border-b border-[var(--color-border-soft)] hover:bg-[var(--color-paper-soft)] transition-colors">
+                      <td className="p-4 text-[var(--color-neutral)] font-mono text-[10px]">{u.id}</td>
+                      <td className="p-4 font-medium text-[var(--color-espresso)] flex items-center gap-2">
+                        <User size={14} className="text-[var(--color-gold)]" />
+                        {u.name || `${u.firstName || ''} ${u.lastName || ''}`}
+                      </td>
+                      <td className="p-4 text-[var(--color-coffee)]">{u.email}</td>
+                      <td className="p-4">
                         {u.active !== false ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold">
-                            <CheckCircle2 className="w-3 h-3" /> Ativo
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[var(--color-success-bg)] text-[var(--color-green)] rounded-md text-[10px] uppercase font-bold border border-[var(--color-success-soft)]">
+                            <CheckCircle2 size={12} /> Ativo
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-50 text-red-700 rounded-full text-xs font-bold">
-                            <XCircle className="w-3 h-3" /> Inativo
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[var(--color-error-bg-soft)] text-[var(--color-error)] rounded-md text-[10px] uppercase font-bold border border-[var(--color-error-bg)]">
+                            <XCircle size={12} /> Inativo
                           </span>
                         )}
                       </td>
-                      <td className="p-3 text-center">
+                      <td className="p-4 text-center">
                         {u.active !== false ? (
-                          <button
+                          <Button 
+                            variant="danger" 
+                            size="sm" 
                             onClick={() => handleDeleteUser(u.id)}
-                            className="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50"
                             disabled={u.id === currentUser?.id}
+                            className="mx-auto"
+                            trailingIcon={false}
                           >
                             Desativar
-                          </button>
+                          </Button>
                         ) : (
-                          <button
+                          <Button 
+                            variant="primary" 
+                            size="sm" 
                             onClick={() => handleRestoreUser(u.id)}
-                            className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50"
                             disabled={u.id === currentUser?.id}
+                            className="mx-auto bg-[var(--color-green)]"
+                            trailingIcon={false}
                           >
-                            Ativar
-                          </button>
+                            Reativar
+                          </Button>
                         )}
                       </td>
                     </tr>
                   ))}
                   {users.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="p-6 text-center text-slate-500">Nenhum usuário encontrado.</td>
+                      <td colSpan={5} className="p-8 text-center text-[var(--color-neutral)] text-sm">Nenhum usuário encontrado no sistema.</td>
                     </tr>
                   )}
                 </tbody>
@@ -330,52 +341,56 @@ export default function AdminDashboard() {
         )}
 
         {activeTab === 'profiles' && (
-          <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <h2 className="text-lg font-bold text-slate-900 mb-4 pb-4 border-b border-slate-100">Controle de Perfis</h2>
+          <section className="bg-white p-2 sm:p-6 rounded-3xl border border-[var(--color-border-soft)] shadow-[var(--shadow-soft)]">
+            <h2 className="text-xl font-serif text-[var(--color-espresso)] mb-6 px-4 sm:px-0">Controle de Perfis de Formatação</h2>
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-sm">
                 <thead>
-                  <tr className="bg-slate-50">
-                    <th className="p-3 text-xs uppercase tracking-wider text-slate-400 font-bold">ID do Perfil</th>
-                    <th className="p-3 text-xs uppercase tracking-wider text-slate-400 font-bold">Nome / Descrição</th>
-                    <th className="p-3 text-xs uppercase tracking-wider text-slate-400 font-bold">Autor ID</th>
-                    <th className="p-3 text-xs uppercase tracking-wider text-slate-400 font-bold">Status</th>
-                    <th className="p-3 text-xs uppercase tracking-wider text-slate-400 font-bold text-center">Ações</th>
+                  <tr className="border-b-2 border-[var(--color-border-soft)]">
+                    <th className="p-4 text-[10px] uppercase tracking-widest text-[var(--color-neutral)] font-bold">ID do Perfil</th>
+                    <th className="p-4 text-[10px] uppercase tracking-widest text-[var(--color-neutral)] font-bold">Informações</th>
+                    <th className="p-4 text-[10px] uppercase tracking-widest text-[var(--color-neutral)] font-bold">Autor ID</th>
+                    <th className="p-4 text-[10px] uppercase tracking-widest text-[var(--color-neutral)] font-bold">Visibilidade</th>
+                    <th className="p-4 text-[10px] uppercase tracking-widest text-[var(--color-neutral)] font-bold text-center">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {profiles.map(p => (
-                    <tr key={p.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                      <td className="p-3 text-slate-600 font-mono text-xs">{p.id}</td>
-                      <td className="p-3">
-                        <div className="font-semibold text-slate-800">{p.name}</div>
-                        <div className="text-xs text-slate-500 truncate max-w-xs">{p.description}</div>
+                    <tr key={p.id} className="border-b border-[var(--color-border-soft)] hover:bg-[var(--color-paper-soft)] transition-colors">
+                      <td className="p-4 text-[var(--color-neutral)] font-mono text-[10px]">{p.id}</td>
+                      <td className="p-4">
+                        <div className="font-medium text-[var(--color-espresso)]">{p.name}</div>
+                        <div className="text-xs text-[var(--color-neutral)] truncate max-w-[200px] mt-1">{p.description}</div>
                       </td>
-                      <td className="p-3 text-slate-600 font-mono text-xs">{p.authorId}</td>
-                      <td className="p-3">
+                      <td className="p-4 text-[var(--color-coffee)] font-mono text-[10px]">{p.authorId}</td>
+                      <td className="p-4">
                         {p.isPublic ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-bold">
-                            <CheckCircle2 className="w-3 h-3" /> Público
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-[var(--color-paper-soft)] border border-[var(--color-border-soft)] text-[var(--color-espresso)] rounded text-[10px] font-bold uppercase">
+                            <CheckCircle2 size={12} /> Público
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold">
-                            <XCircle className="w-3 h-3" /> Privado
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-[var(--color-cream)] border border-[var(--color-border-soft)] text-[var(--color-coffee)] rounded text-[10px] font-bold uppercase">
+                            <XCircle size={12} /> Privado
                           </span>
                         )}
                       </td>
-                      <td className="p-3 text-center">
-                        <button
+                      <td className="p-4 text-center">
+                        <Button 
+                          variant="danger" 
+                          size="sm"
                           onClick={() => handleDeleteProfile(p.id)}
-                          className="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+                          icon={Trash2}
+                          className="mx-auto"
+                          trailingIcon={false}
                         >
                           Deletar
-                        </button>
+                        </Button>
                       </td>
                     </tr>
                   ))}
                   {profiles.length === 0 && (
                     <tr>
-                      <td colSpan={4} className="p-6 text-center text-slate-500">Nenhum perfil encontrado.</td>
+                      <td colSpan={5} className="p-8 text-center text-[var(--color-neutral)] text-sm">Nenhum perfil encontrado no banco de dados.</td>
                     </tr>
                   )}
                 </tbody>
@@ -385,12 +400,12 @@ export default function AdminDashboard() {
         )}
 
         {activeTab === 'verifications' && (
-          <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center justify-center py-16">
-            <ShieldAlert className="w-16 h-16 text-slate-300 mb-4" />
-            <h2 className="text-xl font-bold text-slate-900 mb-2">Verificações em Análise</h2>
-            <p className="text-slate-500 max-w-md text-center">
-              Esta aba exibirá os usuários e perfis que solicitaram selo de verificação de autenticidade (Blue Tick). 
-              Ainda não há dados no momento. O sistema de verificação será integrado em breve!
+          <section className="bg-white p-12 rounded-3xl border border-[var(--color-border-soft)] shadow-[var(--shadow-soft)] flex flex-col items-center justify-center text-center">
+            <ShieldAlert size={60} className="text-[var(--color-border-strong)] mb-6" />
+            <h2 className="text-2xl font-serif text-[var(--color-espresso)] mb-3">Verificações em Análise</h2>
+            <p className="text-[var(--color-neutral)] max-w-md">
+              Esta aba exibirá os usuários que solicitaram o selo de verificação de autenticidade (Docente/Instituição). 
+              O sistema de KYC será integrado em breve.
             </p>
           </section>
         )}

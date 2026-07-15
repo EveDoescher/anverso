@@ -26,7 +26,7 @@ export default function BlockEditor({ value, onChange }: any) {
   };
 
   return (
-    <div className="border border-gray-300 p-3 my-2 rounded bg-white shadow-sm">
+    <div className="border border-[var(--color-border-soft)] p-3 my-2 rounded bg-white shadow-sm">
       <div className="mb-2">
         <select value={value.type || 'PARAGRAPH'} onChange={handleChangeType} className="border p-1 text-xs rounded">
           <option value="PARAGRAPH">Parágrafo</option>

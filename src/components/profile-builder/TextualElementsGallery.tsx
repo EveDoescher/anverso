@@ -27,9 +27,9 @@ function FigureSchema({ captionTemplate, label }: { captionTemplate: string; lab
   const preview = captionTemplate.replace('{n}', '1').replace('{caption}', 'Distribuição dos dados');
   return (
     <div className="space-y-1 text-center">
-      <div className="mx-auto w-20 h-12 bg-slate-200 border border-slate-300 rounded flex items-center justify-center text-slate-400 text-xs">imagem</div>
-      <div className="text-[10px] text-slate-600 font-medium">{label} 1 — {preview.split('—')[1]?.trim() ?? preview}</div>
-      <div className="text-[9px] text-slate-400">Fonte: elaborado pelo autor.</div>
+      <div className="mx-auto w-20 h-12 bg-[var(--color-border-soft)] border border-[var(--color-border-soft)] rounded flex items-center justify-center text-[var(--color-neutral)]/70 text-xs">imagem</div>
+      <div className="text-[10px] text-[var(--color-neutral)] font-medium">{label} 1 — {preview.split('—')[1]?.trim() ?? preview}</div>
+      <div className="text-[9px] text-[var(--color-neutral)]/70">Fonte: elaborado pelo autor.</div>
     </div>
   );
 }
@@ -37,24 +37,24 @@ function FigureSchema({ captionTemplate, label }: { captionTemplate: string; lab
 function TableSchema({ captionTemplate, label }: { captionTemplate: string; label: string }) {
   return (
     <div className="space-y-1 text-center">
-      <div className="text-[10px] text-slate-600 font-medium">{label} 1 — Exemplo de legenda acima</div>
+      <div className="text-[10px] text-[var(--color-neutral)] font-medium">{label} 1 — Exemplo de legenda acima</div>
       <table className="mx-auto text-[9px] border-collapse">
         <thead>
           <tr className="border-t-2 border-b border-slate-400">
-            <th className="px-2 py-0.5 text-left border-r border-slate-300">Col 1</th>
-            <th className="px-2 py-0.5 text-left border-r border-slate-300">Col 2</th>
+            <th className="px-2 py-0.5 text-left border-r border-[var(--color-border-soft)]">Col 1</th>
+            <th className="px-2 py-0.5 text-left border-r border-[var(--color-border-soft)]">Col 2</th>
             <th className="px-2 py-0.5 text-left">Col 3</th>
           </tr>
         </thead>
         <tbody>
           <tr className="border-b-2 border-slate-400">
-            <td className="px-2 py-0.5 border-r border-slate-300">A</td>
-            <td className="px-2 py-0.5 border-r border-slate-300">B</td>
+            <td className="px-2 py-0.5 border-r border-[var(--color-border-soft)]">A</td>
+            <td className="px-2 py-0.5 border-r border-[var(--color-border-soft)]">B</td>
             <td className="px-2 py-0.5">C</td>
           </tr>
         </tbody>
       </table>
-      <div className="text-[9px] text-slate-400">Fonte: elaborado pelo autor.</div>
+      <div className="text-[9px] text-[var(--color-neutral)]/70">Fonte: elaborado pelo autor.</div>
     </div>
   );
 }
@@ -63,10 +63,10 @@ function EquationSchema({ numberingTemplate, label }: { numberingTemplate: strin
   const num = numberingTemplate.replace('{num}', '1');
   return (
     <div className="flex items-center justify-between px-2">
-      <div className="flex-1 text-center font-italic text-sm text-slate-700" style={{ fontStyle: 'italic' }}>
+      <div className="flex-1 text-center font-italic text-sm text-[var(--color-espresso)]" style={{ fontStyle: 'italic' }}>
         E = mc²
       </div>
-      <div className="text-[10px] text-slate-500">{num}</div>
+      <div className="text-[10px] text-[var(--color-neutral)]">{num}</div>
     </div>
   );
 }
@@ -74,8 +74,8 @@ function EquationSchema({ numberingTemplate, label }: { numberingTemplate: strin
 function CodeSchema() {
   return (
     <div className="space-y-1">
-      <div className="text-[10px] text-slate-600 font-medium">Listagem 1 — Algoritmo de ordenação</div>
-      <pre className="bg-slate-100 rounded px-2 py-1 text-[9px] font-mono text-slate-700 text-left">
+      <div className="text-[10px] text-[var(--color-neutral)] font-medium">Listagem 1 — Algoritmo de ordenação</div>
+      <pre className="bg-[var(--color-paper-soft)] rounded px-2 py-1 text-[9px] font-mono text-[var(--color-espresso)] text-left">
 {`def sort(arr):
     return sorted(arr)`}
       </pre>
@@ -85,7 +85,7 @@ function CodeSchema() {
 
 function DirectCitationSchema({ state }: { state: DirectCitationState }) {
   return (
-    <div className="text-[10px] text-slate-600 leading-relaxed text-left">
+    <div className="text-[10px] text-[var(--color-neutral)] leading-relaxed text-left">
       ...o pesquisador afirma que {state.openQuote}a metodologia aplicada revelou resultados significativos{state.closeQuote} (SILVA, 2024, p. 42) e conclui...
     </div>
   );
@@ -93,7 +93,7 @@ function DirectCitationSchema({ state }: { state: DirectCitationState }) {
 
 function LongDirectCitationSchema({ state }: { state: LongDirectCitationState }) {
   return (
-    <div className="text-[10px] text-slate-600 leading-relaxed text-left border-l-2 border-slate-300 pl-2"
+    <div className="text-[10px] text-[var(--color-neutral)] leading-relaxed text-left border-l-2 border-[var(--color-border-soft)] pl-2"
       style={{ marginLeft: `${state.leftIndentCm * 6}px`, fontSize: `${Math.min(state.fontSizePt, 11)}px` }}>
       Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. (AUTOR, 2024, p. 45)
     </div>
@@ -103,9 +103,9 @@ function LongDirectCitationSchema({ state }: { state: LongDirectCitationState })
 function FootnoteSchema({ state }: { state: FootnoteState }) {
   return (
     <div className="text-left space-y-1">
-      <div className="text-[10px] text-slate-600">...texto do parágrafo com nota de rodapé¹ continua normalmente aqui.</div>
+      <div className="text-[10px] text-[var(--color-neutral)]">...texto do parágrafo com nota de rodapé¹ continua normalmente aqui.</div>
       <div className="border-t border-slate-400 pt-1" style={{ width: `${state.separatorWidthPct}%` }}>
-        <div className="text-[9px] text-slate-500" style={{ fontSize: `${Math.min(state.fontSizePt, 10)}px` }}>
+        <div className="text-[9px] text-[var(--color-neutral)]" style={{ fontSize: `${Math.min(state.fontSizePt, 10)}px` }}>
           ¹ Nota de rodapé com informações adicionais sobre o assunto.
         </div>
       </div>
@@ -118,8 +118,8 @@ function FootnoteSchema({ state }: { state: FootnoteState }) {
 function LabeledInput({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
     <div>
-      <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">{label}</label>
-      <input type="text" className="w-full border border-slate-200 rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500"
+      <label className="block text-[10px] font-semibold text-[var(--color-neutral)] mb-0.5">{label}</label>
+      <input type="text" className="w-full border border-[var(--color-border-soft)] rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500"
         value={value} onChange={e => onChange(e.target.value)} />
     </div>
   );
@@ -130,8 +130,8 @@ function LabeledNumber({ label, value, onChange, step = 0.5, min = 0 }: {
 }) {
   return (
     <div>
-      <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">{label}</label>
-      <input type="number" step={step} min={min} className="w-full border border-slate-200 rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500"
+      <label className="block text-[10px] font-semibold text-[var(--color-neutral)] mb-0.5">{label}</label>
+      <input type="number" step={step} min={min} className="w-full border border-[var(--color-border-soft)] rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500"
         value={value} onChange={e => onChange(Number(e.target.value))} />
     </div>
   );
@@ -142,8 +142,8 @@ function LabeledSelect<T extends string>({ label, value, options, onChange }: {
 }) {
   return (
     <div>
-      <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">{label}</label>
-      <select className="w-full border border-slate-200 rounded p-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500"
+      <label className="block text-[10px] font-semibold text-[var(--color-neutral)] mb-0.5">{label}</label>
+      <select className="w-full border border-[var(--color-border-soft)] rounded p-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500"
         value={value} onChange={e => onChange(e.target.value as T)}>
         {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
@@ -189,11 +189,11 @@ const CARDS: CardDef[] = [
       const sourcePreview = fig.sourceTemplate.replace('{source}', 'IBGE (2024)');
       return (
         <div className="space-y-3">
-          <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-center space-y-1">
-            <div className="text-[9px] text-slate-400 uppercase font-bold mb-1">Prévia</div>
-            <div className="mx-auto w-24 h-14 bg-slate-200 rounded flex items-center justify-center text-slate-400 text-[9px]">imagem</div>
-            <div className="text-[10px] font-medium text-slate-700">{captionPreview}</div>
-            <div className="text-[9px] text-slate-500">{sourcePreview}</div>
+          <div className="p-3 bg-[var(--color-paper)] rounded-lg border border-[var(--color-border-soft)] text-center space-y-1">
+            <div className="text-[9px] text-[var(--color-neutral)]/70 uppercase font-bold mb-1">Prévia</div>
+            <div className="mx-auto w-24 h-14 bg-[var(--color-border-soft)] rounded flex items-center justify-center text-[var(--color-neutral)]/70 text-[9px]">imagem</div>
+            <div className="text-[10px] font-medium text-[var(--color-espresso)]">{captionPreview}</div>
+            <div className="text-[9px] text-[var(--color-neutral)]">{sourcePreview}</div>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <LabeledInput label="Rótulo" value={fig.label} onChange={v => set('label', v)} />
@@ -203,7 +203,7 @@ const CARDS: CardDef[] = [
             <LabeledSelect label="Alinhamento" value={fig.alignment} options={ALIGN_OPTS} onChange={v => set('alignment', v)} />
             <LabeledNumber label="Largura máx. (cm)" value={fig.maxWidthCm ?? 16} onChange={v => set('maxWidthCm', v)} />
           </div>
-          <p className="text-[9px] text-slate-400">Variáveis: {'{n}'} = número, {'{caption}'} = legenda, {'{source}'} = fonte</p>
+          <p className="text-[9px] text-[var(--color-neutral)]/70">Variáveis: {'{n}'} = número, {'{caption}'} = legenda, {'{source}'} = fonte</p>
         </div>
       );
     },
@@ -222,16 +222,16 @@ const CARDS: CardDef[] = [
       const captionPreview = tbl.captionTemplate.replace('{n}', '1').replace('{caption}', 'Distribuição por região');
       return (
         <div className="space-y-3">
-          <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-center space-y-1">
-            <div className="text-[9px] text-slate-400 uppercase font-bold mb-1">Prévia</div>
-            <div className="text-[10px] font-medium text-slate-700">{captionPreview}</div>
+          <div className="p-3 bg-[var(--color-paper)] rounded-lg border border-[var(--color-border-soft)] text-center space-y-1">
+            <div className="text-[9px] text-[var(--color-neutral)]/70 uppercase font-bold mb-1">Prévia</div>
+            <div className="text-[10px] font-medium text-[var(--color-espresso)]">{captionPreview}</div>
             <table className="mx-auto text-[9px] border-collapse">
               <thead><tr className="border-t-2 border-b border-slate-400">
-                <th className="px-2 py-0.5 border-r border-slate-300">Região</th>
+                <th className="px-2 py-0.5 border-r border-[var(--color-border-soft)]">Região</th>
                 <th className="px-2 py-0.5">Valor</th>
               </tr></thead>
               <tbody><tr className="border-b-2 border-slate-400">
-                <td className="px-2 py-0.5 border-r border-slate-300">Sul</td>
+                <td className="px-2 py-0.5 border-r border-[var(--color-border-soft)]">Sul</td>
                 <td className="px-2 py-0.5">42%</td>
               </tr></tbody>
             </table>
@@ -244,8 +244,8 @@ const CARDS: CardDef[] = [
             <LabeledSelect label="Alinhamento" value={tbl.alignment} options={ALIGN_OPTS} onChange={v => set('alignment', v)} />
             <LabeledNumber label="Largura (%)" value={tbl.widthPercent} onChange={v => set('widthPercent', v)} step={5} />
           </div>
-          <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-700">
-            <input type="checkbox" className="w-3.5 h-3.5 rounded border-slate-300"
+          <label className="flex items-center gap-2 cursor-pointer text-xs text-[var(--color-espresso)]">
+            <input type="checkbox" className="w-3.5 h-3.5 rounded border-[var(--color-border-soft)]"
               checked={tbl.repeatHeaderOnPageBreak} onChange={e => set('repeatHeaderOnPageBreak', e.target.checked)} />
             Repetir cabeçalho em quebra de página
           </label>
@@ -274,8 +274,8 @@ const CARDS: CardDef[] = [
             <LabeledSelect label="Alinhamento" value={frm.alignment} options={ALIGN_OPTS} onChange={v => set('alignment', v)} />
             <LabeledNumber label="Largura (%)" value={frm.widthPercent} onChange={v => set('widthPercent', v)} step={5} />
           </div>
-          <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-700">
-            <input type="checkbox" className="w-3.5 h-3.5 rounded border-slate-300"
+          <label className="flex items-center gap-2 cursor-pointer text-xs text-[var(--color-espresso)]">
+            <input type="checkbox" className="w-3.5 h-3.5 rounded border-[var(--color-border-soft)]"
               checked={frm.repeatHeaderOnPageBreak} onChange={e => set('repeatHeaderOnPageBreak', e.target.checked)} />
             Repetir cabeçalho em quebra de página
           </label>
@@ -320,11 +320,11 @@ const CARDS: CardDef[] = [
       const numPreview = eq.numberingTemplate.replace('{num}', '3');
       return (
         <div className="space-y-3">
-          <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-            <div className="text-[9px] text-slate-400 uppercase font-bold mb-2">Prévia</div>
+          <div className="p-3 bg-[var(--color-paper)] rounded-lg border border-[var(--color-border-soft)]">
+            <div className="text-[9px] text-[var(--color-neutral)]/70 uppercase font-bold mb-2">Prévia</div>
             <div className="flex items-center justify-between px-2">
-              <div className="flex-1 text-center text-sm italic text-slate-700">E = mc²</div>
-              <div className="text-[10px] text-slate-500">{numPreview}</div>
+              <div className="flex-1 text-center text-sm italic text-[var(--color-espresso)]">E = mc²</div>
+              <div className="text-[10px] text-[var(--color-neutral)]">{numPreview}</div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
@@ -333,7 +333,7 @@ const CARDS: CardDef[] = [
             <LabeledSelect label="Alinhamento da equação" value={eq.alignment} options={ALIGN_OPTS} onChange={v => set('alignment', v)} />
             <LabeledInput label="Rótulo" value={eq.label} onChange={v => set('label', v)} />
           </div>
-          <p className="text-[9px] text-slate-400">Variáveis: {'{num}'} = número sequencial</p>
+          <p className="text-[9px] text-[var(--color-neutral)]/70">Variáveis: {'{num}'} = número sequencial</p>
         </div>
       );
     },
@@ -375,9 +375,9 @@ const CARDS: CardDef[] = [
       const preview = `...texto ${dc.openQuote}trecho citado diretamente${dc.closeQuote} (AUTOR, 2024, p. 10) texto...`;
       return (
         <div className="space-y-3">
-          <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-            <div className="text-[9px] text-slate-400 uppercase font-bold mb-1">Prévia</div>
-            <div className="text-[10px] text-slate-600 leading-relaxed">{preview}</div>
+          <div className="p-3 bg-[var(--color-paper)] rounded-lg border border-[var(--color-border-soft)]">
+            <div className="text-[9px] text-[var(--color-neutral)]/70 uppercase font-bold mb-1">Prévia</div>
+            <div className="text-[10px] text-[var(--color-neutral)] leading-relaxed">{preview}</div>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <LabeledInput label="Aspas de abertura" value={dc.openQuote} onChange={v => set('openQuote', v)} />
@@ -400,9 +400,9 @@ const CARDS: CardDef[] = [
       }
       return (
         <div className="space-y-3">
-          <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-            <div className="text-[9px] text-slate-400 uppercase font-bold mb-2">Prévia</div>
-            <div className="text-slate-600 leading-relaxed"
+          <div className="p-3 bg-[var(--color-paper)] rounded-lg border border-[var(--color-border-soft)]">
+            <div className="text-[9px] text-[var(--color-neutral)]/70 uppercase font-bold mb-2">Prévia</div>
+            <div className="text-[var(--color-neutral)] leading-relaxed"
               style={{
                 marginLeft: `${ldc.leftIndentCm * 8}px`,
                 fontSize: `${Math.min(ldc.fontSizePt, 11)}px`,
@@ -429,7 +429,7 @@ const CARDS: CardDef[] = [
     Icon: MessageSquare,
     description: 'Paráfrase — sem aspas, com referência parentética',
     schema: () => (
-      <div className="text-[10px] text-slate-600 leading-relaxed text-left">
+      <div className="text-[10px] text-[var(--color-neutral)] leading-relaxed text-left">
         ...de acordo com as pesquisas da área (SILVA, 2024), os resultados demonstram que a hipótese inicial foi confirmada...
       </div>
     ),
@@ -441,9 +441,9 @@ const CARDS: CardDef[] = [
       const preview = `${cf.parenOpen}SILVA${cf.authorYearSeparator}2024${cf.parenClose}`;
       return (
         <div className="space-y-3">
-          <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-            <div className="text-[9px] text-slate-400 uppercase font-bold mb-1">Exemplo de referência</div>
-            <div className="text-sm font-mono text-slate-700">{preview}</div>
+          <div className="p-3 bg-[var(--color-paper)] rounded-lg border border-[var(--color-border-soft)]">
+            <div className="text-[9px] text-[var(--color-neutral)]/70 uppercase font-bold mb-1">Exemplo de referência</div>
+            <div className="text-sm font-mono text-[var(--color-espresso)]">{preview}</div>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <LabeledInput label="Parêntese abre" value={cf.parenOpen} onChange={v => setCf('parenOpen', v)} />
@@ -472,11 +472,11 @@ const CARDS: CardDef[] = [
       }
       return (
         <div className="space-y-3">
-          <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-left space-y-1">
-            <div className="text-[9px] text-slate-400 uppercase font-bold mb-2">Prévia</div>
-            <div className="text-[10px] text-slate-600">...parágrafo com nota¹ no rodapé da página.</div>
+          <div className="p-3 bg-[var(--color-paper)] rounded-lg border border-[var(--color-border-soft)] text-left space-y-1">
+            <div className="text-[9px] text-[var(--color-neutral)]/70 uppercase font-bold mb-2">Prévia</div>
+            <div className="text-[10px] text-[var(--color-neutral)]">...parágrafo com nota¹ no rodapé da página.</div>
             <div className="border-t border-slate-400 pt-1" style={{ width: `${fn.separatorWidthPct}%` }}>
-              <div style={{ fontSize: `${Math.min(fn.fontSizePt, 10)}px` }} className="text-slate-500">
+              <div style={{ fontSize: `${Math.min(fn.fontSizePt, 10)}px` }} className="text-[var(--color-neutral)]">
                 ¹ Texto da nota de rodapé explicando o assunto.
               </div>
             </div>
@@ -497,28 +497,28 @@ function ElementCard({ card, state, onChange }: { card: CardDef; state: BodyCont
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className={`border rounded-xl overflow-hidden transition-all ${expanded ? 'border-blue-300 shadow-sm' : 'border-slate-200 hover:border-slate-300'}`}>
+    <div className={`border rounded-xl overflow-hidden transition-all ${expanded ? 'border-blue-300 shadow-sm' : 'border-[var(--color-border-soft)] hover:border-[var(--color-border-soft)]'}`}>
       <button
         onClick={() => setExpanded(e => !e)}
-        className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${expanded ? 'bg-blue-50' : 'bg-white hover:bg-slate-50'}`}
+        className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${expanded ? 'bg-blue-50' : 'bg-white hover:bg-[var(--color-paper)]'}`}
       >
-        <card.Icon size={17} className="shrink-0 text-slate-500" />
+        <card.Icon size={17} className="shrink-0 text-[var(--color-neutral)]" />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-slate-800">{card.label}</p>
-          <p className="text-[10px] text-slate-400 truncate">{card.description}</p>
+          <p className="text-sm font-semibold text-[var(--color-espresso)]">{card.label}</p>
+          <p className="text-[10px] text-[var(--color-neutral)]/70 truncate">{card.description}</p>
         </div>
-        <span className={`text-slate-400 text-xs transition-transform ${expanded ? 'rotate-180' : ''}`}>▾</span>
+        <span className={`text-[var(--color-neutral)]/70 text-xs transition-transform ${expanded ? 'rotate-180' : ''}`}>▾</span>
       </button>
 
       {expanded && (
-        <div className="border-t border-slate-100">
+        <div className="border-t border-[var(--color-border-soft)]">
           <div className="grid grid-cols-2 divide-x divide-slate-100">
             {/* Miniatura */}
             <div className="p-4 flex items-center justify-center bg-white min-h-[100px]">
               {card.schema(state)}
             </div>
             {/* Configuração */}
-            <div className="p-4 bg-slate-50">
+            <div className="p-4 bg-[var(--color-paper)]">
               {card.editor(state, onChange)}
             </div>
           </div>
@@ -531,7 +531,7 @@ function ElementCard({ card, state, onChange }: { card: CardDef; state: BodyCont
 export function TextualElementsGallery({ state, onChange }: Props) {
   return (
     <div className="space-y-2">
-      <p className="text-xs text-slate-500 mb-4">
+      <p className="text-xs text-[var(--color-neutral)] mb-4">
         Configure como cada tipo de elemento deve ser formatado quando inserido no trabalho. Clique em um tipo para ver a prévia e editar as configurações.
       </p>
       {CARDS.map(card => (

@@ -3,6 +3,8 @@
 import { ComponentState, SlotState, SlotType, StyleRule, defaultStyleRule } from '@/lib/profileSerializer';
 import { StyleRuleEditor } from './StyleRuleEditor';
 import { useEffect } from 'react';
+import { Button } from '../ui/Button';
+import { IconButton } from '../ui/IconButton';
 
 interface Props {
   component: ComponentState;
@@ -48,17 +50,17 @@ export function SlotInspector({ component, slot, styleRules, onUpdateSlot, onAdd
 
   return (
     <div className="space-y-5">
-      <div className="border-b border-slate-100 pb-2">
-        <p className="text-sm font-bold text-slate-800">{slot.displayName || slot.id}</p>
-        <p className="text-xs text-slate-400">Campo de conteúdo</p>
+      <div className="border-b border-[var(--color-border-soft)] pb-2">
+        <p className="text-sm font-bold text-[var(--color-espresso)]">{slot.displayName || slot.id}</p>
+        <p className="text-xs text-[var(--color-neutral)]/70">Campo de conteúdo</p>
       </div>
 
       {/* Nome visível */}
       <div>
-        <label className="block text-sm font-semibold text-slate-700 mb-1">Nome do campo</label>
+        <label className="block text-sm font-semibold text-[var(--color-espresso)] mb-1">Nome do campo</label>
         <input
           type="text"
-          className="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500"
+          className="w-full border border-[var(--color-border-soft)] rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-[var(--color-green)]"
           value={slot.displayName || ''}
           onChange={e => set('displayName', e.target.value)}
           placeholder="Ex: Título principal, Autor..."
@@ -67,27 +69,27 @@ export function SlotInspector({ component, slot, styleRules, onUpdateSlot, onAdd
 
       {/* Tipo de conteúdo */}
       <div>
-        <label className="block text-sm font-semibold text-slate-700 mb-1">Tipo de conteúdo</label>
+        <label className="block text-sm font-semibold text-[var(--color-espresso)] mb-1">Tipo de conteúdo</label>
         <div className="space-y-1.5">
           {FIELD_TYPES.map(ft => (
             <label
               key={ft.value}
               className={`flex items-start gap-3 p-2.5 border rounded-lg cursor-pointer transition ${
                 slot.type === ft.value
-                  ? 'border-indigo-400 bg-indigo-50'
-                  : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                  ? 'border-[var(--color-green)] bg-[var(--color-success-bg)]'
+                  : 'border-[var(--color-border-soft)] hover:border-[var(--color-border-soft)] hover:bg-[var(--color-paper)]'
               }`}
             >
               <input
                 type="radio"
                 name={`type-${slot.id}`}
-                className="mt-0.5 text-indigo-600"
+                className="mt-0.5 text-[var(--color-green)]"
                 checked={slot.type === ft.value}
                 onChange={() => set('type', ft.value)}
               />
               <div>
-                <p className="text-sm font-medium text-slate-800">{ft.label}</p>
-                <p className="text-xs text-slate-400">{ft.description}</p>
+                <p className="text-sm font-medium text-[var(--color-espresso)]">{ft.label}</p>
+                <p className="text-xs text-[var(--color-neutral)]/70">{ft.description}</p>
               </div>
             </label>
           ))}
@@ -95,44 +97,44 @@ export function SlotInspector({ component, slot, styleRules, onUpdateSlot, onAdd
       </div>
 
       {/* Obrigatório */}
-      <label className="flex items-center gap-3 cursor-pointer p-2.5 border border-slate-200 rounded-lg hover:bg-slate-50">
+      <label className="flex items-center gap-3 cursor-pointer p-2.5 border border-[var(--color-border-soft)] rounded-lg hover:bg-[var(--color-paper)]">
         <input
           type="checkbox"
-          className="w-4 h-4 text-indigo-600 rounded border-slate-300"
+          className="w-4 h-4 text-[var(--color-green)] rounded border-[var(--color-border-soft)]"
           checked={slot.required}
           onChange={e => set('required', e.target.checked)}
         />
         <div>
-          <p className="text-sm font-medium text-slate-700">Campo obrigatório</p>
-          <p className="text-xs text-slate-400">O usuário não pode deixar em branco</p>
+          <p className="text-sm font-medium text-[var(--color-espresso)]">Campo obrigatório</p>
+          <p className="text-xs text-[var(--color-neutral)]/70">O usuário não pode deixar em branco</p>
         </div>
       </label>
 
       {/* COMPOSED_TEXT */}
       {slot.type === 'COMPOSED_TEXT' && (
-        <div className="space-y-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+        <div className="space-y-3 p-3 bg-[var(--color-cream)] border border-[var(--color-border-soft)] rounded-lg">
           <p className="text-xs font-bold text-amber-800">Texto gerado automaticamente</p>
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">Modelo de texto</label>
+            <label className="block text-sm font-semibold text-[var(--color-espresso)] mb-1">Modelo de texto</label>
             <input
               type="text"
-              className="w-full border border-amber-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-400"
+              className="w-full border border-[var(--color-border-soft)] rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-400"
               placeholder="Ex: {cidade}, {estado} – {ano}"
               value={slot.template ?? ''}
               onChange={e => set('template', e.target.value)}
             />
-            <p className="text-xs text-slate-400 mt-1">Use {'{'} {'}'} para marcar onde cada informação será inserida</p>
+            <p className="text-xs text-[var(--color-neutral)]/70 mt-1">Use {'{'} {'}'} para marcar onde cada informação será inserida</p>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">Informações necessárias</label>
+            <label className="block text-sm font-semibold text-[var(--color-espresso)] mb-1">Informações necessárias</label>
             <input
               type="text"
-              className="w-full border border-amber-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-400"
+              className="w-full border border-[var(--color-border-soft)] rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-400"
               placeholder="cidade, estado, ano"
               value={(slot.fieldNames ?? []).join(', ')}
               onChange={e => set('fieldNames', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
             />
-            <p className="text-xs text-slate-400 mt-1">Separe com vírgula. Devem corresponder ao que está no modelo.</p>
+            <p className="text-xs text-[var(--color-neutral)]/70 mt-1">Separe com vírgula. Devem corresponder ao que está no modelo.</p>
           </div>
         </div>
       )}
@@ -144,15 +146,15 @@ export function SlotInspector({ component, slot, styleRules, onUpdateSlot, onAdd
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
-              className="w-4 h-4 text-purple-600 rounded border-slate-300"
+              className="w-4 h-4 text-purple-600 rounded border-[var(--color-border-soft)]"
               checked={slot.signatureLineEnabled ?? true}
               onChange={e => set('signatureLineEnabled', e.target.checked)}
             />
-            <span className="text-sm font-medium text-slate-700">Mostrar linha de assinatura</span>
+            <span className="text-sm font-medium text-[var(--color-espresso)]">Mostrar linha de assinatura</span>
           </label>
           {slot.signatureLineEnabled !== false && (
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">Aparência da linha</label>
+              <label className="block text-sm font-semibold text-[var(--color-espresso)] mb-1">Aparência da linha</label>
               <input
                 type="text"
                 className="w-full border border-purple-200 rounded-lg p-2.5 text-sm"
@@ -162,8 +164,8 @@ export function SlotInspector({ component, slot, styleRules, onUpdateSlot, onAdd
             </div>
           )}
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">Linhas de informação por pessoa</label>
-            <p className="text-xs text-slate-400 mb-1">Uma por linha. Use {'{'} nome {'}'}, {'{'} cargo {'}'}, {'{'} instituição {'}'} etc.</p>
+            <label className="block text-sm font-semibold text-[var(--color-espresso)] mb-1">Linhas de informação por pessoa</label>
+            <p className="text-xs text-[var(--color-neutral)]/70 mb-1">Uma por linha. Use {'{'} nome {'}'}, {'{'} cargo {'}'}, {'{'} instituição {'}'} etc.</p>
             <textarea
               className="w-full border border-purple-200 rounded-lg p-2.5 text-sm"
               rows={3}
@@ -178,7 +180,7 @@ export function SlotInspector({ component, slot, styleRules, onUpdateSlot, onAdd
       {slot.type === 'SIGNATURE_BLOCK_LIST' && (
         <div className="space-y-2 p-3 bg-violet-50 border border-violet-200 rounded-lg">
           <p className="text-xs font-bold text-violet-800">Campos reconhecidos pelo Formatter</p>
-          <p className="text-[10px] text-slate-500">Um por linha. Ex: name, title, institutionName, role</p>
+          <p className="text-[10px] text-[var(--color-neutral)]">Um por linha. Ex: name, title, institutionName, role</p>
           <textarea
             className="w-full border border-violet-200 rounded-lg p-2 text-xs"
             rows={3}
@@ -190,27 +192,27 @@ export function SlotInspector({ component, slot, styleRules, onUpdateSlot, onAdd
 
       {/* groupId — só para SINGLE_PAGE */}
       {component.ruleType === 'SINGLE_PAGE' && (
-        <div className="pt-3 border-t border-slate-100">
-          <label className="block text-sm font-semibold text-slate-700 mb-1">Agrupar com outros campos</label>
+        <div className="pt-3 border-t border-[var(--color-border-soft)]">
+          <label className="block text-sm font-semibold text-[var(--color-espresso)] mb-1">Agrupar com outros campos</label>
           <input
             type="text"
-            className="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500"
+            className="w-full border border-[var(--color-border-soft)] rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-[var(--color-green)]"
             value={slot.groupId ?? ''}
             onChange={e => set('groupId', e.target.value.trim().toLowerCase().replace(/\s+/g, '-') || undefined)}
             placeholder="Ex: bloco-titulo"
           />
-          <p className="text-xs text-slate-400 mt-0.5">Campos com o mesmo nome de grupo ficam colados verticalmente, sem espaço entre eles</p>
+          <p className="text-xs text-[var(--color-neutral)]/70 mt-0.5">Campos com o mesmo nome de grupo ficam colados verticalmente, sem espaço entre eles</p>
         </div>
       )}
 
       {/* Posicionamento (apenas SINGLE_PAGE) */}
       {component.ruleType === 'SINGLE_PAGE' && (
-        <div className="space-y-3 pt-3 border-t border-slate-100">
-          <p className="text-sm font-bold text-slate-700">Posição na página</p>
+        <div className="space-y-3 pt-3 border-t border-[var(--color-border-soft)]">
+          <p className="text-sm font-bold text-[var(--color-espresso)]">Posição na página</p>
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">Largura ocupada</label>
+            <label className="block text-sm font-semibold text-[var(--color-espresso)] mb-1">Largura ocupada</label>
             <select
-              className="w-full border border-slate-300 rounded-lg p-2.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500"
+              className="w-full border border-[var(--color-border-soft)] rounded-lg p-2.5 text-sm bg-white focus:ring-2 focus:ring-[var(--color-green)]"
               value={slot.horizontalPlacement ?? 'FULL_CONTENT_WIDTH'}
               onChange={e => set('horizontalPlacement', e.target.value as SlotState['horizontalPlacement'])}
             >
@@ -221,14 +223,14 @@ export function SlotInspector({ component, slot, styleRules, onUpdateSlot, onAdd
           {slot.horizontalPlacement === 'CUSTOM' && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Recuo esquerda (cm)</label>
-                <input type="number" step="0.5" min="0" className="w-full border border-slate-200 rounded-lg p-2 text-sm"
+                <label className="block text-xs font-semibold text-[var(--color-neutral)] mb-1">Recuo esquerda (cm)</label>
+                <input type="number" step="0.5" min="0" className="w-full border border-[var(--color-border-soft)] rounded-lg p-2 text-sm"
                   value={slot.customLeftMarginCm ?? 0}
                   onChange={e => set('customLeftMarginCm', Number(e.target.value))} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Recuo direita (cm)</label>
-                <input type="number" step="0.5" min="0" className="w-full border border-slate-200 rounded-lg p-2 text-sm"
+                <label className="block text-xs font-semibold text-[var(--color-neutral)] mb-1">Recuo direita (cm)</label>
+                <input type="number" step="0.5" min="0" className="w-full border border-[var(--color-border-soft)] rounded-lg p-2 text-sm"
                   value={slot.customRightMarginCm ?? 0}
                   onChange={e => set('customRightMarginCm', Number(e.target.value))} />
               </div>
@@ -237,25 +239,25 @@ export function SlotInspector({ component, slot, styleRules, onUpdateSlot, onAdd
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Linhas em branco após</label>
-              <input type="number" min="0" className="w-full border border-slate-200 rounded-lg p-2 text-sm"
+              <label className="block text-xs font-semibold text-[var(--color-neutral)] mb-1">Linhas em branco após</label>
+              <input type="number" min="0" className="w-full border border-[var(--color-border-soft)] rounded-lg p-2 text-sm"
                 value={slot.blankLinesAfter ?? 0}
                 onChange={e => set('blankLinesAfter', parseInt(e.target.value))} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Espaço flexível abaixo</label>
-              <input type="number" min="0" max="100" className="w-full border border-slate-200 rounded-lg p-2 text-sm"
+              <label className="block text-xs font-semibold text-[var(--color-neutral)] mb-1">Espaço flexível abaixo</label>
+              <input type="number" min="0" max="100" className="w-full border border-[var(--color-border-soft)] rounded-lg p-2 text-sm"
                 value={slot.gapWeight ?? 10}
                 onChange={e => set('gapWeight', parseInt(e.target.value))} />
-              <p className="text-[10px] text-slate-400 mt-0.5">1–100, valores maiores afastam mais</p>
+              <p className="text-[10px] text-[var(--color-neutral)]/70 mt-0.5">1–100, valores maiores afastam mais</p>
             </div>
           </div>
         </div>
       )}
 
       {/* Aparência tipográfica — sempre visível */}
-      <div className="space-y-3 pt-3 border-t border-slate-100">
-        <p className="text-sm font-bold text-slate-700">Aparência tipográfica</p>
+      <div className="space-y-3 pt-3 border-t border-[var(--color-border-soft)]">
+        <p className="text-sm font-bold text-[var(--color-espresso)]">Aparência tipográfica</p>
         <StyleRuleEditor rule={rule} onChange={updated => onAddStyleRule(updated)} />
       </div>
     </div>

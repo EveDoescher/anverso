@@ -8,6 +8,9 @@ import BodyEditor from '@/components/body-editor/BodyEditor';
 import SectionedEditor from '@/components/body-editor/SectionedEditor';
 import { ChevronRight, ChevronLeft, Save, CheckCircle, FileText, ArrowLeft, Loader2, FileCheck2, Share2, Bookmark, X } from 'lucide-react';
 import { AlertModal, AlertModalType } from '@/components/ui/AlertModal';
+import { Button } from '@/components/ui/Button';
+import { IconButton } from '@/components/ui/IconButton';
+import { Input } from '@/components/ui/Input';
 
 const componentLabels: Record<string, string> = {
   cover: 'Capa',
@@ -592,16 +595,14 @@ export default function SubmitWork() {
   const activeFields = activeComponentId ? profile.componentFields[activeComponentId] : [];
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans selection:bg-indigo-100 selection:text-indigo-900">
-      <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30 transition-all">
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans selection:bg-[var(--color-success-soft)] selection:text-indigo-900">
+      <header className="bg-white/80 backdrop-blur-md border-b border-[var(--color-border-soft)] sticky top-0 z-30 transition-all">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button type="button" onClick={handleBackNavigation} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors">
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div className="h-5 w-px bg-slate-200"></div>
+            <IconButton variant="ghost" icon={ArrowLeft} label="Voltar" onClick={handleBackNavigation} />
+            <div className="h-5 w-px bg-[var(--color-border-soft)]"></div>
             <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent flex items-center gap-2">
-              <FileText className="w-5 h-5 text-indigo-600" />
+              <FileText className="w-5 h-5 text-[var(--color-green)]" />
               Novo Trabalho Acadêmico
             </h1>
           </div>
@@ -610,7 +611,7 @@ export default function SubmitWork() {
                <button 
                  type="button" 
                  onClick={handleSaveProgress}
-                 className="text-xs font-medium bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-full transition-colors flex items-center gap-1.5"
+                 className="text-xs font-medium bg-[var(--color-success-bg)] hover:bg-[var(--color-success-soft)] text-[var(--color-green)] px-3 py-1.5 rounded-full transition-colors flex items-center gap-1.5"
                  title="Salvar Progresso"
                >
                  <Bookmark className="w-3.5 h-3.5" />
@@ -625,14 +626,14 @@ export default function SubmitWork() {
                  <Share2 className="w-3.5 h-3.5" />
                  <span className="hidden md:inline">Compartilhar</span>
                </button>
-               <div className="w-px h-4 bg-slate-200 mx-1 hidden lg:block"></div>
-               <span className="text-sm text-slate-500 hidden lg:inline-block">
-                 Perfil: <span className="font-semibold text-slate-700">{profile.name}</span>
+               <div className="w-px h-4 bg-[var(--color-border-soft)] mx-1 hidden lg:block"></div>
+               <span className="text-sm text-[var(--color-neutral)] hidden lg:inline-block">
+                 Perfil: <span className="font-semibold text-[var(--color-espresso)]">{profile.name}</span>
                </span>
                <button 
                   type="button" 
                   onClick={handleSwitchProfile} 
-                  className="text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-full transition-colors"
+                  className="text-xs font-medium bg-[var(--color-paper-soft)] hover:bg-[var(--color-border-soft)] text-[var(--color-espresso)] px-3 py-1.5 rounded-full transition-colors"
                 >
                   Trocar Perfil
                 </button>
@@ -647,40 +648,38 @@ export default function SubmitWork() {
         {!profile && (
           <div className="max-w-4xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500 pt-8">
             <div className="text-center mb-10">
-              <div className="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-indigo-50">
-                 <FileCheck2 className="w-8 h-8 text-indigo-600" />
+              <div className="w-16 h-16 bg-[var(--color-success-soft)] rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-indigo-50">
+                 <FileCheck2 className="w-8 h-8 text-[var(--color-green)]" />
               </div>
-              <h2 className="text-3xl font-extrabold text-slate-900 mb-3 tracking-tight">Escolha o Padrão de Formatação</h2>
-              <p className="text-slate-500 text-lg max-w-2xl mx-auto">
+              <h2 className="text-3xl font-extrabold text-[var(--color-espresso)] mb-3 tracking-tight">Escolha o Padrão de Formatação</h2>
+              <p className="text-[var(--color-neutral)] text-lg max-w-2xl mx-auto">
                 Selecione a norma acadêmica ou modelo institucional que o seu trabalho deve seguir. O Anverso cuidará de toda a formatação para você.
               </p>
             </div>
             
             {loading ? (
-              <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+              <div className="flex flex-col items-center justify-center py-20 text-[var(--color-neutral)]/70">
                 <Loader2 className="w-10 h-10 animate-spin mb-4 text-indigo-500" />
                 <p className="font-medium">Carregando modelos disponíveis...</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {profiles.map(p => (
-                  <button 
-                    key={p.id} 
-                    onClick={() => selectProfile(p.id)}
-                    className="group text-left bg-white border border-slate-200 rounded-2xl p-6 hover:border-indigo-300 hover:shadow-lg hover:shadow-indigo-100/50 transition-all duration-300 flex flex-col h-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                  <div key={p.id} onClick={() => selectProfile(p.id)} role="button" tabIndex={0}
+                    className="group text-left bg-white border border-[var(--color-border-soft)] rounded-2xl p-6 hover:border-indigo-300 hover:shadow-lg hover:shadow-indigo-100/50 transition-all duration-300 flex flex-col h-full focus:outline-none focus:ring-2 focus:ring-[var(--color-green)] focus:ring-offset-2"
                   >
                     <div className="flex justify-between items-start mb-4">
-                       <h3 className="font-bold text-slate-900 text-lg group-hover:text-indigo-700 transition-colors">{p.name}</h3>
-                       <div className="w-8 h-8 rounded-full bg-slate-50 group-hover:bg-indigo-50 flex items-center justify-center transition-colors">
-                         <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-indigo-600" />
+                       <h3 className="font-bold text-[var(--color-espresso)] text-lg group-hover:text-[var(--color-green)] transition-colors">{p.name}</h3>
+                       <div className="w-10 h-10 rounded-full bg-[var(--color-paper)] group-hover:bg-[var(--color-success-bg)] flex items-center justify-center transition-colors shadow-sm">
+                         <ChevronRight className="w-4 h-4 text-[var(--color-neutral)]/70 group-hover:text-[var(--color-green)]" />
                        </div>
                     </div>
-                    <p className="text-sm text-slate-500 leading-relaxed mt-auto">{p.description || 'Modelo de formatação padrão estruturado.'}</p>
-                  </button>
+                    <p className="text-sm text-[var(--color-neutral)] leading-relaxed mt-auto">{p.description || 'Modelo de formatação padrão estruturado.'}</p>
+                  </div>
                 ))}
                 {profiles.length === 0 && (
-                  <div className="col-span-2 text-center bg-white border border-dashed border-slate-300 rounded-2xl p-12">
-                    <p className="text-slate-500 font-medium">Nenhum perfil de formatação disponível no momento.</p>
+                  <div className="col-span-2 text-center bg-white border border-dashed border-[var(--color-border-soft)] rounded-2xl p-12">
+                    <p className="text-[var(--color-neutral)] font-medium">Nenhum perfil de formatação disponível no momento.</p>
                   </div>
                 )}
               </div>
@@ -692,17 +691,17 @@ export default function SubmitWork() {
         {/* Step 2: Wizard Form */}
         {profile && componentOrder.length === 0 && !loading && (
           <div className="max-w-xl mx-auto w-full pt-16 text-center animate-in fade-in duration-500">
-            <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center mx-auto mb-5">
-              <FileText className="w-7 h-7 text-amber-500" />
+            <div className="w-14 h-14 rounded-2xl bg-[var(--color-cream)] border border-amber-100 flex items-center justify-center mx-auto mb-5">
+              <FileText className="w-7 h-7 text-[var(--color-gold)]" />
             </div>
-            <h2 className="text-xl font-bold text-slate-900 mb-2">Perfil sem seções configuradas</h2>
-            <p className="text-slate-500 text-sm mb-6">
+            <h2 className="text-xl font-bold text-[var(--color-espresso)] mb-2">Perfil sem seções configuradas</h2>
+            <p className="text-[var(--color-neutral)] text-sm mb-6">
               O perfil <strong>{profile.name}</strong> não possui seções de preenchimento reconhecidas. Tente escolher outro perfil.
             </p>
             <button
               type="button"
               onClick={handleSwitchProfile}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold bg-[var(--color-green)] text-white hover:bg-[#2A3B31] transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               Escolher outro perfil
@@ -714,32 +713,32 @@ export default function SubmitWork() {
           <div className="flex flex-col md:flex-row gap-8 flex-1 animate-in fade-in duration-500 h-full">
             
             {/* Sidebar Navigation */}
-            <div className="w-full md:w-64 lg:w-72 shrink-0 md:sticky md:top-24 self-start bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-              <div className="p-4 bg-slate-50 border-b border-slate-100 flex flex-col gap-4">
+            <div className="w-full md:w-64 lg:w-72 shrink-0 md:sticky md:top-24 self-start bg-white rounded-2xl shadow-sm border border-[var(--color-border-soft)] overflow-hidden">
+              <div className="p-4 bg-[var(--color-paper)] border-b border-[var(--color-border-soft)] flex flex-col gap-4">
                 
                 <div>
-                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Identificação</h3>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Nome do Trabalho</label>
+                  <h3 className="text-xs font-bold text-[var(--color-neutral)] uppercase tracking-wider mb-2">Identificação</h3>
+                  <label className="block text-xs font-semibold text-[var(--color-neutral)] mb-1">Nome do Trabalho</label>
                   <input
                     type="text"
                     value={workName}
                     onChange={(e) => { setWorkName(e.target.value); setHasUnsavedChanges(true); }}
                     placeholder="ex: meu_tcc_2025"
-                    className="w-full text-sm p-2 bg-white border border-slate-300 rounded-lg focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-shadow"
+                    className="w-full text-sm p-2 bg-white border border-[var(--color-border-soft)] rounded-lg focus:border-[var(--color-green)] focus:ring-1 focus:ring-[var(--color-green)] outline-none transition-shadow"
                   />
-                  <p className="text-[11px] text-slate-400 mt-1">Use apenas letras, números e underline.</p>
+                  <p className="text-[11px] text-[var(--color-neutral)]/70 mt-1">Use apenas letras, números e underline.</p>
                 </div>
 
-                <div className="h-px bg-slate-200 w-full" />
+                <div className="h-px bg-[var(--color-border-soft)] w-full" />
 
                 <div>
-                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Documento</h3>
+                  <h3 className="text-xs font-bold text-[var(--color-neutral)] uppercase tracking-wider mb-2">Documento</h3>
                   <div className="mb-3">
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">Fonte Principal</label>
+                    <label className="block text-xs font-semibold text-[var(--color-neutral)] mb-1">Fonte Principal</label>
                     <select
                       value={fontFamily}
                       onChange={(e) => { setFontFamily(e.target.value); setHasUnsavedChanges(true); }}
-                      className="w-full text-sm p-2 bg-white border border-slate-300 rounded-lg focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-shadow cursor-pointer"
+                      className="w-full text-sm p-2 bg-white border border-[var(--color-border-soft)] rounded-lg focus:border-[var(--color-green)] focus:ring-1 focus:ring-[var(--color-green)] outline-none transition-shadow cursor-pointer"
                     >
                       <option value="Times New Roman">Times New Roman</option>
                       <option value="Arial">Arial</option>
@@ -748,14 +747,14 @@ export default function SubmitWork() {
                 </div>
 
                 <div>
-                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Comportamento</h3>
+                  <h3 className="text-xs font-bold text-[var(--color-neutral)] uppercase tracking-wider mb-2">Comportamento</h3>
                   <label
-                    className="flex items-center gap-2 p-2 bg-indigo-50/50 rounded-lg cursor-pointer hover:bg-indigo-50 transition-colors border border-indigo-100/50"
+                    className="flex items-center gap-2 p-2 bg-[var(--color-success-bg)]/50 rounded-lg cursor-pointer hover:bg-[var(--color-success-bg)] transition-colors border border-indigo-100/50"
                     title="Campos com o mesmo nome em seções diferentes (ex: Autor) serão preenchidos ao mesmo tempo."
                   >
                     <input
                       type="checkbox"
-                      className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                      className="w-4 h-4 text-[var(--color-green)] rounded border-[var(--color-border-soft)] focus:ring-[var(--color-green)]"
                       checked={autoFill}
                       onChange={(e) => { setAutoFill(e.target.checked); setHasUnsavedChanges(true); }}
                     />
@@ -769,14 +768,14 @@ export default function SubmitWork() {
                 const doneCount = enabledOrder.filter((c: string) => getSectionStatus(c) === 'complete').length;
                 const pct = enabledOrder.length > 0 ? Math.round((doneCount / enabledOrder.length) * 100) : 0;
                 return (
-                  <div className="px-4 py-3 border-b border-slate-100">
+                  <div className="px-4 py-3 border-b border-[var(--color-border-soft)]">
                     <div className="flex justify-between items-center mb-1.5">
-                      <span className="text-[11px] font-semibold text-slate-500">Progresso</span>
-                      <span className="text-[11px] font-bold text-indigo-600">{doneCount}/{enabledOrder.length} seções</span>
+                      <span className="text-[11px] font-semibold text-[var(--color-neutral)]">Progresso</span>
+                      <span className="text-[11px] font-bold text-[var(--color-green)]">{doneCount}/{enabledOrder.length} seções</span>
                     </div>
-                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="w-full h-1.5 bg-[var(--color-paper-soft)] rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full transition-all duration-500"
+                        className="h-full bg-gradient-to-r bg-[var(--color-green)] rounded-full transition-all duration-500"
                         style={{ width: `${pct}%` }}
                       />
                     </div>
@@ -795,15 +794,15 @@ export default function SubmitWork() {
                       key={compId}
                       onClick={() => setActiveTab(idx)}
                       className={`w-full text-left px-4 py-3 flex items-center gap-3 text-sm transition-all relative
-                        ${isActive ? 'bg-indigo-50/50 text-indigo-700 font-semibold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'}
+                        ${isActive ? 'bg-[var(--color-success-bg)]/50 text-[var(--color-green)] font-semibold' : 'text-[var(--color-neutral)] hover:bg-[var(--color-paper)] hover:text-[var(--color-espresso)] font-medium'}
                       `}
                     >
-                      {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-600 rounded-r-full" />}
+                      {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-green)] rounded-r-full" />}
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors
-                        ${isActive ? 'bg-indigo-600 text-white' :
+                        ${isActive ? 'bg-[var(--color-green)] text-white' :
                           status === 'complete' ? 'bg-emerald-100 text-emerald-600' :
                           status === 'partial'  ? 'bg-amber-100 text-amber-600' :
-                          'bg-slate-100 text-slate-400'}
+                          'bg-[var(--color-paper-soft)] text-[var(--color-neutral)]/70'}
                       `}>
                         {status === 'complete' && !isActive ? (
                           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
@@ -813,7 +812,7 @@ export default function SubmitWork() {
                           <span className="text-[10px] font-bold">{idx + 1}</span>
                         )}
                       </div>
-                      <span className={`truncate ${isDisabled ? 'line-through text-slate-400 opacity-70' : ''}`}>
+                      <span className={`truncate ${isDisabled ? 'line-through text-[var(--color-neutral)]/70 opacity-70' : ''}`}>
                         {formatComponentLabel(compId)}
                       </span>
                     </button>
@@ -823,18 +822,18 @@ export default function SubmitWork() {
             </div>
 
             {/* Main Form Area */}
-            <div className="flex-1 flex flex-col min-h-0 bg-white rounded-2xl shadow-sm border border-slate-200">
+            <div className="flex-1 flex flex-col min-h-0 bg-white rounded-2xl shadow-sm border border-[var(--color-border-soft)]">
               <form onSubmit={handleSubmit} className="flex flex-col h-full">
                 
                 {/* Active Section Header */}
-                <div className="p-6 md:p-8 border-b border-slate-100 bg-white rounded-t-2xl">
-                  <div className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-bold uppercase tracking-wider mb-3">
+                <div className="p-6 md:p-8 border-b border-[var(--color-border-soft)] bg-white rounded-t-2xl">
+                  <div className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-[var(--color-success-bg)] text-[var(--color-green)] text-xs font-bold uppercase tracking-wider mb-3">
                     Seção {activeTab + 1} de {componentOrder.length}
                   </div>
                   
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-3">
-                      <h2 className="text-2xl font-bold text-slate-900">
+                      <h2 className="text-2xl font-bold text-[var(--color-espresso)]">
                         {formatComponentLabel(activeComponentId)}
                       </h2>
                       {REQUIRED_COMPONENTS.has(activeComponentId) ? (
@@ -842,26 +841,26 @@ export default function SubmitWork() {
                           Obrigatório
                         </span>
                       ) : (
-                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[var(--color-paper-soft)] text-[var(--color-neutral)] border border-[var(--color-border-soft)]">
                           Opcional
                         </span>
                       )}
                     </div>
 
                     {!REQUIRED_COMPONENTS.has(activeComponentId) && (
-                      <label className="flex items-center gap-2 cursor-pointer bg-slate-50 hover:bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 transition-colors">
+                      <label className="flex items-center gap-2 cursor-pointer bg-[var(--color-paper)] hover:bg-[var(--color-paper-soft)] px-3 py-1.5 rounded-lg border border-[var(--color-border-soft)] transition-colors">
                         <input
                           type="checkbox"
-                          className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                          className="w-4 h-4 text-[var(--color-green)] rounded border-[var(--color-border-soft)] focus:ring-[var(--color-green)]"
                           checked={enabledComponents[activeComponentId] ?? true}
                           onChange={(e) => { setEnabledComponents({...enabledComponents, [activeComponentId]: e.target.checked}); setHasUnsavedChanges(true); }}
                         />
-                        <span className="text-sm font-semibold text-slate-700 select-none">Incluir esta seção no documento</span>
+                        <span className="text-sm font-semibold text-[var(--color-espresso)] select-none">Incluir esta seção no documento</span>
                       </label>
                     )}
                   </div>
 
-                  <p className="text-slate-500 text-sm">
+                  <p className="text-[var(--color-neutral)] text-sm">
                     {REQUIRED_COMPONENTS.has(activeComponentId)
                       ? 'Esta seção é parte obrigatória da estrutura do documento.'
                       : 'Esta seção é opcional. Desative o toggle acima se não quiser incluí-la.'}
@@ -869,25 +868,25 @@ export default function SubmitWork() {
                 </div>
                 
                 {/* Active Section Fields */}
-                <div className={`p-6 md:p-8 flex-1 overflow-y-auto bg-slate-50/30 transition-opacity duration-300 ${!enabledComponents[activeComponentId] ? 'opacity-40 pointer-events-none grayscale-[0.5]' : ''}`}>
+                <div className={`p-6 md:p-8 flex-1 overflow-y-auto bg-[var(--color-paper)]/30 transition-opacity duration-300 ${!enabledComponents[activeComponentId] ? 'opacity-40 pointer-events-none grayscale-[0.5]' : ''}`}>
                   <div className="max-w-3xl space-y-6">
                     {activeFields?.map((el: any, elIdx: number) => {
                       
                       // COMPOSED TYPE
                       if (el.type === 'composed') {
                         return (
-                          <div key={elIdx} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                            <label className="flex items-center gap-2 text-sm font-bold mb-4 text-slate-800">
+                          <div key={elIdx} className="bg-white p-5 rounded-xl border border-[var(--color-border-soft)] shadow-sm">
+                            <label className="flex items-center gap-2 text-sm font-bold mb-4 text-[var(--color-espresso)]">
                               {formatLabel(el.name)} {el.required && <span className="text-red-500">*</span>}
                             </label>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               {el.fields.map((fName: string) => (
                                 <div key={fName}>
-                                  <label className="block text-xs font-semibold mb-1.5 text-slate-500">{formatLabel(fName)}</label>
+                                  <label className="block text-xs font-semibold mb-1.5 text-[var(--color-neutral)]">{formatLabel(fName)}</label>
                                   <input 
                                     type="text"
                                     required={el.required}
-                                    className="w-full border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 p-2.5 rounded-lg text-sm text-slate-900 transition-shadow outline-none"
+                                    className="w-full border border-[var(--color-border-soft)] focus:border-[var(--color-green)] focus:ring-1 focus:ring-[var(--color-green)] p-2.5 rounded-lg text-sm text-[var(--color-espresso)] transition-shadow outline-none"
                                     value={formData[activeComponentId]?.[el.name]?.[fName] || ''}
                                     onChange={(e) => {
                                       const currentObj = formData[activeComponentId]?.[el.name] || {};
@@ -905,20 +904,20 @@ export default function SubmitWork() {
                       if (el.type === 'signature') {
                         const items = formData[activeComponentId]?.[el.name] || [];
                         return (
-                          <div key={elIdx} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                          <div key={elIdx} className="bg-white p-5 rounded-xl border border-[var(--color-border-soft)] shadow-sm">
                             <div className="flex justify-between items-center mb-4">
-                              <label className="text-sm font-bold text-slate-800">
+                              <label className="text-sm font-bold text-[var(--color-espresso)]">
                                 {formatLabel(el.name)} {el.required && <span className="text-red-500">*</span>}
                               </label>
                               <button type="button" onClick={() => {
                                 handleInputChange(activeComponentId, el.name, [...items, {}]);
-                              }} className="text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg transition-colors">
+                              }} className="text-xs font-medium bg-[var(--color-paper-soft)] hover:bg-[var(--color-border-soft)] text-[var(--color-espresso)] px-3 py-1.5 rounded-lg transition-colors">
                                 + Adicionar Membro
                               </button>
                             </div>
                             <div className="space-y-3">
                               {items.map((item: any, itemIdx: number) => (
-                                <div key={itemIdx} className="p-4 border border-slate-200 rounded-lg bg-slate-50/50 relative group">
+                                <div key={itemIdx} className="p-4 border border-[var(--color-border-soft)] rounded-lg bg-[var(--color-paper)]/50 relative group">
                                   <button
                                     type="button"
                                     aria-label="Remover"
@@ -927,17 +926,17 @@ export default function SubmitWork() {
                                       newItems.splice(itemIdx, 1);
                                       handleInputChange(activeComponentId, el.name, newItems);
                                     }}
-                                    className="absolute top-3 right-3 text-slate-400 hover:text-red-500 transition-colors w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-50"
+                                    className="absolute top-3 right-3 text-[var(--color-neutral)]/70 hover:text-red-500 transition-colors w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-50"
                                   >
                                     <X className="w-3.5 h-3.5" />
                                   </button>
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pr-8">
                                     {el.fields.map((fName: string) => (
                                       <div key={fName}>
-                                        <label className="block text-xs font-semibold mb-1.5 text-slate-500">{formatLabel(fName)}</label>
+                                        <label className="block text-xs font-semibold mb-1.5 text-[var(--color-neutral)]">{formatLabel(fName)}</label>
                                         <input 
                                           type="text"
-                                          className="w-full border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 p-2 rounded-md text-sm text-slate-900 transition-shadow outline-none"
+                                          className="w-full border border-[var(--color-border-soft)] focus:border-[var(--color-green)] focus:ring-1 focus:ring-[var(--color-green)] p-2 rounded-md text-sm text-[var(--color-espresso)] transition-shadow outline-none"
                                           value={item[fName] || ''}
                                           onChange={(e) => {
                                             const newItems = [...items];
@@ -950,7 +949,7 @@ export default function SubmitWork() {
                                   </div>
                                 </div>
                               ))}
-                              {items.length === 0 && <div className="text-sm text-slate-400 italic text-center py-4 border border-dashed border-slate-200 rounded-lg">Nenhum membro adicionado.</div>}
+                              {items.length === 0 && <div className="text-sm text-[var(--color-neutral)]/70 italic text-center py-4 border border-dashed border-[var(--color-border-soft)] rounded-lg">Nenhum membro adicionado.</div>}
                             </div>
                           </div>
                         );
@@ -960,10 +959,10 @@ export default function SubmitWork() {
                       if (el.type === 'body_content') {
                         return (
                           <div key={elIdx} className="space-y-3">
-                            <label className="block text-sm font-bold text-slate-800 capitalize">
+                            <label className="block text-sm font-bold text-[var(--color-espresso)] capitalize">
                               Conteúdo Textual
                             </label>
-                            <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                            <div className="border border-[var(--color-border-soft)] rounded-xl overflow-hidden shadow-sm">
                                 <BodyEditor
                                   value={formData[activeComponentId]?.sections || []}
                                   onChange={(sections: any) => handleInputChange(activeComponentId, 'sections', sections)}
@@ -978,10 +977,10 @@ export default function SubmitWork() {
                       if (el.type === 'sectioned') {
                         return (
                           <div key={elIdx} className="space-y-3">
-                            <label className="block text-sm font-bold text-slate-800 capitalize">
+                            <label className="block text-sm font-bold text-[var(--color-espresso)] capitalize">
                               Itens da Seção
                             </label>
-                            <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm bg-white">
+                            <div className="border border-[var(--color-border-soft)] rounded-xl overflow-hidden shadow-sm bg-white">
                                 <SectionedEditor
                                   value={formData[activeComponentId]?.items || []}
                                   onChange={(items: any) => handleInputChange(activeComponentId, 'items', items)}
@@ -995,20 +994,20 @@ export default function SubmitWork() {
                       if (el.type === 'repeat') {
                         const items = formData[activeComponentId]?.[el.name] || [];
                         return (
-                          <div key={elIdx} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                          <div key={elIdx} className="bg-white p-5 rounded-xl border border-[var(--color-border-soft)] shadow-sm">
                             <div className="flex justify-between items-center mb-4">
-                              <label className="text-sm font-bold text-slate-800">
+                              <label className="text-sm font-bold text-[var(--color-espresso)]">
                                 {formatLabel(el.name)} {el.required && <span className="text-red-500">*</span>}
                               </label>
                               <button type="button" onClick={() => {
                                 handleInputChange(activeComponentId, el.name, [...items, {}]);
-                              }} className="text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg transition-colors">
+                              }} className="text-xs font-medium bg-[var(--color-paper-soft)] hover:bg-[var(--color-border-soft)] text-[var(--color-espresso)] px-3 py-1.5 rounded-lg transition-colors">
                                 + Adicionar Item
                               </button>
                             </div>
                             <div className="space-y-3">
                               {items.map((item: any, itemIdx: number) => (
-                                <div key={itemIdx} className="p-4 border border-slate-200 rounded-lg bg-slate-50/50 relative">
+                                <div key={itemIdx} className="p-4 border border-[var(--color-border-soft)] rounded-lg bg-[var(--color-paper)]/50 relative">
                                   <button
                                     type="button"
                                     aria-label="Remover"
@@ -1017,7 +1016,7 @@ export default function SubmitWork() {
                                       newItems.splice(itemIdx, 1);
                                       handleInputChange(activeComponentId, el.name, newItems);
                                     }}
-                                    className="absolute top-3 right-3 text-slate-400 hover:text-red-500 transition-colors w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-50"
+                                    className="absolute top-3 right-3 text-[var(--color-neutral)]/70 hover:text-red-500 transition-colors w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-50"
                                   >
                                     <X className="w-3.5 h-3.5" />
                                   </button>
@@ -1030,10 +1029,10 @@ export default function SubmitWork() {
                                         if (gItem.type === 'TEMPLATED_TEXT') {
                                             return gItem.fieldNames?.map((fn: string) => (
                                               <div key={fn}>
-                                                <label className="block text-xs font-semibold mb-1.5 text-slate-500">{formatLabel(fn)}</label>
+                                                <label className="block text-xs font-semibold mb-1.5 text-[var(--color-neutral)]">{formatLabel(fn)}</label>
                                                 <input 
                                                   type="text"
-                                                  className="w-full border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 p-2 rounded-md text-sm text-slate-900 outline-none"
+                                                  className="w-full border border-[var(--color-border-soft)] focus:border-[var(--color-green)] focus:ring-1 focus:ring-[var(--color-green)] p-2 rounded-md text-sm text-[var(--color-espresso)] outline-none"
                                                   value={item[fn] || ''}
                                                   onChange={(e) => {
                                                     const newItems = [...items];
@@ -1050,10 +1049,10 @@ export default function SubmitWork() {
                                         
                                         return (
                                           <div key={sName}>
-                                            <label className="block text-xs font-semibold mb-1.5 text-slate-500">{formatLabel(sName)}</label>
+                                            <label className="block text-xs font-semibold mb-1.5 text-[var(--color-neutral)]">{formatLabel(sName)}</label>
                                             <input 
                                               type="text"
-                                              className="w-full border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 p-2 rounded-md text-sm text-slate-900 outline-none"
+                                              className="w-full border border-[var(--color-border-soft)] focus:border-[var(--color-green)] focus:ring-1 focus:ring-[var(--color-green)] p-2 rounded-md text-sm text-[var(--color-espresso)] outline-none"
                                               value={item[sName] || ''}
                                               onChange={(e) => {
                                                 const newItems = [...items];
@@ -1067,7 +1066,7 @@ export default function SubmitWork() {
                                     </div>
                                   ) : (
                                     <textarea
-                                      className="w-full border border-slate-300 focus:border-indigo-500 p-3 rounded-md text-sm font-mono outline-none"
+                                      className="w-full border border-[var(--color-border-soft)] focus:border-[var(--color-green)] p-3 rounded-md text-sm font-mono outline-none"
                                       rows={3}
                                       placeholder="Dados em formato texto ou JSON..."
                                       value={typeof item === 'object' ? JSON.stringify(item) : item}
@@ -1080,7 +1079,7 @@ export default function SubmitWork() {
                                   )}
                                 </div>
                               ))}
-                              {items.length === 0 && <div className="text-sm text-slate-400 italic text-center py-4 border border-dashed border-slate-200 rounded-lg">Nenhum item adicionado.</div>}
+                              {items.length === 0 && <div className="text-sm text-[var(--color-neutral)]/70 italic text-center py-4 border border-dashed border-[var(--color-border-soft)] rounded-lg">Nenhum item adicionado.</div>}
                             </div>
                           </div>
                         );
@@ -1090,12 +1089,12 @@ export default function SubmitWork() {
                       const isTextarea = el.name.toLowerCase().includes('text') || el.name.toLowerCase().includes('resumo') || el.name.toLowerCase().includes('abstract');
                       const hint = slotHints[el.name];
                       return (
-                        <div key={elIdx} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                          <label className="block text-sm font-bold mb-1.5 text-slate-800">
+                        <div key={elIdx} className="bg-white p-5 rounded-xl border border-[var(--color-border-soft)] shadow-sm">
+                          <label className="block text-sm font-bold mb-1.5 text-[var(--color-espresso)]">
                             {formatLabel(el.name)} {el.required && <span className="text-red-500">*</span>}
                           </label>
                           {(el.isArray || el.desc || hint) && (
-                            <p className="text-xs text-slate-400 mb-3">
+                            <p className="text-xs text-[var(--color-neutral)]/70 mb-3">
                               {hint || el.desc || ''}{el.isArray && !hint ? (el.desc ? ' · ' : '') + 'Separe múltiplos itens por vírgula' : ''}
                             </p>
                           )}
@@ -1103,7 +1102,7 @@ export default function SubmitWork() {
                           {isTextarea && !el.isArray ? (
                             <textarea
                               required={el.required}
-                              className="w-full border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 p-3 rounded-lg text-sm text-slate-900 transition-shadow outline-none resize-y min-h-[120px]"
+                              className="w-full border border-[var(--color-border-soft)] focus:border-[var(--color-green)] focus:ring-1 focus:ring-[var(--color-green)] p-3 rounded-lg text-sm text-[var(--color-espresso)] transition-shadow outline-none resize-y min-h-[120px]"
                               value={formData[activeComponentId]?.[el.name] || ''}
                               placeholder={`Digite o ${formatLabel(el.name).toLowerCase()}...`}
                               onChange={(e) => handleInputChange(activeComponentId, el.name, e.target.value)}
@@ -1112,7 +1111,7 @@ export default function SubmitWork() {
                             <input
                               type="text"
                               required={el.required}
-                              className="w-full border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 p-2.5 rounded-lg text-sm text-slate-900 transition-shadow outline-none"
+                              className="w-full border border-[var(--color-border-soft)] focus:border-[var(--color-green)] focus:ring-1 focus:ring-[var(--color-green)] p-2.5 rounded-lg text-sm text-[var(--color-espresso)] transition-shadow outline-none"
                               value={formData[activeComponentId]?.[el.name] || ''}
                               placeholder={hint ? '' : `Ex: ${el.isArray ? 'Item 1, Item 2' : 'Preencha aqui...'}`}
                               onChange={(e) => handleInputChange(activeComponentId, el.name, e.target.value)}
@@ -1127,8 +1126,8 @@ export default function SubmitWork() {
                         <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center mb-3">
                           <CheckCircle className="w-6 h-6 text-emerald-500" />
                         </div>
-                        <h3 className="text-slate-800 font-semibold mb-2">Gerada automaticamente</h3>
-                        <p className="text-slate-500 text-sm max-w-sm">
+                        <h3 className="text-[var(--color-espresso)] font-semibold mb-2">Gerada automaticamente</h3>
+                        <p className="text-[var(--color-neutral)] text-sm max-w-sm">
                           {componentAutoDescriptions[activeComponentId] || 'Esta seção não requer preenchimento. O Anverso cuidará de toda a formatação e estrutura automaticamente.'}
                         </p>
                       </div>
@@ -1137,12 +1136,12 @@ export default function SubmitWork() {
                 </div>
 
                 {/* Form Navigation Footer */}
-                <div className="p-4 md:px-8 md:py-5 border-t border-slate-100 bg-white rounded-b-2xl flex items-center justify-between mt-auto">
+                <div className="p-4 md:px-8 md:py-5 border-t border-[var(--color-border-soft)] bg-white rounded-b-2xl flex items-center justify-between mt-auto">
                   <button 
                     type="button" 
                     onClick={handlePrev}
                     disabled={activeTab === 0}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-slate-600 hover:bg-slate-100"
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-[var(--color-neutral)] hover:bg-[var(--color-paper-soft)]"
                   >
                     <ChevronLeft className="w-4 h-4" />
                     Anterior
@@ -1152,7 +1151,7 @@ export default function SubmitWork() {
                     <button 
                       type="button" 
                       onClick={handleNext}
-                      className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-colors bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
+                      className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-colors bg-[var(--color-success-bg)] text-[var(--color-green)] hover:bg-[var(--color-success-soft)]"
                     >
                       Próxima Seção
                       <ChevronRight className="w-4 h-4" />

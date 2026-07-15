@@ -31,26 +31,26 @@ export function SectionIndexForm({ comp, onChange, styleRules, allComponents }: 
   return (
     <div className="space-y-4">
       <div>
-        <label className="block text-xs font-semibold text-slate-600 mb-1">Título da página</label>
-        <input type="text" className="w-full border border-slate-300 rounded p-2 text-xs focus:ring-2 focus:ring-blue-500"
+        <label className="block text-xs font-semibold text-[var(--color-neutral)] mb-1">Título da página</label>
+        <input type="text" className="w-full border border-[var(--color-border-soft)] rounded p-2 text-xs focus:ring-2 focus:ring-blue-500"
           value={comp.headingText ?? 'SUMÁRIO'}
           onChange={e => onChange({ ...comp, headingText: e.target.value })} />
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-slate-600 mb-1">Corpo do texto de origem</label>
-        <select className="w-full border border-slate-300 rounded p-2 text-xs bg-white focus:ring-2 focus:ring-blue-500"
+        <label className="block text-xs font-semibold text-[var(--color-neutral)] mb-1">Corpo do texto de origem</label>
+        <select className="w-full border border-[var(--color-border-soft)] rounded p-2 text-xs bg-white focus:ring-2 focus:ring-blue-500"
           value={comp.sourceComponentId ?? ''}
           onChange={e => onChange({ ...comp, sourceComponentId: e.target.value || undefined })}>
           <option value="">— Selecione —</option>
           {bodyContentComponents.map(c => <option key={c.id} value={c.id}>{c.displayName || c.id}</option>)}
         </select>
-        <p className="text-[10px] text-slate-400 mt-0.5">Seção do documento de onde os títulos de capítulos serão coletados</p>
+        <p className="text-[10px] text-[var(--color-neutral)]/70 mt-0.5">Seção do documento de onde os títulos de capítulos serão coletados</p>
       </div>
 
       <div>
-        <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Estilo do título da página</label>
-        <select className="w-full border border-slate-300 rounded p-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500"
+        <label className="block text-[10px] font-semibold text-[var(--color-neutral)] mb-0.5">Estilo do título da página</label>
+        <select className="w-full border border-[var(--color-border-soft)] rounded p-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500"
           value={comp.headingStyleId ?? ''}
           onChange={e => onChange({ ...comp, headingStyleId: e.target.value || undefined })}>
           <option value="">(usar padrão automático)</option>
@@ -59,22 +59,22 @@ export function SectionIndexForm({ comp, onChange, styleRules, allComponents }: 
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-slate-600 mb-1">Template de entrada</label>
-        <input type="text" className="w-full border border-slate-300 rounded p-2 text-xs focus:ring-2 focus:ring-blue-500"
+        <label className="block text-xs font-semibold text-[var(--color-neutral)] mb-1">Template de entrada</label>
+        <input type="text" className="w-full border border-[var(--color-border-soft)] rounded p-2 text-xs focus:ring-2 focus:ring-blue-500"
           value={entryTemplate}
           onChange={e => onChange({ ...comp, entryTemplate: e.target.value })} />
-        <p className="text-[10px] text-slate-400 mt-0.5">
+        <p className="text-[10px] text-[var(--color-neutral)]/70 mt-0.5">
           Variáveis: <code>{'{number}'}</code>, <code>{'{title}'}</code>, <code>{'{page}'}</code>
         </p>
-        <div className="mt-1.5 border border-slate-200 rounded-lg overflow-hidden bg-white">
-          <div className="px-3 py-1.5 bg-slate-50 border-b border-slate-100">
-            <span className="text-[9px] font-bold text-slate-400 uppercase">Prévia</span>
+        <div className="mt-1.5 border border-[var(--color-border-soft)] rounded-lg overflow-hidden bg-white">
+          <div className="px-3 py-1.5 bg-[var(--color-paper)] border-b border-[var(--color-border-soft)]">
+            <span className="text-[9px] font-bold text-[var(--color-neutral)]/70 uppercase">Prévia</span>
           </div>
           <div className="px-3 py-2 space-y-1.5 font-serif">
             {LEVEL_SAMPLES.map(level => (
               <div
                 key={level.level}
-                className="text-xs text-slate-700"
+                className="text-xs text-[var(--color-espresso)]"
                 style={{ paddingLeft: `${(level.level - 1) * 12}px` }}
               >
                 {renderLevelPreview(level)}
@@ -85,19 +85,19 @@ export function SectionIndexForm({ comp, onChange, styleRules, allComponents }: 
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-slate-600 mb-1">Linhas em branco após título</label>
-        <input type="number" min="0" className="w-full border border-slate-300 rounded p-2 text-xs focus:ring-2 focus:ring-blue-500"
+        <label className="block text-xs font-semibold text-[var(--color-neutral)] mb-1">Linhas em branco após título</label>
+        <input type="number" min="0" className="w-full border border-[var(--color-border-soft)] rounded p-2 text-xs focus:ring-2 focus:ring-blue-500"
           value={comp.blankLinesAfterHeading ?? 1}
           onChange={e => onChange({ ...comp, blankLinesAfterHeading: parseInt(e.target.value) })} />
       </div>
 
       <label className="flex items-center gap-2 cursor-pointer">
-        <input type="checkbox" className="w-4 h-4 text-blue-600 rounded border-slate-300"
+        <input type="checkbox" className="w-4 h-4 text-[var(--color-green)] rounded border-[var(--color-border-soft)]"
           checked={comp.useTocField ?? true}
           onChange={e => onChange({ ...comp, useTocField: e.target.checked })} />
         <div>
-          <p className="text-xs font-medium text-slate-700">Sumário clicável</p>
-          <p className="text-[10px] text-slate-400">Gera links que navegam direto para cada seção no Word</p>
+          <p className="text-xs font-medium text-[var(--color-espresso)]">Sumário clicável</p>
+          <p className="text-[10px] text-[var(--color-neutral)]/70">Gera links que navegam direto para cada seção no Word</p>
         </div>
       </label>
     </div>

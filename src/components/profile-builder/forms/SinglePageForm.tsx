@@ -35,16 +35,16 @@ function SelectField({ label: lbl, value, options, onChange, tooltip }: {
 }) {
   return (
     <div>
-      <label className="flex items-center gap-1 text-xs font-semibold text-slate-600 mb-1">
+      <label className="flex items-center gap-1 text-xs font-semibold text-[var(--color-neutral)] mb-1">
         {lbl}
         {tooltip && (
           <Tooltip content={tooltip}>
-            <span className="text-slate-400 cursor-help text-[10px] border border-slate-300 rounded-full px-1">?</span>
+            <span className="text-[var(--color-neutral)]/70 cursor-help text-[10px] border border-[var(--color-border-soft)] rounded-full px-1">?</span>
           </Tooltip>
         )}
       </label>
       <select
-        className="w-full border border-slate-300 rounded p-2 text-xs text-slate-800 bg-white focus:ring-2 focus:ring-blue-500"
+        className="w-full border border-[var(--color-border-soft)] rounded p-2 text-xs text-[var(--color-espresso)] bg-white focus:ring-2 focus:ring-blue-500"
         value={value}
         onChange={e => onChange(e.target.value)}
       >
@@ -69,21 +69,21 @@ export function SinglePageForm({ comp, onChange }: Props) {
   return (
     <div className="space-y-4">
       <div>
-        <label className="block text-xs font-semibold text-slate-600 mb-1">Nome de exibição</label>
+        <label className="block text-xs font-semibold text-[var(--color-neutral)] mb-1">Nome de exibição</label>
         <input
           type="text"
-          className="w-full border border-slate-300 rounded p-2 text-xs text-slate-800 focus:ring-2 focus:ring-blue-500"
+          className="w-full border border-[var(--color-border-soft)] rounded p-2 text-xs text-[var(--color-espresso)] focus:ring-2 focus:ring-blue-500"
           value={comp.displayName}
           onChange={e => onChange({ ...comp, displayName: e.target.value })}
           placeholder="Ex: Capa"
         />
       </div>
 
-      <details className="border border-slate-200 rounded-lg">
-        <summary className="px-3 py-2 text-xs font-semibold text-slate-600 cursor-pointer hover:bg-slate-50 rounded-lg">
+      <details className="border border-[var(--color-border-soft)] rounded-lg">
+        <summary className="px-3 py-2 text-xs font-semibold text-[var(--color-neutral)] cursor-pointer hover:bg-[var(--color-paper)] rounded-lg">
           Política de Layout (avançado)
         </summary>
-        <div className="p-3 space-y-3 border-t border-slate-100">
+        <div className="p-3 space-y-3 border-t border-[var(--color-border-soft)]">
           <SelectField
             label="Estratégia de âncora"
             value={policy.anchorStrategy}
@@ -113,7 +113,7 @@ export function SinglePageForm({ comp, onChange }: Props) {
         </div>
       </details>
 
-      <p className="text-[11px] text-blue-600 bg-blue-50 border border-blue-100 rounded p-2">
+      <p className="text-[11px] text-[var(--color-green)] bg-blue-50 border border-blue-100 rounded p-2">
         Use o painel central para adicionar e reordenar slots desta página.
       </p>
     </div>

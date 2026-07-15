@@ -4,6 +4,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { fetchApi } from '@/lib/api';
 import Link from 'next/link';
+import Image from 'next/image';
+import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
+import { Mail, Lock, KeyRound } from 'lucide-react';
 
 export default function RecoverPassword() {
   const [step, setStep] = useState<'REQUEST' | 'RESET'>('REQUEST');
@@ -13,12 +17,14 @@ export default function RecoverPassword() {
   
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
+    setLoading(true);
 
     try {
       const res = await fetchApi('/api/auth/forgot-password', {
@@ -34,6 +40,8 @@ export default function RecoverPassword() {
       setStep('RESET');
     } catch (err: any) {
       setError(err.message || 'Ocorreu um erro');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -41,6 +49,7 @@ export default function RecoverPassword() {
     e.preventDefault();
     setError('');
     setSuccess('');
+    setLoading(true);
 
     try {
       const res = await fetchApi('/api/auth/reset-password', {
@@ -58,85 +67,95 @@ export default function RecoverPassword() {
       }, 2000);
     } catch (err: any) {
       setError(err.message || 'Ocorreu um erro');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-8">
-      <div className="bg-white p-8 rounded shadow-md w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-6 text-center text-blue-600">
-          {step === 'REQUEST' ? 'Recuperar Senha' : 'Redefinir Senha'}
-        </h1>
-        
-        {error && <div className="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm">{error}</div>}
-        {success && <div className="bg-green-100 text-green-700 p-3 rounded mb-4 text-sm">{success}</div>}
+    <div className="min-h-screen bg-[var(--color-paper)] flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      {/* Decorações */}
+      <Image src="/icons/leaves.png" alt="" width={400} height={400} className="pointer-events-none absolute -left-[50px] -top-[50px] z-0 opacity-10 mix-blend-color-burn" unoptimized />
+      <Image src="/icons/leaves.png" alt="" width={300} height={300} className="pointer-events-none absolute -right-[50px] -bottom-[50px] z-0 rotate-[135deg] opacity-10 mix-blend-color-burn" unoptimized />
 
-        {step === 'REQUEST' ? (
-          <form onSubmit={handleRequest} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
-              <input
+      <div className="relative z-10 w-full max-w-md">
+        <div className="text-center mb-8">
+          <Link href="/" className="inline-flex items-center justify-center bg-white p-3 rounded-2xl shadow-sm mb-6 hover:scale-105 transition-transform">
+            <Image src="/icons/xicara.png" alt="Anverso" width={32} height={32} unoptimized />
+          </Link>
+          <h1 className="text-3xl font-serif text-[var(--color-espresso)] mb-2">
+            {step === 'REQUEST' ? 'Recuperar Senha' : 'Redefinir Senha'}
+          </h1>
+          <p className="text-[var(--color-neutral)] text-sm">
+            {step === 'REQUEST' ? 'Enviaremos um código para o seu e-mail.' : 'Crie uma nova senha segura.'}
+          </p>
+        </div>
+
+        <div className="bg-white/80 backdrop-blur-md p-8 rounded-3xl shadow-[var(--shadow-soft)] border border-[var(--color-border-soft)]">
+          {error && <div className="bg-[var(--color-error-bg-soft)] text-[var(--color-error)] border border-[var(--color-error-bg)] p-3 rounded-xl mb-6 text-sm">{error}</div>}
+          {success && <div className="bg-[var(--color-success-bg)] text-[var(--color-green)] border border-[var(--color-success-soft)] p-3 rounded-xl mb-6 text-sm">{success}</div>}
+
+          {step === 'REQUEST' ? (
+            <form onSubmit={handleRequest} className="space-y-5">
+              <Input
+                label="E-mail"
                 type="email"
                 required
-                className="w-full border p-2 rounded text-black"
+                leftIcon={Mail}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                placeholder="seu@email.com"
               />
-            </div>
-            
-            <button
-              type="submit"
-              className="w-full bg-blue-600 text-white py-2 rounded font-medium hover:bg-blue-700 transition"
-            >
-              Enviar Código
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={handleReset} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
-              <input
+              
+              <div className="pt-2">
+                <Button type="submit" variant="primary" size="lg" className="w-full justify-center" loading={loading}>
+                  Enviar Código
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <form onSubmit={handleReset} className="space-y-5">
+              <Input
+                label="E-mail"
                 type="email"
                 required
                 disabled
-                className="w-full border p-2 rounded bg-gray-100 text-gray-500"
+                leftIcon={Mail}
                 value={email}
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Código OTP</label>
-              <input
+              <Input
+                label="Código OTP"
                 type="text"
                 required
-                className="w-full border p-2 rounded"
+                leftIcon={KeyRound}
+                className="tracking-widest uppercase"
                 value={otpCode}
                 onChange={(e) => setOtpCode(e.target.value)}
+                placeholder="000000"
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nova Senha</label>
-              <input
+              <Input
+                label="Nova Senha"
                 type="password"
                 required
-                className="w-full border p-2 rounded"
+                leftIcon={Lock}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="••••••••"
               />
-            </div>
-            
-            <button
-              type="submit"
-              className="w-full bg-blue-600 text-white py-2 rounded font-medium hover:bg-blue-700 transition"
-            >
-              Redefinir Senha
-            </button>
-          </form>
-        )}
+              
+              <div className="pt-2">
+                <Button type="submit" variant="primary" size="lg" className="w-full justify-center" loading={loading}>
+                  Redefinir Senha
+                </Button>
+              </div>
+            </form>
+          )}
 
-        <div className="mt-4 text-sm text-center">
-          <Link href="/login" className="text-gray-600 hover:underline">
-            Lembrou a senha? Voltar para o Login
-          </Link>
+          <div className="mt-8 text-sm text-center">
+            <span className="text-[var(--color-neutral)]">
+              Lembrou a senha? <Link href="/login" className="text-[var(--color-forest)] font-bold hover:underline">Voltar para o Login</Link>
+            </span>
+          </div>
         </div>
       </div>
     </div>

@@ -1,7 +1,8 @@
 'use client';
 
 import { BuilderSection } from '@/app/create-profile/[[...id]]/page';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Save, Blocks } from 'lucide-react';
+import { Button } from '../ui/Button';
 
 interface SidebarProps {
   activeSection: BuilderSection;
@@ -21,12 +22,15 @@ const SECTIONS: { id: BuilderSection; label: string }[] = [
 
 export function BuilderSidebar({ activeSection, onSectionChange, errors, onSave, isSaving }: SidebarProps) {
   return (
-    <aside className="w-52 shrink-0 flex flex-col border-r border-slate-200 bg-white h-full">
-      <div className="p-4 border-b border-slate-100">
-        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Builder</span>
+    <aside className="w-64 shrink-0 flex flex-col border-r border-[var(--color-border-soft)] bg-[var(--color-paper-soft)] h-full">
+      <div className="p-6 border-b border-[var(--color-border-soft)] flex items-center gap-3">
+        <div className="w-8 h-8 rounded-lg bg-[var(--color-forest)] text-white flex items-center justify-center shadow-sm">
+          <Blocks size={16} />
+        </div>
+        <span className="text-sm font-extrabold text-[var(--color-espresso)] uppercase tracking-wider">Builder</span>
       </div>
 
-      <nav className="flex-1 py-2">
+      <nav className="flex-1 py-4 px-3 space-y-1">
         {SECTIONS.map(s => {
           const sectionErrors = errors[s.id] ?? [];
           const hasError = sectionErrors.length > 0;
@@ -36,29 +40,33 @@ export function BuilderSidebar({ activeSection, onSectionChange, errors, onSave,
             <button
               key={s.id}
               onClick={() => onSectionChange(s.id)}
-              className={`w-full flex items-center justify-between px-4 py-3 text-sm font-medium transition-colors text-left ${
+              className={`w-full flex items-center justify-between px-4 py-3 text-sm font-medium transition-all rounded-xl text-left ${
                 isActive
-                  ? 'bg-blue-50 text-blue-700 border-l-2 border-blue-600'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'bg-white text-[var(--color-green)] shadow-sm border border-[var(--color-border-soft)] font-bold'
+                  : 'text-[var(--color-neutral)] hover:bg-[rgba(47,44,45,0.06)] hover:text-[var(--color-espresso)] border border-transparent'
               }`}
             >
               <span>{s.label}</span>
               {hasError && (
-                <span title={sectionErrors.join(', ')}><AlertTriangle size={13} className="text-orange-500 shrink-0" /></span>
+                <span title={sectionErrors.join(', ')} className="w-5 h-5 rounded-full bg-red-50 flex items-center justify-center border border-red-100">
+                  <AlertTriangle size={12} className="text-red-500 shrink-0" />
+                </span>
               )}
             </button>
           );
         })}
       </nav>
 
-      <div className="p-4 border-t border-slate-100">
-        <button
+      <div className="p-4 border-t border-[var(--color-border-soft)] bg-white">
+        <Button
           onClick={onSave}
-          disabled={isSaving}
-          className="w-full bg-blue-600 text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-60"
+          loading={isSaving}
+          variant="primary"
+          className="w-full justify-center"
+          icon={Save}
         >
           {isSaving ? 'Salvando...' : 'Salvar Perfil'}
-        </button>
+        </Button>
       </div>
     </aside>
   );

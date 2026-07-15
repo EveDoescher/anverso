@@ -18,6 +18,8 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { StyleRuleEditor } from './StyleRuleEditor';
+import { Button } from '../ui/Button';
+import { IconButton } from '../ui/IconButton';
 import {
   BookOpen, BookMarked, Newspaper, Globe, Scale, GraduationCap, FileText, ClipboardList, Ruler,
   Check, AlertTriangle,
@@ -84,17 +86,17 @@ function SortableField({ slot, index, isSelected, onSelect, onRemove }: {
       style={style}
       onClick={onSelect}
       className={`flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer transition-all select-none ${
-        isSelected ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+        isSelected ? 'border-[var(--color-green)] bg-[var(--color-success-bg)]' : 'border-[var(--color-border-soft)] hover:border-[var(--color-border-soft)] hover:bg-[var(--color-paper)]'
       }`}
     >
       <button {...attributes} {...listeners}
-        className="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing shrink-0"
+        className="text-[var(--color-neutral)]/50 hover:text-[var(--color-neutral)] cursor-grab active:cursor-grabbing shrink-0"
         onClick={e => e.stopPropagation()}>≡</button>
       <div className={`w-2.5 h-2.5 rounded-sm shrink-0 ${colorForIndex(index)}`} />
-      <span className="flex-1 text-sm font-medium text-slate-700 min-w-0 truncate">{slot.displayName || slot.id}</span>
+      <span className="flex-1 text-sm font-medium text-[var(--color-espresso)] min-w-0 truncate">{slot.displayName || slot.id}</span>
       {slot.required && <span className="text-[10px] text-red-500 font-bold shrink-0" title="Obrigatório">*</span>}
       <button onClick={e => { e.stopPropagation(); onRemove(); }}
-        className="text-slate-300 hover:text-red-500 font-bold shrink-0 text-base leading-none">×</button>
+        className="text-[var(--color-neutral)]/50 hover:text-red-500 font-bold shrink-0 text-base leading-none">×</button>
     </div>
   );
 }
@@ -139,19 +141,19 @@ function SinglePagePanel({ component, selectedSlotId, onSelectSlot, onUpdateComp
   return (
     <div className="flex-1 overflow-auto p-3 space-y-3">
       {slots.length > 0 && (
-        <div className="border border-slate-200 rounded-lg p-3 bg-white">
-          <p className="text-[9px] font-bold text-slate-400 uppercase mb-2">Prévia da página</p>
-          <div className="border border-slate-300 rounded bg-white p-2 space-y-1.5 min-h-[120px] flex flex-col">
+        <div className="border border-[var(--color-border-soft)] rounded-lg p-3 bg-white">
+          <p className="text-[9px] font-bold text-[var(--color-neutral)]/70 uppercase mb-2">Prévia da página</p>
+          <div className="border border-[var(--color-border-soft)] rounded bg-white p-2 space-y-1.5 min-h-[120px] flex flex-col">
             {slots.map((slot, idx) => (
               <FieldPreviewBlock key={slot.id} slot={slot} index={idx} isSelected={selectedSlotId === slot.id} />
             ))}
           </div>
-          <p className="text-[9px] text-slate-400 mt-2">Cada campo tem uma cor única para facilitar a identificação.</p>
+          <p className="text-[9px] text-[var(--color-neutral)]/70 mt-2">Cada campo tem uma cor única para facilitar a identificação.</p>
         </div>
       )}
 
       <div className="space-y-1.5">
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Campos de conteúdo</p>
+        <p className="text-[10px] font-bold text-[var(--color-neutral)]/70 uppercase tracking-wider">Campos de conteúdo</p>
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={slots.map(s => s.id)} strategy={verticalListSortingStrategy}>
             {slots.map((slot, idx) => (
@@ -164,7 +166,7 @@ function SinglePagePanel({ component, selectedSlotId, onSelectSlot, onUpdateComp
         </DndContext>
 
         {slots.length === 0 && !showAddField && (
-          <div className="text-xs text-slate-400 text-center p-4 border-2 border-dashed border-slate-100 rounded-lg">
+          <div className="text-xs text-[var(--color-neutral)]/70 text-center p-4 border-2 border-dashed border-[var(--color-border-soft)] rounded-lg">
             Nenhum campo. Adicione um abaixo.
           </div>
         )}
@@ -172,7 +174,7 @@ function SinglePagePanel({ component, selectedSlotId, onSelectSlot, onUpdateComp
         {showAddField ? (
           <div className="flex gap-2 items-center">
             <input type="text" autoFocus
-              className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+              className="flex-1 border border-[var(--color-border-soft)] rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
               placeholder="Nome do campo (ex: Título, Autor...)"
               value={newFieldName}
               onChange={e => setNewFieldName(e.target.value)}
@@ -180,16 +182,11 @@ function SinglePagePanel({ component, selectedSlotId, onSelectSlot, onUpdateComp
                 if (e.key === 'Enter') confirmAddField();
                 if (e.key === 'Escape') { setShowAddField(false); setNewFieldName(''); }
               }} />
-            <button onClick={confirmAddField}
-              className="px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition">OK</button>
-            <button onClick={() => { setShowAddField(false); setNewFieldName(''); }}
-              className="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">✕</button>
+            <Button onClick={confirmAddField} variant="primary">OK</Button>
+            <Button variant="ghost" onClick={() => { setShowAddField(false); setNewFieldName(""); }}>✕</Button>
           </div>
         ) : (
-          <button onClick={() => setShowAddField(true)}
-            className="w-full border border-dashed border-slate-300 rounded-lg py-2 text-sm text-slate-500 hover:border-blue-400 hover:text-blue-600 transition">
-            + Adicionar campo
-          </button>
+          <Button variant="secondary" onClick={() => setShowAddField(true)} className="w-full justify-center border-dashed">+ Adicionar campo</Button>
         )}
       </div>
     </div>
@@ -264,9 +261,9 @@ function BodyHierarchyPanel({ component, styleRules, onUpdateComponent, onAddSty
   return (
     <div className="flex h-full">
       {/* Hierarchy list */}
-      <div className="w-56 shrink-0 border-r border-slate-200 flex flex-col overflow-auto">
-        <div className="px-3 py-2 border-b border-slate-100 bg-slate-50">
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Hierarquia tipográfica</span>
+      <div className="w-56 shrink-0 border-r border-[var(--color-border-soft)] flex flex-col overflow-auto">
+        <div className="px-3 py-2 border-b border-[var(--color-border-soft)] bg-[var(--color-paper)]">
+          <span className="text-[10px] font-bold text-[var(--color-neutral)] uppercase tracking-wider">Hierarquia tipográfica</span>
         </div>
         <div className="flex-1 overflow-auto">
           {BODY_LEVELS.map(level => {
@@ -276,7 +273,7 @@ function BodyHierarchyPanel({ component, styleRules, onUpdateComponent, onAddSty
               <button
                 key={level.key}
                 onClick={() => { setSelectedLevel(level.key); getOrCreateRule(level.key); }}
-                className={`w-full text-left px-4 py-3 border-b border-slate-100 transition-colors ${isSelected ? 'bg-blue-50 border-l-2 border-l-blue-500' : 'hover:bg-slate-50'}`}
+                className={`w-full text-left px-4 py-3 border-b border-[var(--color-border-soft)] transition-colors ${isSelected ? 'bg-blue-50 border-l-2 border-l-blue-500' : 'hover:bg-[var(--color-paper)]'}`}
               >
                 <div
                   className="truncate"
@@ -290,7 +287,7 @@ function BodyHierarchyPanel({ component, styleRules, onUpdateComponent, onAddSty
                 >
                   {level.sample}
                 </div>
-                <div className="text-[9px] text-slate-400 mt-0.5">
+                <div className="text-[9px] text-[var(--color-neutral)]/70 mt-0.5">
                   {rule.fontFamily} {rule.fontSizePt}pt {rule.bold ? '• negrito' : ''}{rule.italic ? '• itálico' : ''}{rule.uppercase ? '• maiúsculas' : ''}
                 </div>
               </button>
@@ -304,10 +301,10 @@ function BodyHierarchyPanel({ component, styleRules, onUpdateComponent, onAddSty
         {selectedLevel && selectedRule ? (
           <div className="p-4">
             <div className="mb-3">
-              <p className="text-sm font-bold text-slate-800">
+              <p className="text-sm font-bold text-[var(--color-espresso)]">
                 {BODY_LEVELS.find(l => l.key === selectedLevel)?.label}
               </p>
-              <p className="text-xs text-slate-400">Estilo tipográfico</p>
+              <p className="text-xs text-[var(--color-neutral)]/70">Estilo tipográfico</p>
             </div>
             <StyleRuleEditor
               rule={selectedRule}
@@ -315,7 +312,7 @@ function BodyHierarchyPanel({ component, styleRules, onUpdateComponent, onAddSty
             />
           </div>
         ) : (
-          <div className="flex items-center justify-center h-full text-sm text-slate-400 text-center p-8">
+          <div className="flex items-center justify-center h-full text-sm text-[var(--color-neutral)]/70 text-center p-8">
             Clique em um nível da hierarquia para editar seu estilo tipográfico.
           </div>
         )}
@@ -388,9 +385,9 @@ function BibEntryEditor({ parts, onChange }: { parts: BibEntryPart[]; onChange: 
   return (
     <div className="space-y-1.5">
       {parts.map((p, i) => (
-        <div key={i} className="flex items-center gap-1.5 text-xs bg-white rounded border border-slate-200 p-1.5">
+        <div key={i} className="flex items-center gap-1.5 text-xs bg-white rounded border border-[var(--color-border-soft)] p-1.5">
           <select
-            className="border border-slate-200 rounded px-1 py-0.5 text-[10px] bg-white max-w-[110px]"
+            className="border border-[var(--color-border-soft)] rounded px-1 py-0.5 text-[10px] bg-white max-w-[110px]"
             value={p.source}
             onChange={e => update(i, 'source', e.target.value)}
           >
@@ -398,13 +395,13 @@ function BibEntryEditor({ parts, onChange }: { parts: BibEntryPart[]; onChange: 
             <option value={`literal:${p.source.startsWith('literal:') ? p.source.slice(8) : ''}`}>literal...</option>
           </select>
           <input
-            className="w-12 border border-slate-200 rounded px-1 py-0.5 text-[10px]"
+            className="w-12 border border-[var(--color-border-soft)] rounded px-1 py-0.5 text-[10px]"
             placeholder="antes"
             value={p.prefix}
             onChange={e => update(i, 'prefix', e.target.value)}
           />
           <input
-            className="w-12 border border-slate-200 rounded px-1 py-0.5 text-[10px]"
+            className="w-12 border border-[var(--color-border-soft)] rounded px-1 py-0.5 text-[10px]"
             placeholder="depois"
             value={p.suffix}
             onChange={e => update(i, 'suffix', e.target.value)}
@@ -420,9 +417,7 @@ function BibEntryEditor({ parts, onChange }: { parts: BibEntryPart[]; onChange: 
           <button onClick={() => remove(i)} className="text-red-400 hover:text-red-600 font-bold ml-auto">×</button>
         </div>
       ))}
-      <button onClick={add} className="w-full text-[10px] text-blue-600 hover:underline border border-dashed border-blue-200 rounded py-1">
-        + Adicionar parte
-      </button>
+      <Button variant="secondary" size="sm" onClick={add} className="w-full justify-center">+ Adicionar parte</Button>
     </div>
   );
 }
@@ -443,9 +438,9 @@ function BibliographyRichPanel({ component, onUpdateComponent }: {
   return (
     <div className="flex h-full">
       {/* Type list */}
-      <div className="w-52 shrink-0 border-r border-slate-200 flex flex-col overflow-auto">
-        <div className="px-3 py-2 border-b border-slate-100 bg-slate-50">
-          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Tipos de referência</span>
+      <div className="w-52 shrink-0 border-r border-[var(--color-border-soft)] flex flex-col overflow-auto">
+        <div className="px-3 py-2 border-b border-[var(--color-border-soft)] bg-[var(--color-paper)]">
+          <span className="text-[10px] font-bold text-[var(--color-neutral)] uppercase tracking-wider">Tipos de referência</span>
         </div>
         <div className="flex-1 overflow-auto">
           {BIB_REF_TYPES.map(rt => {
@@ -456,15 +451,15 @@ function BibliographyRichPanel({ component, onUpdateComponent }: {
               <button
                 key={rt.value}
                 onClick={() => setSelectedType(rt.value)}
-                className={`w-full flex items-center gap-2 px-3 py-2.5 text-left border-b border-slate-100 transition-colors ${isSelected ? 'bg-blue-50 border-l-2 border-l-blue-500' : 'hover:bg-slate-50'}`}
+                className={`w-full flex items-center gap-2 px-3 py-2.5 text-left border-b border-[var(--color-border-soft)] transition-colors ${isSelected ? 'bg-blue-50 border-l-2 border-l-blue-500' : 'hover:bg-[var(--color-paper)]'}`}
               >
-                <rt.Icon size={15} className="shrink-0 text-slate-500" />
+                <rt.Icon size={15} className="shrink-0 text-[var(--color-neutral)]" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-slate-700 truncate">{rt.label}</p>
+                  <p className="text-xs font-medium text-[var(--color-espresso)] truncate">{rt.label}</p>
                   {isConfigured ? (
                     <p className="text-[9px] text-green-600 flex items-center gap-0.5"><Check size={9} /> {parts.length} partes</p>
                   ) : (
-                    <p className="text-[9px] text-amber-500 flex items-center gap-0.5"><AlertTriangle size={9} /> não configurado</p>
+                    <p className="text-[9px] text-[var(--color-gold)] flex items-center gap-0.5"><AlertTriangle size={9} /> não configurado</p>
                   )}
                 </div>
               </button>
@@ -478,40 +473,40 @@ function BibliographyRichPanel({ component, onUpdateComponent }: {
         {selectedType ? (
           <>
             <div>
-              <p className="text-sm font-bold text-slate-800">
+              <p className="text-sm font-bold text-[var(--color-espresso)]">
                 {BIB_REF_TYPES.find(r => r.value === selectedType)?.label}
               </p>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-[var(--color-neutral)]/70 mt-0.5">
                 Monte a referência arrastando e configurando as partes abaixo.
               </p>
             </div>
 
             {preview && (
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                <p className="text-[9px] text-slate-400 uppercase font-bold mb-1">Prévia com dados de exemplo</p>
-                <p className="text-xs text-slate-700 leading-relaxed font-serif">{preview}</p>
+              <div className="p-3 bg-[var(--color-paper)] border border-[var(--color-border-soft)] rounded-lg">
+                <p className="text-[9px] text-[var(--color-neutral)]/70 uppercase font-bold mb-1">Prévia com dados de exemplo</p>
+                <p className="text-xs text-[var(--color-espresso)] leading-relaxed font-serif">{preview}</p>
               </div>
             )}
 
             <div>
-              <p className="text-xs font-semibold text-slate-600 mb-2">Partes da referência</p>
+              <p className="text-xs font-semibold text-[var(--color-neutral)] mb-2">Partes da referência</p>
               <BibEntryEditor
                 parts={currentParts}
                 onChange={parts => setEntryFormat(selectedType, parts)}
               />
             </div>
 
-            <details className="text-[10px] text-slate-400">
-              <summary className="cursor-pointer hover:text-slate-600">Campos disponíveis</summary>
+            <details className="text-[10px] text-[var(--color-neutral)]/70">
+              <summary className="cursor-pointer hover:text-[var(--color-neutral)]">Campos disponíveis</summary>
               <div className="mt-2 grid grid-cols-2 gap-1 text-[9px]">
                 {BIB_SOURCES.map(s => (
-                  <span key={s} className="font-mono bg-slate-100 px-1.5 py-0.5 rounded">{s}</span>
+                  <span key={s} className="font-mono bg-[var(--color-paper-soft)] px-1.5 py-0.5 rounded">{s}</span>
                 ))}
               </div>
             </details>
           </>
         ) : (
-          <div className="flex items-center justify-center h-full text-sm text-slate-400 text-center">
+          <div className="flex items-center justify-center h-full text-sm text-[var(--color-neutral)]/70 text-center">
             Selecione um tipo de referência para configurar seu formato.
           </div>
         )}
@@ -525,19 +520,19 @@ function BibliographyRichPanel({ component, onUpdateComponent }: {
 export function ComponentVisualPanel({ component, selectedSlotId, onSelectSlot, onUpdateComponent, styleRules, onAddStyleRule }: Props) {
   if (!component) {
     return (
-      <div className="flex-1 flex items-center justify-center text-sm text-slate-400 border-r border-slate-200">
+      <div className="flex-1 flex items-center justify-center text-sm text-[var(--color-neutral)]/70 border-r border-[var(--color-border-soft)]">
         Selecione um componente na coluna esquerda.
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col border-r border-slate-200 min-w-0 overflow-hidden">
-      <div className="px-3 py-2.5 border-b border-slate-100 bg-slate-50 shrink-0">
-        <span className="text-sm font-bold text-slate-700">
+    <div className="flex-1 flex flex-col border-r border-[var(--color-border-soft)] min-w-0 overflow-hidden">
+      <div className="px-3 py-2.5 border-b border-[var(--color-border-soft)] bg-[var(--color-paper)] shrink-0">
+        <span className="text-sm font-bold text-[var(--color-espresso)]">
           {component.displayName || component.id}
         </span>
-        <span className="ml-2 text-[10px] text-slate-400 uppercase tracking-wide">
+        <span className="ml-2 text-[10px] text-[var(--color-neutral)]/70 uppercase tracking-wide">
           {component.ruleType === 'SINGLE_PAGE' ? 'Página única' :
            component.ruleType === 'BODY_CONTENT' ? 'Corpo do texto' :
            component.ruleType === 'BIBLIOGRAPHY' ? 'Referências' :
@@ -569,8 +564,8 @@ export function ComponentVisualPanel({ component, selectedSlotId, onSelectSlot, 
         />
       ) : (
         <div className="flex-1 flex items-center justify-center p-6">
-          <div className="text-sm text-slate-500 bg-slate-50 rounded-lg border border-slate-200 p-4 max-w-xs text-center">
-            <p className="font-semibold text-slate-700 mb-1">Configure no painel ao lado</p>
+          <div className="text-sm text-[var(--color-neutral)] bg-[var(--color-paper)] rounded-lg border border-[var(--color-border-soft)] p-4 max-w-xs text-center">
+            <p className="font-semibold text-[var(--color-espresso)] mb-1">Configure no painel ao lado</p>
             <p>As propriedades deste componente ficam no inspector de propriedades à direita.</p>
           </div>
         </div>

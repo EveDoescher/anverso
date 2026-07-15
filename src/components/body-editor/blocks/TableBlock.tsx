@@ -56,23 +56,23 @@ export default function TableBlock({ value, onChange }: any) {
   const rows = table.rows || [];
 
   return (
-    <div className="space-y-4 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+    <div className="space-y-4 bg-white p-5 rounded-xl border border-[var(--color-border-soft)] shadow-sm">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">Título/Legenda da Tabela</label>
+          <label className="block text-xs font-semibold text-[var(--color-neutral)] mb-1.5 uppercase">Título/Legenda da Tabela</label>
           <input 
             type="text" 
-            className="w-full border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 p-2.5 text-sm rounded-lg outline-none transition-shadow" 
+            className="w-full border border-[var(--color-border-soft)] focus:border-[var(--color-green)] focus:ring-1 focus:ring-[var(--color-green)] p-2.5 text-sm rounded-lg outline-none transition-shadow" 
             placeholder="Ex: Tabela 1 - Comparativo de Resultados" 
             value={table.caption || ''} 
             onChange={e => onChange({...value, table: {...table, caption: e.target.value}})} 
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase">Fonte (Opcional)</label>
+          <label className="block text-xs font-semibold text-[var(--color-neutral)] mb-1.5 uppercase">Fonte (Opcional)</label>
           <input 
             type="text" 
-            className="w-full border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 p-2.5 text-sm rounded-lg outline-none transition-shadow" 
+            className="w-full border border-[var(--color-border-soft)] focus:border-[var(--color-green)] focus:ring-1 focus:ring-[var(--color-green)] p-2.5 text-sm rounded-lg outline-none transition-shadow" 
             placeholder="Ex: O Autor (2024)" 
             value={table.source || ''} 
             onChange={e => onChange({...value, table: {...table, source: e.target.value}})} 
@@ -82,9 +82,9 @@ export default function TableBlock({ value, onChange }: any) {
 
       <div className="pt-2">
         <div className="flex items-center justify-between mb-3">
-          <label className="block text-sm font-bold text-slate-800">Dados da Tabela</label>
+          <label className="block text-sm font-bold text-[var(--color-espresso)]">Dados da Tabela</label>
           <div className="flex gap-2">
-            <button type="button" onClick={addColumn} className="flex items-center gap-1 text-xs bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-3 py-1.5 rounded-md font-medium transition-colors">
+            <button type="button" onClick={addColumn} className="flex items-center gap-1 text-xs bg-[var(--color-success-bg)] text-[var(--color-green)] hover:bg-[var(--color-success-soft)] px-3 py-1.5 rounded-md font-medium transition-colors">
               <Columns className="w-3.5 h-3.5" /> Adicionar Coluna
             </button>
             <button type="button" onClick={addRow} className="flex items-center gap-1 text-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100 px-3 py-1.5 rounded-md font-medium transition-colors">
@@ -93,15 +93,15 @@ export default function TableBlock({ value, onChange }: any) {
           </div>
         </div>
         
-        <div className="overflow-x-auto border border-slate-200 rounded-lg">
+        <div className="overflow-x-auto border border-[var(--color-border-soft)] rounded-lg">
           <table className="w-full text-left border-collapse min-w-max">
             <thead>
-              <tr className="bg-slate-50">
+              <tr className="bg-[var(--color-paper)]">
                 {cols.map((col: any, colIdx: number) => (
-                  <th key={`th-${colIdx}`} className="border-b border-r border-slate-200 p-2 font-medium text-slate-700 align-top relative group min-w-[150px]">
+                  <th key={`th-${colIdx}`} className="border-b border-r border-[var(--color-border-soft)] p-2 font-medium text-[var(--color-espresso)] align-top relative group min-w-[150px]">
                     <input 
                       type="text" 
-                      className="w-full bg-transparent font-bold text-sm outline-none border-b border-transparent focus:border-indigo-400 pb-1"
+                      className="w-full bg-transparent font-bold text-sm outline-none border-b border-transparent focus:border-[var(--color-green)] pb-1"
                       value={col.title || ''}
                       placeholder={`Coluna ${colIdx + 1}`}
                       onChange={(e) => updateColumnTitle(colIdx, e.target.value)}
@@ -110,7 +110,7 @@ export default function TableBlock({ value, onChange }: any) {
                       <button 
                         type="button" 
                         onClick={() => removeColumn(colIdx)} 
-                        className="absolute right-2 top-2 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity bg-white p-1 rounded shadow-sm border border-slate-200"
+                        className="absolute right-2 top-2 text-[var(--color-neutral)]/70 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity bg-white p-1 rounded shadow-sm border border-[var(--color-border-soft)]"
                         title="Remover Coluna"
                       >
                         <Trash2 className="w-3 h-3" />
@@ -118,29 +118,29 @@ export default function TableBlock({ value, onChange }: any) {
                     )}
                   </th>
                 ))}
-                <th className="border-b border-slate-200 w-12 bg-slate-50"></th>
+                <th className="border-b border-[var(--color-border-soft)] w-12 bg-[var(--color-paper)]"></th>
               </tr>
             </thead>
             <tbody>
               {rows.map((row: any, rowIdx: number) => (
-                <tr key={`tr-${rowIdx}`} className="hover:bg-slate-50/50 group">
+                <tr key={`tr-${rowIdx}`} className="hover:bg-[var(--color-paper)]/50 group">
                   {cols.map((_: any, colIdx: number) => (
-                    <td key={`td-${rowIdx}-${colIdx}`} className="border-b border-r border-slate-200 p-2">
+                    <td key={`td-${rowIdx}-${colIdx}`} className="border-b border-r border-[var(--color-border-soft)] p-2">
                       <input 
                         type="text" 
-                        className="w-full bg-transparent text-sm outline-none focus:ring-1 focus:ring-indigo-500 rounded p-1"
+                        className="w-full bg-transparent text-sm outline-none focus:ring-1 focus:ring-[var(--color-green)] rounded p-1"
                         value={row.cells?.[colIdx]?.content || ''}
                         placeholder="Valor..."
                         onChange={(e) => updateCellContent(rowIdx, colIdx, e.target.value)}
                       />
                     </td>
                   ))}
-                  <td className="border-b border-slate-200 p-2 text-center align-middle">
+                  <td className="border-b border-[var(--color-border-soft)] p-2 text-center align-middle">
                     {rows.length > 1 && (
                       <button 
                         type="button" 
                         onClick={() => removeRow(rowIdx)} 
-                        className="text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="text-[var(--color-neutral)]/70 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
                         title="Remover Linha"
                       >
                         <Trash2 className="w-4 h-4" />

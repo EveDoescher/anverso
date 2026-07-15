@@ -7,6 +7,9 @@ import { ArrowLeft, Star, Heart, Share2, FileCheck, CheckCircle2, User, Clock, M
 import { fetchApi } from '@/lib/api';
 import Navbar from '@/components/layout/Navbar';
 import { AlertModal, AlertModalType } from '@/components/ui/AlertModal';
+import { Button } from '@/components/ui/Button';
+import { IconButton } from '@/components/ui/IconButton';
+import { Input } from '@/components/ui/Input';
 
 export default function ProfileDetailsPage() {
   const { id } = useParams();
@@ -96,14 +99,13 @@ export default function ProfileDetailsPage() {
         }
         
         // Fetch comments
-        const revResponse = await fetchApi(`/api/v1/profiles/${id}/reviews`);
-        if (revResponse.ok) {
+        try {
+          const revResponse = await fetchApi(`/api/v1/profiles/${id}/reviews`);
           const revData = await revResponse.json();
           const enriched = await Promise.all(revData.map(async (rev: any) => {
             if (!rev.userId) return rev;
             try {
               const uRes = await fetchApi(`/api/users/${rev.userId}/public`);
-              if (!uRes.ok) return rev;
               const u = await uRes.json();
               return {
                 ...rev,
@@ -113,13 +115,17 @@ export default function ProfileDetailsPage() {
             } catch { return rev; }
           }));
           setComments(enriched);
+        } catch (e) {
+          console.warn('Failed to fetch reviews:', e);
         }
         
         // Fetch versions
-        const verResponse = await fetchApi(`/api/v1/profiles/${id}/versions`);
-        if (verResponse.ok) {
+        try {
+          const verResponse = await fetchApi(`/api/v1/profiles/${id}/versions`);
           const verData = await verResponse.json();
           setVersions(verData);
+        } catch (e) {
+          console.warn('Failed to fetch versions:', e);
         }
       } catch (error) {
         console.error('Failed to fetch profile:', error);
@@ -204,40 +210,40 @@ export default function ProfileDetailsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--color-paper)] flex items-center justify-center">
         <div className="animate-pulse flex flex-col items-center">
-          <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4" />
-          <p className="text-slate-500 font-medium">Carregando perfil...</p>
+          <div className="w-16 h-16 border-4 border-[var(--color-success-soft)] border-t-indigo-600 rounded-full animate-spin mb-4" />
+          <p className="text-[var(--color-neutral)] font-medium">Carregando perfil...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-24 font-sans">
+    <div className="min-h-screen bg-[var(--color-paper)] pb-24 font-sans">
       <Navbar />
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 md:px-8 pt-8">
-        <Link href="/explore" className="inline-flex items-center gap-2 text-slate-500 hover:text-indigo-600 transition-colors mb-8 font-medium">
+        <Link href="/explore" className="inline-flex items-center gap-2 text-[var(--color-neutral)] hover:text-[var(--color-green)] transition-colors mb-8 font-medium">
           <ArrowLeft size={18} />
           Voltar para Comunidade
         </Link>
 
-        <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+        <div className="bg-white rounded-3xl border border-[var(--color-border-soft)] overflow-hidden shadow-sm">
           {/* Header Banner */}
-          <div className="h-48 md:h-64 bg-gradient-to-r from-indigo-600 via-purple-600 to-fuchsia-600 relative">
+          <div className="h-48 md:h-64 bg-gradient-to-r from-[var(--color-forest)] via-[#2A3B31] to-[var(--color-coffee)] relative">
             <div className="absolute inset-0 bg-grid-white/[0.1] bg-[bottom_1px_center]" />
             <div className="absolute bottom-6 left-6 md:left-10 flex gap-4">
               <div className="w-24 h-32 bg-white rounded-lg shadow-xl p-2 flex flex-col transform rotate-[-5deg]">
-                <div className="w-full h-2 bg-slate-200 rounded-full mb-2" />
-                <div className="w-3/4 h-2 bg-slate-200 rounded-full mb-2" />
-                <div className="w-full h-1/2 bg-slate-100 rounded mt-auto" />
+                <div className="w-full h-2 bg-[var(--color-border-soft)] rounded-full mb-2" />
+                <div className="w-3/4 h-2 bg-[var(--color-border-soft)] rounded-full mb-2" />
+                <div className="w-full h-1/2 bg-[var(--color-paper-soft)] rounded mt-auto" />
               </div>
               <div className="w-24 h-32 bg-white rounded-lg shadow-xl p-2 flex flex-col transform rotate-[5deg] translate-y-4">
-                <div className="w-full h-1/2 bg-slate-100 rounded mb-auto" />
-                <div className="w-full h-2 bg-slate-200 rounded-full mt-2" />
-                <div className="w-2/4 h-2 bg-slate-200 rounded-full mt-2" />
+                <div className="w-full h-1/2 bg-[var(--color-paper-soft)] rounded mb-auto" />
+                <div className="w-full h-2 bg-[var(--color-border-soft)] rounded-full mt-2" />
+                <div className="w-2/4 h-2 bg-[var(--color-border-soft)] rounded-full mt-2" />
               </div>
             </div>
           </div>
@@ -246,62 +252,62 @@ export default function ProfileDetailsPage() {
             {/* Left Column: Info */}
             <div className="flex-1">
               <div className="flex flex-wrap items-center gap-3 mb-4">
-                <span className="px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-bold uppercase tracking-wider rounded-full">
+                <span className="px-3 py-1 bg-[var(--color-success-bg)] text-[var(--color-green)] text-xs font-bold uppercase tracking-wider rounded-full">
                   Template ABNT
                 </span>
-                <div className="flex items-center gap-1 text-amber-500 font-bold text-sm bg-amber-50 px-2 py-1 rounded-lg">
-                  <Star size={14} className="fill-amber-500" />
+                <div className="flex items-center gap-1 text-[var(--color-gold)] font-bold text-sm bg-[var(--color-cream)] px-2 py-1 rounded-lg">
+                  <Star size={14} className="fill-[var(--color-gold)]" />
                   {rating}
                 </div>
-                <span className="text-slate-400 text-sm">({reviewsCount} avaliações)</span>
+                <span className="text-[var(--color-neutral)]/70 text-sm">({reviewsCount} avaliações)</span>
               </div>
 
-              <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-4 leading-tight">
+              <h1 className="text-3xl md:text-4xl font-extrabold text-[var(--color-espresso)] mb-4 leading-tight">
                 {profile?.name}
               </h1>
 
-              <div className="flex items-center gap-4 text-sm text-slate-600 mb-8 pb-8 border-b border-slate-100">
+              <div className="flex items-center gap-4 text-sm text-[var(--color-neutral)] mb-8 pb-8 border-b border-[var(--color-border-soft)]">
                 <div className="flex items-center gap-2">
                   {authorPhoto ? (
                     <img src={authorPhoto} alt={authorName} className="w-8 h-8 rounded-full object-cover" />
                   ) : (
-                    <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-500">
+                    <div className="w-8 h-8 rounded-full bg-[var(--color-border-soft)] flex items-center justify-center font-bold text-[var(--color-neutral)]">
                       {authorName.charAt(0)}
                     </div>
                   )}
                   <div>
-                    <p className="text-xs text-slate-400">Criado por</p>
-                    <p className="font-semibold text-slate-700">{authorName}</p>
+                    <p className="text-xs text-[var(--color-neutral)]/70">Criado por</p>
+                    <p className="font-semibold text-[var(--color-espresso)]">{authorName}</p>
                   </div>
                 </div>
-                <div className="w-px h-8 bg-slate-200" />
+                <div className="w-px h-8 bg-[var(--color-border-soft)]" />
                 <div>
-                  <p className="text-xs text-slate-400">Usos</p>
-                  <p className="font-semibold text-slate-700 flex items-center gap-1">
+                  <p className="text-xs text-[var(--color-neutral)]/70">Usos</p>
+                  <p className="font-semibold text-[var(--color-espresso)] flex items-center gap-1">
                     <FileCheck size={14} /> {usageCount}
                   </p>
                 </div>
-                <div className="w-px h-8 bg-slate-200" />
+                <div className="w-px h-8 bg-[var(--color-border-soft)]" />
                 <div>
-                  <p className="text-xs text-slate-400">ID do Perfil</p>
-                  <p className="font-semibold text-slate-700 font-mono text-xs mt-0.5">
+                  <p className="text-xs text-[var(--color-neutral)]/70">ID do Perfil</p>
+                  <p className="font-semibold text-[var(--color-espresso)] font-mono text-xs mt-0.5">
                     {profile?.id}
                   </p>
                 </div>
               </div>
 
               <div className="prose prose-slate max-w-none">
-                <h3 className="text-lg font-bold text-slate-900 mb-3">Sobre este Perfil</h3>
-                <p className="text-slate-600 leading-relaxed mb-6">
+                <h3 className="text-lg font-bold text-[var(--color-espresso)] mb-3">Sobre este Perfil</h3>
+                <p className="text-[var(--color-neutral)] leading-relaxed mb-6">
                   {profile?.description || 'Nenhuma descrição detalhada foi fornecida para este perfil de formatação. Este perfil contém um conjunto de regras, margens, fontes e espaçamentos pré-configurados.'}
                 </p>
 
-                <h3 className="text-lg font-bold text-slate-900 mb-4">O que está incluído?</h3>
+                <h3 className="text-lg font-bold text-[var(--color-espresso)] mb-4">O que está incluído?</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
                   {['Capa e Folha de Rosto Automáticas', 'Sumário Gerado Dinamicamente', 'Espaçamento ABNT (1.5)', 'Margens 3cm/2cm', 'Paginação no Canto Superior Direito', 'Referências Bibliográficas'].map((feature, i) => (
                     <div key={i} className="flex items-start gap-2">
                       <CheckCircle2 size={18} className="text-emerald-500 shrink-0 mt-0.5" />
-                      <span className="text-slate-600 text-sm">{feature}</span>
+                      <span className="text-[var(--color-neutral)] text-sm">{feature}</span>
                     </div>
                   ))}
                 </div>
@@ -310,12 +316,12 @@ export default function ProfileDetailsPage() {
 
             {/* Right Column: Actions Sidebar */}
             <div className="w-full md:w-80 shrink-0">
-              <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 sticky top-24">
+              <div className="bg-[var(--color-paper)] rounded-2xl p-6 border border-[var(--color-border-soft)] sticky top-24">
 
 
                 <button 
                   onClick={() => requireAuth(() => router.push(`/submit-work?profileId=${profile?.id}`))}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-xl font-bold shadow-lg shadow-indigo-600/20 transition-all active:scale-[0.98] mb-3 flex items-center justify-center gap-2"
+                  className="w-full bg-[var(--color-green)] hover:bg-[#2A3B31] text-white py-4 rounded-xl font-bold shadow-lg shadow-[var(--shadow-soft)] transition-all active:scale-[0.98] mb-3 flex items-center justify-center gap-2"
                 >
                   <LayoutTemplate size={20} />
                   Usar este Perfil
@@ -324,7 +330,7 @@ export default function ProfileDetailsPage() {
                 {loggedUserId && profile?.ownerId === loggedUserId && (
                   <button 
                     onClick={() => router.push(`/create-profile/${profile.id}`)}
-                    className="w-full bg-amber-500 hover:bg-amber-600 text-white py-4 rounded-xl font-bold shadow-lg shadow-amber-500/20 transition-all active:scale-[0.98] mb-3 flex items-center justify-center gap-2"
+                    className="w-full bg-[var(--color-cream)]0 hover:bg-[#A16207] text-white py-4 rounded-xl font-bold shadow-lg shadow-amber-500/20 transition-all active:scale-[0.98] mb-3 flex items-center justify-center gap-2"
                   >
                     Editar Perfil
                   </button>
@@ -333,20 +339,20 @@ export default function ProfileDetailsPage() {
                 <div className="flex gap-3 mb-6">
                   <button 
                     onClick={() => requireAuth(handleToggleFavorite)}
-                    className={`flex-1 py-3 rounded-xl font-semibold border-2 transition-colors flex items-center justify-center gap-2 ${isFavorite ? 'bg-rose-50 border-rose-200 text-rose-600' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'}`}
+                    className={`flex-1 py-3 rounded-xl font-semibold border-2 transition-colors flex items-center justify-center gap-2 ${isFavorite ? 'bg-rose-50 border-rose-200 text-rose-600' : 'bg-white border-[var(--color-border-soft)] text-[var(--color-neutral)] hover:border-[var(--color-border-soft)]'}`}
                   >
                     <Heart size={18} className={isFavorite ? 'fill-rose-500' : ''} />
                     Favoritar
                   </button>
-                  <button className="flex-1 bg-white border-2 border-slate-200 hover:border-slate-300 text-slate-600 py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2">
+                  <button className="flex-1 bg-white border-2 border-[var(--color-border-soft)] hover:border-[var(--color-border-soft)] text-[var(--color-neutral)] py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2">
                     <Share2 size={18} />
                     Compartilhar
                   </button>
                 </div>
 
-                <div className="bg-white p-4 rounded-xl border border-slate-200 flex items-start gap-3">
-                  <AlertCircle size={20} className="text-amber-500 shrink-0" />
-                  <p className="text-xs text-slate-600 leading-relaxed">
+                <div className="bg-white p-4 rounded-xl border border-[var(--color-border-soft)] flex items-start gap-3">
+                  <AlertCircle size={20} className="text-[var(--color-gold)] shrink-0" />
+                  <p className="text-xs text-[var(--color-neutral)] leading-relaxed">
                     Este perfil é mantido pela comunidade. Verifique as margens e regras específicas da sua instituição antes da entrega final.
                   </p>
                 </div>
@@ -356,71 +362,71 @@ export default function ProfileDetailsPage() {
         </div>
         
         {/* Tabs */}
-        <div className="mt-12 border-b border-slate-200">
+        <div className="mt-12 border-b border-[var(--color-border-soft)]">
           <nav className="flex gap-8">
             <button
               onClick={() => setActiveTab('details')}
-              className={`pb-4 font-semibold text-sm transition-colors relative ${activeTab === 'details' ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-800'}`}
+              className={`pb-4 font-semibold text-sm transition-colors relative ${activeTab === 'details' ? 'text-[var(--color-green)]' : 'text-[var(--color-neutral)] hover:text-[var(--color-espresso)]'}`}
             >
               Detalhes do Perfil
-              {activeTab === 'details' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-t-full" />}
+              {activeTab === 'details' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-green)] rounded-t-full" />}
             </button>
             <button
               onClick={() => setActiveTab('reviews')}
-              className={`pb-4 font-semibold text-sm transition-colors relative flex items-center gap-2 ${activeTab === 'reviews' ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-800'}`}
+              className={`pb-4 font-semibold text-sm transition-colors relative flex items-center gap-2 ${activeTab === 'reviews' ? 'text-[var(--color-green)]' : 'text-[var(--color-neutral)] hover:text-[var(--color-espresso)]'}`}
             >
               Avaliações
-              <span className="bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-xs">{reviewsCount}</span>
-              {activeTab === 'reviews' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-t-full" />}
+              <span className="bg-[var(--color-paper-soft)] text-[var(--color-neutral)] py-0.5 px-2 rounded-full text-xs">{reviewsCount}</span>
+              {activeTab === 'reviews' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-green)] rounded-t-full" />}
             </button>
             <button
               onClick={() => setActiveTab('versions')}
-              className={`pb-4 font-semibold text-sm transition-colors relative flex items-center gap-2 ${activeTab === 'versions' ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-800'}`}
+              className={`pb-4 font-semibold text-sm transition-colors relative flex items-center gap-2 ${activeTab === 'versions' ? 'text-[var(--color-green)]' : 'text-[var(--color-neutral)] hover:text-[var(--color-espresso)]'}`}
             >
               Versões Anteriores
-              <span className="bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-xs">{versions.length}</span>
-              {activeTab === 'versions' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-t-full" />}
+              <span className="bg-[var(--color-paper-soft)] text-[var(--color-neutral)] py-0.5 px-2 rounded-full text-xs">{versions.length}</span>
+              {activeTab === 'versions' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-green)] rounded-t-full" />}
             </button>
           </nav>
         </div>
 
         <div className="mt-8 mb-24 max-w-4xl">
           {activeTab === 'details' && (
-            <div className="bg-white p-8 rounded-2xl border border-slate-200">
-               <h3 className="text-xl font-bold text-slate-900 mb-6">Detalhes Técnicos</h3>
-               <p className="text-slate-600">Este perfil utiliza JSON como base para estruturar configurações de formatação ABNT, APA ou personalizadas.</p>
+            <div className="bg-white p-8 rounded-2xl border border-[var(--color-border-soft)]">
+               <h3 className="text-xl font-bold text-[var(--color-espresso)] mb-6">Detalhes Técnicos</h3>
+               <p className="text-[var(--color-neutral)]">Este perfil utiliza JSON como base para estruturar configurações de formatação ABNT, APA ou personalizadas.</p>
             </div>
           )}
 
           {activeTab === 'versions' && (
             <div className="space-y-4">
               {versions.length === 0 ? (
-                <div className="bg-white p-8 text-center rounded-2xl border border-slate-200">
-                  <p className="text-slate-500">Nenhuma versão anterior encontrada para este perfil.</p>
+                <div className="bg-white p-8 text-center rounded-2xl border border-[var(--color-border-soft)]">
+                  <p className="text-[var(--color-neutral)]">Nenhuma versão anterior encontrada para este perfil.</p>
                 </div>
               ) : (
                 versions.map((v, idx) => (
-                  <div key={v.id} className="bg-white p-6 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div key={v.id} className="bg-white p-6 rounded-2xl border border-[var(--color-border-soft)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                      <h4 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                      <h4 className="text-lg font-bold text-[var(--color-espresso)] flex items-center gap-2">
                         {v.versionName || `Versão ${versions.length - idx}`}
-                        {v.isTemporary && <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-semibold">Backup Temporário (30 dias)</span>}
+                        {v.isTemporary && <span className="text-xs bg-amber-100 text-[var(--color-gold)] px-2 py-0.5 rounded-full font-semibold">Backup Temporário (30 dias)</span>}
                       </h4>
-                      <p className="text-sm text-slate-500 mt-1">Salva em: {new Date(v.createdAt).toLocaleString('pt-BR')}</p>
+                      <p className="text-sm text-[var(--color-neutral)] mt-1">Salva em: {new Date(v.createdAt).toLocaleString('pt-BR')}</p>
                     </div>
                     {/* Ação para usar a versão (ex: redirecionar para submissão com query string da versão, ou apenas visualização) */}
                     <div className="flex gap-2">
                       {!v.isTemporary && (
                         <button 
                           onClick={() => requireAuth(() => router.push(`/submit-work?profileId=${profile?.id}&versionId=${v.id}`))}
-                          className="text-indigo-600 font-semibold text-sm hover:text-indigo-800 transition-colors bg-indigo-50 px-4 py-2 rounded-lg">
+                          className="text-[var(--color-green)] font-semibold text-sm hover:text-indigo-800 transition-colors bg-[var(--color-success-bg)] px-4 py-2 rounded-lg">
                           Usar esta versão
                         </button>
                       )}
                       {v.isTemporary && profile?.ownerId === loggedUserId && (
                         <button 
                           onClick={() => handleRestoreVersion(v)}
-                          className="text-amber-700 font-semibold text-sm hover:text-amber-900 transition-colors bg-amber-50 px-4 py-2 rounded-lg">
+                          className="text-[var(--color-gold)] font-semibold text-sm hover:text-amber-900 transition-colors bg-[var(--color-cream)] px-4 py-2 rounded-lg">
                           Restaurar versão
                         </button>
                       )}
@@ -434,15 +440,15 @@ export default function ProfileDetailsPage() {
           {activeTab === 'reviews' && (
             <div>
               <div className="flex items-center justify-between mb-8">
-                <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                  <MessageSquare size={24} className="text-indigo-600" />
+                <h2 className="text-2xl font-bold text-[var(--color-espresso)] flex items-center gap-2">
+                  <MessageSquare size={24} className="text-[var(--color-green)]" />
                   Avaliações da Comunidade
 
             </h2>
             {!showReviewForm && (
               <button 
                 onClick={() => requireAuth(() => setShowReviewForm(true))}
-                className="text-indigo-600 font-semibold text-sm hover:underline"
+                className="text-[var(--color-green)] font-semibold text-sm hover:underline"
               >
                 Escrever avaliação
               </button>
@@ -450,8 +456,8 @@ export default function ProfileDetailsPage() {
           </div>
 
           {showReviewForm && (
-            <div className="bg-white p-6 rounded-2xl border border-indigo-200 shadow-sm mb-6">
-              <h3 className="font-bold text-lg text-slate-900 mb-4">Sua Avaliação</h3>
+            <div className="bg-white p-6 rounded-2xl border border-[var(--color-success-soft)] shadow-sm mb-6">
+              <h3 className="font-bold text-lg text-[var(--color-espresso)] mb-4">Sua Avaliação</h3>
               <div className="flex items-center gap-1 mb-4">
                 {[1,2,3,4,5].map(star => {
                   const halfVal = star - 0.5;
@@ -465,31 +471,31 @@ export default function ProfileDetailsPage() {
                         className="absolute inset-0 w-1/2 overflow-hidden z-10"
                         onClick={() => setNewReviewRating(halfVal)}
                       >
-                        <Star size={28} className={`${isHalfFilled || isFullFilled ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} />
+                        <Star size={28} className={`${isHalfFilled || isFullFilled ? 'fill-[var(--color-gold)] text-[var(--color-gold)] text-amber-400' : 'text-slate-200'}`} />
                       </div>
                       {/* Right half = full star */}
                       <div 
                         className="absolute inset-0 z-0"
                         onClick={() => setNewReviewRating(fullVal)}
                       >
-                        <Star size={28} className={`${isFullFilled ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} />
+                        <Star size={28} className={`${isFullFilled ? 'fill-[var(--color-gold)] text-[var(--color-gold)] text-amber-400' : 'text-slate-200'}`} />
                       </div>
                     </div>
                   );
                 })}
-                <span className="ml-3 text-lg font-bold text-slate-700">{newReviewRating.toFixed(1)}</span>
+                <span className="ml-3 text-lg font-bold text-[var(--color-espresso)]">{newReviewRating.toFixed(1)}</span>
               </div>
               <textarea
                 value={newReviewText}
                 onChange={e => setNewReviewText(e.target.value)}
                 placeholder="Como este template te ajudou?"
-                className="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 mb-4 resize-none h-24"
+                className="w-full border-2 border-[var(--color-border-soft)] rounded-xl p-3 focus:border-[var(--color-green)] focus:outline-none focus:ring-4 focus:ring-[var(--color-green)]/10 mb-4 resize-none h-24"
               />
               <div className="flex justify-end gap-3">
-                <button onClick={() => setShowReviewForm(false)} className="px-4 py-2 text-slate-500 font-semibold hover:bg-slate-50 rounded-lg">
+                <button onClick={() => setShowReviewForm(false)} className="px-4 py-2 text-[var(--color-neutral)] font-semibold hover:bg-[var(--color-paper)] rounded-lg">
                   Cancelar
                 </button>
-                <button onClick={handleSubmitReview} className="px-4 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700">
+                <button onClick={handleSubmitReview} className="px-4 py-2 bg-[var(--color-green)] text-white font-bold rounded-lg hover:bg-[#2A3B31]">
                   Enviar Avaliação
                 </button>
               </div>
@@ -498,24 +504,24 @@ export default function ProfileDetailsPage() {
 
           <div className="space-y-6">
             {comments.length === 0 ? (
-              <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center">
-                <p className="text-slate-500">Nenhuma avaliação ainda. Seja o primeiro a avaliar!</p>
+              <div className="bg-white p-8 rounded-2xl border border-[var(--color-border-soft)] text-center">
+                <p className="text-[var(--color-neutral)]">Nenhuma avaliação ainda. Seja o primeiro a avaliar!</p>
               </div>
             ) : (
               comments.map((comment: any) => (
-                <div key={comment.id} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex gap-4">
+                <div key={comment.id} className="bg-white p-6 rounded-2xl border border-[var(--color-border-soft)] shadow-sm flex gap-4">
                   {comment.userPhoto ? (
                     <img src={comment.userPhoto} alt={comment.userName} className="w-12 h-12 rounded-full object-cover shrink-0" />
                   ) : (
-                    <div className="w-12 h-12 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-lg shrink-0">
+                    <div className="w-12 h-12 rounded-full bg-[var(--color-success-soft)] text-[var(--color-green)] flex items-center justify-center font-bold text-lg shrink-0">
                       {comment.userName ? comment.userName.charAt(0).toUpperCase() : 'U'}
                     </div>
                   )}
                   <div className="flex-1">
                     <div className="flex items-start justify-between mb-2">
                       <div>
-                        <h4 className="font-bold text-slate-900">{comment.userName || 'Usuário Anônimo'}</h4>
-                        <p className="text-xs text-slate-400">
+                        <h4 className="font-bold text-[var(--color-espresso)]">{comment.userName || 'Usuário Anônimo'}</h4>
+                        <p className="text-xs text-[var(--color-neutral)]/70">
                           {comment.date ? new Date(comment.date).toLocaleDateString('pt-BR') : 'Recentemente'}
                         </p>
                       </div>
@@ -529,18 +535,18 @@ export default function ProfileDetailsPage() {
                               <Star size={14} className="text-slate-200 absolute inset-0" />
                               {isHalf && (
                                 <div className="absolute inset-0 w-1/2 overflow-hidden">
-                                  <Star size={14} className="fill-amber-400 text-amber-400" />
+                                  <Star size={14} className="fill-[var(--color-gold)] text-[var(--color-gold)] text-amber-400" />
                                 </div>
                               )}
                               {isFull && (
-                                <Star size={14} className="fill-amber-400 text-amber-400 absolute inset-0" />
+                                <Star size={14} className="fill-[var(--color-gold)] text-[var(--color-gold)] text-amber-400 absolute inset-0" />
                               )}
                             </div>
                           );
                         })}
                       </div>
                     </div>
-                        <p className="text-slate-700 leading-relaxed text-sm">
+                        <p className="text-[var(--color-espresso)] leading-relaxed text-sm">
                           "{comment.comment}"
                         </p>
                       </div>

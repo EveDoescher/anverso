@@ -11,8 +11,8 @@ interface Props {
 function tf(label: string, value: string, onChange: (v: string) => void) {
   return (
     <div>
-      <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">{label}</label>
-      <input type="text" className="w-full border border-slate-200 rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500"
+      <label className="block text-[10px] font-semibold text-[var(--color-neutral)] mb-0.5">{label}</label>
+      <input type="text" className="w-full border border-[var(--color-border-soft)] rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500"
         value={value} onChange={e => onChange(e.target.value)} />
     </div>
   );
@@ -21,8 +21,8 @@ function tf(label: string, value: string, onChange: (v: string) => void) {
 function nf(label: string, value: number, onChange: (v: number) => void, step = 1, min = 0) {
   return (
     <div>
-      <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">{label}</label>
-      <input type="number" step={step} min={min} className="w-full border border-slate-200 rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500"
+      <label className="block text-[10px] font-semibold text-[var(--color-neutral)] mb-0.5">{label}</label>
+      <input type="number" step={step} min={min} className="w-full border border-[var(--color-border-soft)] rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500"
         value={value} onChange={e => onChange(Number(e.target.value))} />
     </div>
   );
@@ -31,8 +31,8 @@ function nf(label: string, value: number, onChange: (v: number) => void, step = 
 function sf<T extends string>(label: string, value: T, options: { value: T; label: string }[], onChange: (v: T) => void) {
   return (
     <div>
-      <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">{label}</label>
-      <select className="w-full border border-slate-200 rounded p-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500"
+      <label className="block text-[10px] font-semibold text-[var(--color-neutral)] mb-0.5">{label}</label>
+      <select className="w-full border border-[var(--color-border-soft)] rounded p-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500"
         value={value} onChange={e => onChange(e.target.value as T)}>
         {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
@@ -43,8 +43,8 @@ function sf<T extends string>(label: string, value: T, options: { value: T; labe
 function ck(label: string, checked: boolean, onChange: (v: boolean) => void) {
   return (
     <label className="flex items-center gap-2 cursor-pointer">
-      <input type="checkbox" className="w-4 h-4 text-blue-600 rounded border-slate-300" checked={checked} onChange={e => onChange(e.target.checked)} />
-      <span className="text-xs font-medium text-slate-700">{label}</span>
+      <input type="checkbox" className="w-4 h-4 text-[var(--color-green)] rounded border-[var(--color-border-soft)]" checked={checked} onChange={e => onChange(e.target.checked)} />
+      <span className="text-xs font-medium text-[var(--color-espresso)]">{label}</span>
     </label>
   );
 }
@@ -109,11 +109,11 @@ export function BodyContentForm({ state, onChange }: Props) {
       <Accordion.Root type="multiple" className="space-y-2">
 
         {/* Parágrafos e Títulos */}
-        <Accordion.Item value="paragraphs" className="border border-slate-200 rounded-lg overflow-hidden">
-          <Accordion.Trigger className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 transition">
-            Parágrafos e Títulos <span className="text-slate-400">▾</span>
+        <Accordion.Item value="paragraphs" className="border border-[var(--color-border-soft)] rounded-lg overflow-hidden">
+          <Accordion.Trigger className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-[var(--color-espresso)] bg-[var(--color-paper)] hover:bg-[var(--color-paper-soft)] transition">
+            Parágrafos e Títulos <span className="text-[var(--color-neutral)]/70">▾</span>
           </Accordion.Trigger>
-          <Accordion.Content className="p-4 space-y-3 border-t border-slate-100">
+          <Accordion.Content className="p-4 space-y-3 border-t border-[var(--color-border-soft)]">
             {ck('Numeração automática de seções (ex: 1.2.3)', bc.numbering.enabled, v => setNb('enabled', v))}
             <div className="grid grid-cols-2 gap-2 ml-6">
               {tf('Separador', bc.numbering.separator, v => setNb('separator', v))}
@@ -126,11 +126,11 @@ export function BodyContentForm({ state, onChange }: Props) {
               {nf('Linhas em branco após o título', bc.layout.blankLinesAfterSectionTitle, v => setLayout('blankLinesAfterSectionTitle', v))}
             </div>
             <div>
-              <label className="block text-[10px] font-semibold text-slate-500 mb-1">Títulos inline (run-in heading) — APA níveis 4 e 5</label>
+              <label className="block text-[10px] font-semibold text-[var(--color-neutral)] mb-1">Títulos inline (run-in heading) — APA níveis 4 e 5</label>
               <div className="flex gap-3 flex-wrap">
                 {HEADING_LEVELS.map(level => (
-                  <label key={level} className="flex items-center gap-1.5 cursor-pointer text-xs text-slate-700">
-                    <input type="checkbox" className="w-3.5 h-3.5 text-blue-600 rounded border-slate-300"
+                  <label key={level} className="flex items-center gap-1.5 cursor-pointer text-xs text-[var(--color-espresso)]">
+                    <input type="checkbox" className="w-3.5 h-3.5 text-[var(--color-green)] rounded border-[var(--color-border-soft)]"
                       checked={inlineHeadingLevels.includes(level)}
                       onChange={e => toggleInlineLevel(level, e.target.checked)} />
                     Nível {level}
@@ -142,11 +142,11 @@ export function BodyContentForm({ state, onChange }: Props) {
         </Accordion.Item>
 
         {/* Citações */}
-        <Accordion.Item value="citations" className="border border-slate-200 rounded-lg overflow-hidden">
-          <Accordion.Trigger className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 transition">
-            Citações <span className="text-slate-400">▾</span>
+        <Accordion.Item value="citations" className="border border-[var(--color-border-soft)] rounded-lg overflow-hidden">
+          <Accordion.Trigger className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-[var(--color-espresso)] bg-[var(--color-paper)] hover:bg-[var(--color-paper-soft)] transition">
+            Citações <span className="text-[var(--color-neutral)]/70">▾</span>
           </Accordion.Trigger>
-          <Accordion.Content className="p-4 border-t border-slate-100">
+          <Accordion.Content className="p-4 border-t border-[var(--color-border-soft)]">
             <div className="grid grid-cols-2 gap-2">
               {tf('Prefixo de página', bc.citationFormatting.pagePrefix, v => setCf('pagePrefix', v))}
               {tf('Separador multi-autor', bc.citationFormatting.multiAuthorJoiner, v => setCf('multiAuthorJoiner', v))}
@@ -166,11 +166,11 @@ export function BodyContentForm({ state, onChange }: Props) {
         </Accordion.Item>
 
         {/* Rótulos de referência cruzada */}
-        <Accordion.Item value="crossref" className="border border-slate-200 rounded-lg overflow-hidden">
-          <Accordion.Trigger className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 transition">
-            Rótulos de Referência Cruzada <span className="text-slate-400">▾</span>
+        <Accordion.Item value="crossref" className="border border-[var(--color-border-soft)] rounded-lg overflow-hidden">
+          <Accordion.Trigger className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-[var(--color-espresso)] bg-[var(--color-paper)] hover:bg-[var(--color-paper-soft)] transition">
+            Rótulos de Referência Cruzada <span className="text-[var(--color-neutral)]/70">▾</span>
           </Accordion.Trigger>
-          <Accordion.Content className="p-4 border-t border-slate-100">
+          <Accordion.Content className="p-4 border-t border-[var(--color-border-soft)]">
             <div className="grid grid-cols-2 gap-2">
               {tf('Seção', bc.crossReferenceLabels.sectionLabel, v => setCrl('sectionLabel', v))}
               {tf('Figura', bc.crossReferenceLabels.figureLabel, v => setCrl('figureLabel', v))}
@@ -184,11 +184,11 @@ export function BodyContentForm({ state, onChange }: Props) {
         </Accordion.Item>
 
         {/* Figuras */}
-        <Accordion.Item value="figures" className="border border-slate-200 rounded-lg overflow-hidden">
-          <Accordion.Trigger className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 transition">
-            Figuras <span className="text-slate-400">▾</span>
+        <Accordion.Item value="figures" className="border border-[var(--color-border-soft)] rounded-lg overflow-hidden">
+          <Accordion.Trigger className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-[var(--color-espresso)] bg-[var(--color-paper)] hover:bg-[var(--color-paper-soft)] transition">
+            Figuras <span className="text-[var(--color-neutral)]/70">▾</span>
           </Accordion.Trigger>
-          <Accordion.Content className="p-4 border-t border-slate-100">
+          <Accordion.Content className="p-4 border-t border-[var(--color-border-soft)]">
             <div className="grid grid-cols-2 gap-2">
               {tf('Template de legenda', bc.figure.captionTemplate, v => setFig('captionTemplate', v))}
               {tf('Template de fonte', bc.figure.sourceTemplate, v => setFig('sourceTemplate', v))}
@@ -198,16 +198,16 @@ export function BodyContentForm({ state, onChange }: Props) {
               {nf('Largura máx. (cm)', bc.figure.maxWidthCm ?? 16, v => setFig('maxWidthCm', v), 0.5)}
               {nf('Altura máx. (cm)', bc.figure.maxHeightCm ?? 20, v => setFig('maxHeightCm', v), 0.5)}
             </div>
-            <p className="text-[9px] text-slate-400 mt-2">Tokens: <code>{'{number}'}</code> = número, <code>{'{caption}'}</code> = legenda, <code>{'{source}'}</code> = fonte</p>
+            <p className="text-[9px] text-[var(--color-neutral)]/70 mt-2">Tokens: <code>{'{number}'}</code> = número, <code>{'{caption}'}</code> = legenda, <code>{'{source}'}</code> = fonte</p>
           </Accordion.Content>
         </Accordion.Item>
 
         {/* Tabelas */}
-        <Accordion.Item value="tables" className="border border-slate-200 rounded-lg overflow-hidden">
-          <Accordion.Trigger className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 transition">
-            Tabelas <span className="text-slate-400">▾</span>
+        <Accordion.Item value="tables" className="border border-[var(--color-border-soft)] rounded-lg overflow-hidden">
+          <Accordion.Trigger className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-[var(--color-espresso)] bg-[var(--color-paper)] hover:bg-[var(--color-paper-soft)] transition">
+            Tabelas <span className="text-[var(--color-neutral)]/70">▾</span>
           </Accordion.Trigger>
-          <Accordion.Content className="p-4 border-t border-slate-100 space-y-2">
+          <Accordion.Content className="p-4 border-t border-[var(--color-border-soft)] space-y-2">
             <div className="grid grid-cols-2 gap-2">
               {tf('Template de legenda', bc.table.captionTemplate, v => setTbl('captionTemplate', v))}
               {tf('Template de fonte', bc.table.sourceTemplate, v => setTbl('sourceTemplate', v))}
@@ -217,16 +217,16 @@ export function BodyContentForm({ state, onChange }: Props) {
               {nf('Largura (%)', bc.table.widthPercent, v => setTbl('widthPercent', v))}
             </div>
             {ck('Repetir cabeçalho em quebra de página', bc.table.repeatHeaderOnPageBreak, v => setTbl('repeatHeaderOnPageBreak', v))}
-            <p className="text-[9px] text-slate-400">Tokens: <code>{'{number}'}</code>, <code>{'{caption}'}</code>, <code>{'{source}'}</code></p>
+            <p className="text-[9px] text-[var(--color-neutral)]/70">Tokens: <code>{'{number}'}</code>, <code>{'{caption}'}</code>, <code>{'{source}'}</code></p>
           </Accordion.Content>
         </Accordion.Item>
 
         {/* Quadros */}
-        <Accordion.Item value="frames" className="border border-slate-200 rounded-lg overflow-hidden">
-          <Accordion.Trigger className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 transition">
-            Quadros <span className="text-slate-400">▾</span>
+        <Accordion.Item value="frames" className="border border-[var(--color-border-soft)] rounded-lg overflow-hidden">
+          <Accordion.Trigger className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-[var(--color-espresso)] bg-[var(--color-paper)] hover:bg-[var(--color-paper-soft)] transition">
+            Quadros <span className="text-[var(--color-neutral)]/70">▾</span>
           </Accordion.Trigger>
-          <Accordion.Content className="p-4 border-t border-slate-100 space-y-2">
+          <Accordion.Content className="p-4 border-t border-[var(--color-border-soft)] space-y-2">
             <div className="grid grid-cols-2 gap-2">
               {tf('Template de legenda', bc.frame.captionTemplate, v => setFrm('captionTemplate', v))}
               {tf('Template de fonte', bc.frame.sourceTemplate, v => setFrm('sourceTemplate', v))}
@@ -240,11 +240,11 @@ export function BodyContentForm({ state, onChange }: Props) {
         </Accordion.Item>
 
         {/* Gráficos */}
-        <Accordion.Item value="charts" className="border border-slate-200 rounded-lg overflow-hidden">
-          <Accordion.Trigger className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 transition">
-            Gráficos <span className="text-slate-400">▾</span>
+        <Accordion.Item value="charts" className="border border-[var(--color-border-soft)] rounded-lg overflow-hidden">
+          <Accordion.Trigger className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-[var(--color-espresso)] bg-[var(--color-paper)] hover:bg-[var(--color-paper-soft)] transition">
+            Gráficos <span className="text-[var(--color-neutral)]/70">▾</span>
           </Accordion.Trigger>
-          <Accordion.Content className="p-4 border-t border-slate-100">
+          <Accordion.Content className="p-4 border-t border-[var(--color-border-soft)]">
             <div className="grid grid-cols-2 gap-2">
               {tf('Template de legenda', bc.chart.captionTemplate, v => setChart('captionTemplate', v))}
               {tf('Template de fonte', bc.chart.sourceTemplate, v => setChart('sourceTemplate', v))}
@@ -257,11 +257,11 @@ export function BodyContentForm({ state, onChange }: Props) {
         </Accordion.Item>
 
         {/* Código */}
-        <Accordion.Item value="code" className="border border-slate-200 rounded-lg overflow-hidden">
-          <Accordion.Trigger className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 transition">
-            Listagens de Código <span className="text-slate-400">▾</span>
+        <Accordion.Item value="code" className="border border-[var(--color-border-soft)] rounded-lg overflow-hidden">
+          <Accordion.Trigger className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-[var(--color-espresso)] bg-[var(--color-paper)] hover:bg-[var(--color-paper-soft)] transition">
+            Listagens de Código <span className="text-[var(--color-neutral)]/70">▾</span>
           </Accordion.Trigger>
-          <Accordion.Content className="p-4 border-t border-slate-100">
+          <Accordion.Content className="p-4 border-t border-[var(--color-border-soft)]">
             <div className="grid grid-cols-2 gap-2">
               {tf('Template de legenda', bc.codeListing.captionTemplate, v => setCode('captionTemplate', v))}
               {tf('Família de fonte', bc.codeListing.fontFamily, v => setCode('fontFamily', v))}
@@ -273,11 +273,11 @@ export function BodyContentForm({ state, onChange }: Props) {
         </Accordion.Item>
 
         {/* Equações */}
-        <Accordion.Item value="equations" className="border border-slate-200 rounded-lg overflow-hidden">
-          <Accordion.Trigger className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 transition">
-            Equações <span className="text-slate-400">▾</span>
+        <Accordion.Item value="equations" className="border border-[var(--color-border-soft)] rounded-lg overflow-hidden">
+          <Accordion.Trigger className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-[var(--color-espresso)] bg-[var(--color-paper)] hover:bg-[var(--color-paper-soft)] transition">
+            Equações <span className="text-[var(--color-neutral)]/70">▾</span>
           </Accordion.Trigger>
-          <Accordion.Content className="p-4 border-t border-slate-100">
+          <Accordion.Content className="p-4 border-t border-[var(--color-border-soft)]">
             <div className="grid grid-cols-2 gap-2">
               {tf('Template de numeração', bc.equation.numberingTemplate, v => setEq('numberingTemplate', v))}
               {sf('Alinhamento da equação', bc.equation.alignment, ALIGNMENTS, v => setEq('alignment', v))}

@@ -40,10 +40,10 @@ function ItemEditor({ item, idx, onUpdate, onRemove }: {
   }
 
   return (
-    <div className="border border-slate-200 rounded-lg p-3 space-y-2 bg-white">
+    <div className="border border-[var(--color-border-soft)] rounded-lg p-3 space-y-2 bg-white">
       <div className="flex items-center gap-2">
         <select
-          className="flex-1 border border-slate-200 rounded p-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500"
+          className="flex-1 border border-[var(--color-border-soft)] rounded p-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500"
           value={item.type}
           onChange={e => onUpdate(defaultItem(e.target.value as FlowItemType))}
         >
@@ -53,29 +53,29 @@ function ItemEditor({ item, idx, onUpdate, onRemove }: {
       </div>
 
       {item.type === 'HEADING' && (
-        <input type="text" className="w-full border border-slate-200 rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500"
+        <input type="text" className="w-full border border-[var(--color-border-soft)] rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500"
           placeholder="Texto fixo do título"
           value={item.text ?? ''} onChange={e => set('text', e.target.value)} />
       )}
 
       {item.type === 'BLANK_LINES' && (
-        <input type="number" min="1" className="w-full border border-slate-200 rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500"
+        <input type="number" min="1" className="w-full border border-[var(--color-border-soft)] rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500"
           value={item.count ?? 1} onChange={e => set('count', parseInt(e.target.value))} />
       )}
 
       {item.type === 'PLAIN_TEXT' && (
-        <input type="text" className="w-full border border-slate-200 rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500"
+        <input type="text" className="w-full border border-[var(--color-border-soft)] rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500"
           placeholder="Nome do slot (ex: texto)"
           value={item.slotName ?? ''} onChange={e => set('slotName', e.target.value)} />
       )}
 
       {item.type === 'TABLE_BLOCK' && (
         <div className="space-y-1">
-          <input type="text" className="w-full border border-slate-200 rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500"
+          <input type="text" className="w-full border border-[var(--color-border-soft)] rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500"
             placeholder="Cabeçalhos (separados por vírgula)"
             value={(item.headers ?? []).join(', ')}
             onChange={e => set('headers', e.target.value.split(',').map(s => s.trim()))} />
-          <input type="text" className="w-full border border-slate-200 rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500"
+          <input type="text" className="w-full border border-[var(--color-border-soft)] rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500"
             placeholder="Nome do slot de linhas (ex: linhas)"
             value={item.rowsSlotName ?? ''} onChange={e => set('rowsSlotName', e.target.value)} />
         </div>
@@ -83,38 +83,38 @@ function ItemEditor({ item, idx, onUpdate, onRemove }: {
 
       {item.type === 'BOLD_LABELED_KEYWORDS' && (
         <div className="grid grid-cols-2 gap-1">
-          <input type="text" className="border border-slate-200 rounded p-1.5 text-xs"
+          <input type="text" className="border border-[var(--color-border-soft)] rounded p-1.5 text-xs"
             placeholder="Slot do rótulo" value={item.labelSlotName ?? ''} onChange={e => set('labelSlotName', e.target.value)} />
-          <input type="text" className="border border-slate-200 rounded p-1.5 text-xs"
+          <input type="text" className="border border-[var(--color-border-soft)] rounded p-1.5 text-xs"
             placeholder="Slot das palavras" value={item.keywordsSlotName ?? ''} onChange={e => set('keywordsSlotName', e.target.value)} />
-          <input type="text" className="border border-slate-200 rounded p-1.5 text-xs"
+          <input type="text" className="border border-[var(--color-border-soft)] rounded p-1.5 text-xs"
             placeholder="Separador (ex: ; )" value={item.separator ?? '; '} onChange={e => set('separator', e.target.value)} />
-          <input type="text" className="border border-slate-200 rounded p-1.5 text-xs"
+          <input type="text" className="border border-[var(--color-border-soft)] rounded p-1.5 text-xs"
             placeholder="Terminador (ex: .)" value={item.terminator ?? '.'} onChange={e => set('terminator', e.target.value)} />
         </div>
       )}
 
       {item.type === 'PAIR_LIST' && (
         <div className="grid grid-cols-2 gap-1">
-          <input type="text" className="border border-slate-200 rounded p-1.5 text-xs"
+          <input type="text" className="border border-[var(--color-border-soft)] rounded p-1.5 text-xs"
             placeholder="Slot dos termos" value={item.termsSlotName ?? ''} onChange={e => set('termsSlotName', e.target.value)} />
-          <input type="text" className="border border-slate-200 rounded p-1.5 text-xs"
+          <input type="text" className="border border-[var(--color-border-soft)] rounded p-1.5 text-xs"
             placeholder="Slot das definições" value={item.definitionsSlotName ?? ''} onChange={e => set('definitionsSlotName', e.target.value)} />
-          <input type="text" className="col-span-2 border border-slate-200 rounded p-1.5 text-xs"
+          <input type="text" className="col-span-2 border border-[var(--color-border-soft)] rounded p-1.5 text-xs"
             placeholder="Separador (ex: — )" value={item.separator ?? ' — '} onChange={e => set('separator', e.target.value)} />
         </div>
       )}
 
       {item.type === 'REPEAT_GROUP' && (
         <div className="space-y-1">
-          <input type="text" className="w-full border border-slate-200 rounded p-1.5 text-xs"
+          <input type="text" className="w-full border border-[var(--color-border-soft)] rounded p-1.5 text-xs"
             placeholder="Slot de entradas (ex: referencias)"
             value={item.entriesSlotName ?? ''} onChange={e => set('entriesSlotName', e.target.value)} />
           <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" className="w-3 h-3 text-blue-600 rounded"
+            <input type="checkbox" className="w-3 h-3 text-[var(--color-green)] rounded"
               checked={item.pageBreakBetweenEntries ?? false}
               onChange={e => set('pageBreakBetweenEntries', e.target.checked)} />
-            <span className="text-[10px] text-slate-600">Quebra de página entre entradas</span>
+            <span className="text-[10px] text-[var(--color-neutral)]">Quebra de página entre entradas</span>
           </label>
         </div>
       )}
@@ -147,7 +147,7 @@ export function FlowTextualForm({ comp, onChange }: Props) {
       </div>
 
       <button onClick={addItem}
-        className="w-full border border-dashed border-slate-300 rounded-lg py-2 text-xs text-slate-500 hover:border-blue-400 hover:text-blue-600 transition">
+        className="w-full border border-dashed border-[var(--color-border-soft)] rounded-lg py-2 text-xs text-[var(--color-neutral)] hover:border-[var(--color-green)] hover:text-[var(--color-green)] transition">
         + Adicionar item
       </button>
     </div>

@@ -1,26 +1,284 @@
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600&family=Mulish:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400&display=swap');
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* ── Verde botânico ───────────────────────────────────── */
+  --color-forest:       #1E3028;   /* verde escuro — protagonista */
+  --color-forest-mid:   #2C4235;   /* verde médio — superfícies */
+  --color-green:        #4C7A5D;   /* verde suave — estados positivos */
+  --color-fern:         #7A9E88;   /* verde névoa — apoio */
+  --color-sage:         #B5C9BB;   /* sálvia — sobre escuro */
+
+  /* ── Café ─────────────────────────────────────────────── */
+  --color-espresso:     #2C1810;   /* café escuro — profundidade */
+  --color-coffee:       #5C3320;   /* café médio — tom quente */
+  --color-mocha:        #8B5E3C;   /* mocha — terracota suavizado */
+  --color-latte:        #C49A6C;   /* latte — bege dourado */
+  --color-cream-coffee: #E8D5BE;   /* creme de leite — superfície */
+
+  /* ── Dourado editorial ───────────────────────────────── */
+  --color-gold:         #B5892A;   /* ouro editorial — acento */
+  --color-gold-strong:  #8C6517;   /* ouro profundo — contraste */
+  --color-gold-light:   #D4AA5C;   /* ouro suave — sobre escuro */
+  --color-gold-subtle:  rgba(181, 137, 42, 0.12);
+
+  /* ── Cores de feedback ───────────────────────────────── */
+  --color-blue:         #294A70;
+
+  /* ── Texto ───────────────────────────────────────────── */
+  --color-ink:          #1A1917;
+  --color-text:         #282421;
+  --color-neutral:      #4A4845;
+  --color-muted:        rgba(74, 72, 69, 0.72);
+  --color-soft-text:    rgba(40, 36, 33, 0.68);
+
+  /* Texto sobre fundo escuro */
+  --color-ink-inv:      #F5EFE4;
+  --color-text-inv:     #E8DFD2;
+  --color-muted-inv:    rgba(232, 223, 210, 0.62);
+
+  /* ── Superfícies claras ───────────────────────────────── */
+  --color-paper:        #FAF5EC;
+  --color-paper-soft:   rgba(250, 245, 236, 0.88);
+  --color-cream:        #F2E8D6;
+  --color-cream-soft:   rgba(242, 232, 214, 0.80);
+  --color-warm-white:   #F7F1E7;
+  --color-sand:         #D9CCBA;
+  --color-surface-muted: rgba(220, 210, 194, 0.70);
+
+  /* ── Bordas ───────────────────────────────────────────── */
+  --color-border:       #C8BAA4;
+  --color-border-soft:  rgba(181, 162, 130, 0.36);
+  --color-border-strong: #B0A090;
+  --color-border-inv:   rgba(181, 162, 130, 0.22);
+  --color-divider:      #DDD0BC;
+  --color-white:        #FFFFFF;
+
+  /* ── Feedback ─────────────────────────────────────────── */
+  --color-success:      #3A5443;
+  --color-success-soft: rgba(58, 84, 67, 0.28);
+  --color-success-bg:   #F5FBF6;
+
+  --color-info:         #294A70;
+  --color-info-soft:    rgba(41, 74, 112, 0.28);
+  --color-info-bg:      #F6FAFF;
+
+  --color-warning:      #8A5515;
+  --color-warning-soft: rgba(138, 85, 21, 0.28);
+  --color-warning-bg:   #FFF7EE;
+
+  --color-error:        #7A4030;
+  --color-error-soft:   rgba(122, 64, 48, 0.28);
+  --color-error-bg:     #FBE4E0;
+  --color-error-bg-soft: #FFF0EE;
+
+  /* ── Legacy aliases ───────────────────────────────────── */
+  --color-brown:        var(--color-coffee);
+  --color-red-strong:   #8A3A2E;
+  --surface-paper:      var(--color-paper);
+  --surface-cream:      var(--color-cream);
+  --surface-soft:       rgba(255, 251, 247, 0.70);
+  --border-soft:        var(--color-border-soft);
+  --border-sand:        var(--color-border);
+
+  /* ── Sombras ──────────────────────────────────────────── */
+  --shadow-soft:   0 24px 64px rgba(20, 36, 28, 0.10);
+  --shadow-card:   0 18px 48px rgba(40, 32, 20, 0.08);
+  --shadow-lift:   0 32px 80px rgba(20, 36, 28, 0.16);
+  --shadow-button: 0 10px 28px rgba(20, 36, 28, 0.28);
+  --shadow-gold:   0 10px 24px rgba(181, 137, 42, 0.24);
+  --shadow-dark:   0 40px 100px rgba(10, 18, 14, 0.36);
+
+  /* ── Raios ────────────────────────────────────────────── */
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  16px;
+  --radius-xl:  24px;
+  --radius-2xl: 36px;
+
+  /* ── Tipografia ───────────────────────────────────────── */
+  --font-serif:   'Crimson Pro', Georgia, serif;
+  --font-sans:    'Mulish', system-ui, sans-serif;
+  --font-display: var(--font-serif);
+  --font-body:    var(--font-sans);
+  --font-mono:    'Courier New', Courier, monospace;
+
+  /* ── Layout ───────────────────────────────────────────── */
+  --sidebar-width: 124px;
+
+  /* ── Motion ───────────────────────────────────────────── */
+  --transition-soft:  240ms cubic-bezier(.2, .8, .2, 1);
+  --ease-out:         cubic-bezier(.16, 1, .3, 1);
+  --ease-out-expo:    cubic-bezier(.19, 1, .22, 1);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-
+/* ── Reset & base ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; overflow-x: hidden; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  background-color: var(--color-paper);
+  color: var(--color-text);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-input, select, textarea {
-  color: #171717;
-  background-color: #ffffff;
+/* Textura de papel muito sutil e elegante */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: url('/icons/paper-texture.jpg');
+  background-size: 640px auto;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.15;
+}
+
+main {
+  position: relative;
+  z-index: 1;
+}
+
+button, a, input, textarea, select { font: inherit; }
+
+/* ── Tipografia global ──────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6, blockquote, .font-serif {
+  font-family: var(--font-serif) !important;
+  font-weight: 700;
+  text-wrap: balance;
+}
+
+body, button, input, textarea, select, .font-sans {
+  font-family: var(--font-sans) !important;
+}
+
+/* ── Containers ─────────────────────────────────────────────── */
+.guide-container {
+  width: min(1800px, calc(100% - 56px));
+  margin-inline: auto;
+}
+
+/* ── Seção escura — vai de borda a borda (ignora sidebar) ──── */
+/*
+  A seção escura usa posicionamento relativo ao viewport com
+  negative margin para anular o marginLeft do <main>.
+  A sidebar tem z-index 50, então fica por cima.
+*/
+.dark-stage-wrapper {
+  position: relative;
+  margin-left: calc(-1 * var(--sidebar-width));
+  padding-left: var(--sidebar-width);
+  width: calc(100% + var(--sidebar-width));
+}
+
+/* ── Cards e painéis ─────────────────────────────────────────── */
+
+/* ── Decorações ─────────────────────────────────────────────── */
+.ink-rule {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(181, 137, 42, 0.44), transparent);
+}
+
+.ink-rule-strong {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(181, 162, 130, 0.50) 20%, rgba(181, 137, 42, 0.65) 50%, rgba(181, 162, 130, 0.50) 80%, transparent);
+}
+
+.guide-line {
+  background-image: linear-gradient(90deg, rgba(181, 137, 42, 0.44) 40%, transparent 0);
+  background-size: 8px 1px;
+}
+
+.ornament-line {
+  position: relative;
+}
+
+.ornament-line::before,
+.ornament-line::after {
+  content: "";
+  display: block;
+  height: 1px;
+  flex: 1;
+  min-width: 40px;
+  background: linear-gradient(90deg, transparent, rgba(181, 137, 42, 0.50), transparent);
+}
+
+/* ── Transição suave entre seções ───────────────────────────── */
+/* Fade gradiente na borda inferior de seções escuras */
+.dark-section-fade-bottom::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: linear-gradient(to bottom, transparent, var(--color-paper));
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Fade gradiente na borda superior de seções escuras */
+.dark-section-fade-top::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: linear-gradient(to top, transparent, var(--color-paper));
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ── Scrollbar ──────────────────────────────────────────────── */
+::-webkit-scrollbar        { width: 4px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: var(--color-sand); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-gold); }
+::selection { background: var(--color-gold); color: #fff; }
+
+/* ── Focus ──────────────────────────────────────────────────── */
+.anverso-focus { outline: none; }
+.anverso-focus:focus-visible {
+  box-shadow: 0 0 0 3px rgba(76, 122, 93, 0.30);
+}
+
+/* ── Folha flutuante ────────────────────────────────────────── */
+.floating-leaf {
+  pointer-events: none;
+  position: fixed;
+  opacity: 0.09;
+  z-index: 0;
+  filter: sepia(15%);
+}
+
+/* ── Reduced motion ─────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration:        0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior:           auto !important;
+    transition-duration:       0.01ms !important;
+  }
+}
+
+/* ── Responsivo ─────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  :root { 
+    --sidebar-width: 0px;
+    --bottom-nav-height: 80px;
+  }
+  .guide-container {
+    width: 100%;
+  }
+  .dark-stage-wrapper {
+    margin-left: 0;
+    padding-left: 0;
+    width: 100%;
+  }
+  .section-content-offset { transform: none !important; }
 }

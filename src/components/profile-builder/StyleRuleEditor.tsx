@@ -30,9 +30,9 @@ const RULE_TYPES: { value: StyleRule['type']; label: string }[] = [
 function field(label: string, children: React.ReactNode, hint?: string) {
   return (
     <div>
-      <label className="block text-xs font-semibold text-slate-600 mb-1">{label}</label>
+      <label className="block text-xs font-semibold text-[var(--color-neutral)] mb-1">{label}</label>
       {children}
-      {hint && <p className="text-[10px] text-slate-400 mt-0.5">{hint}</p>}
+      {hint && <p className="text-[10px] text-[var(--color-neutral)]/70 mt-0.5">{hint}</p>}
     </div>
   );
 }
@@ -43,12 +43,12 @@ export function StyleRuleEditor({ rule, onChange }: StyleRuleEditorProps) {
   }
 
   return (
-    <div className="space-y-4 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+    <div className="space-y-4 p-4 bg-[var(--color-paper)] border border-[var(--color-border-soft)] rounded-lg">
       <div className="grid grid-cols-2 gap-3">
         {field('Nome do estilo',
           <input
             type="text"
-            className="w-full border border-slate-300 rounded p-2 text-xs text-slate-800 focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-[var(--color-border-soft)] rounded p-2 text-xs text-[var(--color-espresso)] focus:ring-2 focus:ring-blue-500"
             value={rule.displayName ?? styleIdToDisplayName(rule.id)}
             onChange={e => {
               const name = e.target.value;
@@ -59,7 +59,7 @@ export function StyleRuleEditor({ rule, onChange }: StyleRuleEditorProps) {
         )}
         {field('Tipo',
           <select
-            className="w-full border border-slate-300 rounded p-2 text-xs text-slate-800 bg-white focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-[var(--color-border-soft)] rounded p-2 text-xs text-[var(--color-espresso)] bg-white focus:ring-2 focus:ring-blue-500"
             value={rule.type}
             onChange={e => set('type', e.target.value as StyleRule['type'])}
           >
@@ -71,7 +71,7 @@ export function StyleRuleEditor({ rule, onChange }: StyleRuleEditorProps) {
       <div className="grid grid-cols-2 gap-3">
         {field('Família de fonte',
           <select
-            className="w-full border border-slate-300 rounded p-2 text-xs text-slate-800 bg-white focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-[var(--color-border-soft)] rounded p-2 text-xs text-[var(--color-espresso)] bg-white focus:ring-2 focus:ring-blue-500"
             value={rule.fontFamily}
             onChange={e => set('fontFamily', e.target.value)}
           >
@@ -84,7 +84,7 @@ export function StyleRuleEditor({ rule, onChange }: StyleRuleEditorProps) {
             step="0.5"
             min="6"
             max="72"
-            className="w-full border border-slate-300 rounded p-2 text-xs text-slate-800 focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-[var(--color-border-soft)] rounded p-2 text-xs text-[var(--color-espresso)] focus:ring-2 focus:ring-blue-500"
             value={rule.fontSizePt}
             onChange={e => set('fontSizePt', Number(e.target.value))}
           />
@@ -94,7 +94,7 @@ export function StyleRuleEditor({ rule, onChange }: StyleRuleEditorProps) {
       <div className="grid grid-cols-2 gap-3">
         {field('Alinhamento',
           <select
-            className="w-full border border-slate-300 rounded p-2 text-xs text-slate-800 bg-white focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-[var(--color-border-soft)] rounded p-2 text-xs text-[var(--color-espresso)] bg-white focus:ring-2 focus:ring-blue-500"
             value={rule.alignment}
             onChange={e => set('alignment', e.target.value as StyleRule['alignment'])}
           >
@@ -103,7 +103,7 @@ export function StyleRuleEditor({ rule, onChange }: StyleRuleEditorProps) {
         )}
         {field('Espaçamento de linha',
           <select
-            className="w-full border border-slate-300 rounded p-2 text-xs text-slate-800 bg-white focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-[var(--color-border-soft)] rounded p-2 text-xs text-[var(--color-espresso)] bg-white focus:ring-2 focus:ring-blue-500"
             value={rule.lineSpacing}
             onChange={e => set('lineSpacing', Number(e.target.value))}
           >
@@ -117,31 +117,31 @@ export function StyleRuleEditor({ rule, onChange }: StyleRuleEditorProps) {
 
       <div className="grid grid-cols-3 gap-3">
         {field('Recuo 1ª linha (cm)',
-          <input type="number" step="0.1" min="0" className="w-full border border-slate-300 rounded p-2 text-xs focus:ring-2 focus:ring-blue-500"
+          <input type="number" step="0.1" min="0" className="w-full border border-[var(--color-border-soft)] rounded p-2 text-xs focus:ring-2 focus:ring-blue-500"
             value={rule.firstLineIndentCm} onChange={e => set('firstLineIndentCm', Number(e.target.value))} />
         )}
         {field('Recuo esq. (cm)',
-          <input type="number" step="0.1" min="0" className="w-full border border-slate-300 rounded p-2 text-xs focus:ring-2 focus:ring-blue-500"
+          <input type="number" step="0.1" min="0" className="w-full border border-[var(--color-border-soft)] rounded p-2 text-xs focus:ring-2 focus:ring-blue-500"
             value={rule.leftIndentCm} onChange={e => set('leftIndentCm', Number(e.target.value))} />
         )}
         {field('Recuo dir. (cm)',
-          <input type="number" step="0.1" min="0" className="w-full border border-slate-300 rounded p-2 text-xs focus:ring-2 focus:ring-blue-500"
+          <input type="number" step="0.1" min="0" className="w-full border border-[var(--color-border-soft)] rounded p-2 text-xs focus:ring-2 focus:ring-blue-500"
             value={rule.rightIndentCm} onChange={e => set('rightIndentCm', Number(e.target.value))} />
         )}
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         {field('Espaç. antes (pt)',
-          <input type="number" step="1" min="0" className="w-full border border-slate-300 rounded p-2 text-xs focus:ring-2 focus:ring-blue-500"
+          <input type="number" step="1" min="0" className="w-full border border-[var(--color-border-soft)] rounded p-2 text-xs focus:ring-2 focus:ring-blue-500"
             value={rule.spacingBeforePt} onChange={e => set('spacingBeforePt', Number(e.target.value))} />
         )}
         {field('Espaç. depois (pt)',
-          <input type="number" step="1" min="0" className="w-full border border-slate-300 rounded p-2 text-xs focus:ring-2 focus:ring-blue-500"
+          <input type="number" step="1" min="0" className="w-full border border-[var(--color-border-soft)] rounded p-2 text-xs focus:ring-2 focus:ring-blue-500"
             value={rule.spacingAfterPt} onChange={e => set('spacingAfterPt', Number(e.target.value))} />
         )}
       </div>
 
-      <div className="flex gap-6 p-3 bg-white border border-slate-200 rounded-lg">
+      <div className="flex gap-6 p-3 bg-white border border-[var(--color-border-soft)] rounded-lg">
         {[
           { key: 'bold' as const, label: 'Negrito', display: 'B', extraClass: 'font-bold' },
           { key: 'italic' as const, label: 'Itálico', display: 'I', extraClass: 'italic font-serif' },
@@ -152,10 +152,10 @@ export function StyleRuleEditor({ rule, onChange }: StyleRuleEditorProps) {
               type="checkbox"
               checked={rule[key]}
               onChange={e => set(key, e.target.checked)}
-              className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+              className="w-4 h-4 text-[var(--color-green)] rounded border-[var(--color-border-soft)] focus:ring-blue-500"
             />
-            <span className={`text-sm text-slate-700 ${extraClass}`}>{display}</span>
-            <span className="text-[10px] text-slate-400">{label}</span>
+            <span className={`text-sm text-[var(--color-espresso)] ${extraClass}`}>{display}</span>
+            <span className="text-[10px] text-[var(--color-neutral)]/70">{label}</span>
           </label>
         ))}
       </div>
