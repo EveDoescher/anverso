@@ -2,31 +2,44 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Search, Filter, Star, Heart, User, FileCheck, CheckCircle2, Plus } from 'lucide-react';
+import { Search, Filter, Star, Heart, User, FileCheck, Plus } from 'lucide-react';
 import { fetchApi } from '@/lib/api';
 import Navbar from '@/components/layout/Navbar';
-import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
+import { Checkbox } from '@/components/ui/Checkbox';
+import { Badge } from '@/components/ui/Badge';
+import { SearchInput } from '@/components/ui/SearchInput';
+
+type FilterMode = 'popular' | 'recents' | 'top-rated';
+
+const SORT_OPTIONS: { label: string; value: FilterMode }[] = [
+  { label: 'Populares', value: 'popular' },
+  { label: 'Recentes', value: 'recents' },
+  { label: 'Avaliados', value: 'top-rated' },
+];
+
+const CATEGORIES = ['Universidade', 'Revistas', 'ABNT', 'APA', 'Vancouver'];
 
 export default function ExplorePage() {
   const [profiles, setProfiles] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
-  const [filterMode, setFilterMode] = useState('popular'); 
+  const [filterMode, setFilterMode] = useState<FilterMode>('popular');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchProfiles = async () => {
       try {
-        const response = await fetchApi('/api/v1/profiles');
+        const response = await fetchApi('/api/v1/profiles', { skipAuthRedirect: true });
         const data = await response.json();
-        
+
         const ownerIds = [...new Set(data.map((p: any) => p.ownerId).filter(Boolean))] as string[];
         const authorCache: Record<string, string> = {};
-        
+
         await Promise.all(ownerIds.map(async (ownerId: string) => {
           try {
-            const userRes = await fetchApi(`/api/users/${ownerId}/public`);
+            const userRes = await fetchApi(`/api/users/${ownerId}/public`, { skipAuthRedirect: true });
             const userData = await userRes.json();
             authorCache[ownerId] = userData.name || 'Usuário';
           } catch { /* silently ignore */ }
@@ -41,7 +54,7 @@ export default function ExplorePage() {
           if (name.includes('universidade') || name.includes('tcc') || name.includes('tese')) tags.push('Universidade');
           if (name.includes('revista') || name.includes('artigo')) tags.push('Revistas');
           if (tags.length === 0) tags.push('Universidade');
-          
+
           return {
             ...p,
             rating: p.rating ? p.rating.toFixed(1) : '0.0',
@@ -54,7 +67,7 @@ export default function ExplorePage() {
               'bg-[var(--color-forest)]',
               'bg-[var(--color-coffee)]',
               'bg-[var(--color-gold)]',
-              'bg-[#2A3B31]', 
+              'bg-[#2A3B31]',
               'bg-[#8C7A6B]',
             ][idx % 5]
           };
@@ -70,7 +83,7 @@ export default function ExplorePage() {
   }, []);
 
   const toggleCategory = (cat: string) => {
-    setSelectedCategories(prev => 
+    setSelectedCategories(prev =>
       prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
     );
   };
@@ -83,22 +96,20 @@ export default function ExplorePage() {
       p.authorName?.toLowerCase().includes(term) ||
       p.id?.toLowerCase().includes(term)
     );
-    
-    const matchesCategory = selectedCategories.length === 0 || 
+    const matchesCategory = selectedCategories.length === 0 ||
       p.tags.some((tag: string) => selectedCategories.includes(tag));
-      
     return matchesSearch && matchesCategory;
   }).sort((a, b) => {
     if (filterMode === 'popular') return b.usageCount - a.usageCount;
     if (filterMode === 'top-rated') return parseFloat(b.rating) - parseFloat(a.rating);
-    return b.favoritesCount - a.favoritesCount; 
+    return b.favoritesCount - a.favoritesCount;
   });
 
   return (
     <div className="min-h-screen bg-[var(--color-paper)] flex flex-col font-sans">
       <Navbar />
 
-      {/* Hero Section */}
+      {/* Hero */}
       <div className="bg-[var(--color-cream)] border-b border-[var(--color-border-soft)] relative">
         <div className="absolute inset-0 bg-[url('/icons/leaves.png')] opacity-[0.03] mix-blend-color-burn bg-repeat" style={{ backgroundSize: '200px' }} />
         <div className="max-w-7xl mx-auto px-6 py-16 md:py-24 relative z-10">
@@ -109,19 +120,15 @@ export default function ExplorePage() {
             <p className="text-lg md:text-xl text-[var(--color-neutral)] mb-10 font-light">
               Explore nossa biblioteca de perfis criados pela comunidade. Encontre o template perfeito para o seu TCC, tese, artigo ou relatório.
             </p>
-            
             <div className="flex flex-col sm:flex-row gap-4 items-center">
               <div className="w-full sm:flex-1">
-                <Input
-                  type="text"
+                <SearchInput
                   placeholder="Pesquisar por nome, ID ou autor..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  leftIcon={Search}
-                  className="h-14 text-base rounded-2xl"
                 />
               </div>
-              <Button variant="primary" size="lg" className="w-full sm:w-auto h-14 px-8 rounded-2xl">
+              <Button variant="primary" size="lg" className="w-full sm:w-auto rounded-2xl" trailingIcon={false}>
                 Buscar
               </Button>
             </div>
@@ -129,51 +136,40 @@ export default function ExplorePage() {
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-12">
         <div className="flex flex-col md:flex-row gap-8">
-          
-          {/* Sidebar Filters */}
+
+          {/* Sidebar */}
           <div className="w-full md:w-64 shrink-0">
-            <div className="bg-white rounded-3xl border border-[var(--color-border-soft)] p-6 sticky top-24 shadow-sm">
-              <div className="flex items-center gap-2 mb-6">
+            <div className="bg-white rounded-3xl border border-[var(--color-border-soft)] p-6 sticky top-24 shadow-sm space-y-6">
+              <div className="flex items-center gap-2">
                 <Filter size={18} className="text-[var(--color-coffee)]" />
                 <h3 className="text-lg font-serif text-[var(--color-espresso)]">Filtros</h3>
               </div>
-              
-              <div className="space-y-6">
-                <div>
-                  <h4 className="text-[10px] font-bold text-[var(--color-neutral)] uppercase tracking-[0.2em] mb-4">Ordenar por</h4>
-                  <div className="space-y-3">
-                    {['popular', 'recents', 'top-rated'].map((mode) => (
-                      <label key={mode} className="flex items-center gap-3 cursor-pointer group" onClick={() => setFilterMode(mode)}>
-                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${filterMode === mode ? 'border-[var(--color-green)]' : 'border-[var(--color-border)] group-hover:border-[var(--color-green)]'}`}>
-                          {filterMode === mode && <div className="w-2 h-2 bg-[var(--color-green)] rounded-full" />}
-                        </div>
-                        <span className={`text-sm ${filterMode === mode ? 'text-[var(--color-espresso)] font-medium' : 'text-[var(--color-neutral)]'}`}>
-                          {mode === 'popular' && 'Mais Populares'}
-                          {mode === 'recents' && 'Recentes'}
-                          {mode === 'top-rated' && 'Melhor Avaliados'}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
 
-                <div className="h-[1px] bg-[var(--color-border-soft)]" />
+              <div>
+                <h4 className="text-[10px] font-bold text-[var(--color-neutral)] uppercase tracking-[0.2em] mb-3">Ordenar por</h4>
+                <SegmentedControl
+                  value={filterMode}
+                  options={SORT_OPTIONS}
+                  onChange={setFilterMode}
+                />
+              </div>
 
-                <div>
-                  <h4 className="text-[10px] font-bold text-[var(--color-neutral)] uppercase tracking-[0.2em] mb-4">Categorias</h4>
-                  <div className="space-y-3">
-                    {['Universidade', 'Revistas', 'ABNT', 'APA', 'Vancouver'].map((cat) => (
-                      <label key={cat} className="flex items-center gap-3 cursor-pointer group" onClick={() => toggleCategory(cat)}>
-                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${selectedCategories.includes(cat) ? 'bg-[var(--color-green)] border-[var(--color-green)]' : 'border-[var(--color-border)] group-hover:border-[var(--color-green)]'}`}>
-                          {selectedCategories.includes(cat) && <CheckCircle2 size={12} className="text-white" />}
-                        </div>
-                        <span className={`text-sm ${selectedCategories.includes(cat) ? 'text-[var(--color-espresso)] font-medium' : 'text-[var(--color-neutral)]'}`}>{cat}</span>
-                      </label>
-                    ))}
-                  </div>
+              <div className="h-[1px] bg-[var(--color-border-soft)]" />
+
+              <div>
+                <h4 className="text-[10px] font-bold text-[var(--color-neutral)] uppercase tracking-[0.2em] mb-4">Categorias</h4>
+                <div className="space-y-3">
+                  {CATEGORIES.map((cat) => (
+                    <Checkbox
+                      key={cat}
+                      label={cat}
+                      checked={selectedCategories.includes(cat)}
+                      onChange={() => toggleCategory(cat)}
+                    />
+                  ))}
                 </div>
               </div>
             </div>
@@ -203,8 +199,8 @@ export default function ExplorePage() {
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                 {filteredProfiles.map((profile) => (
-                  <Link 
-                    href={`/explore/${profile.id}`} 
+                  <Link
+                    href={`/explore/${profile.id}`}
                     key={profile.id}
                     className="group bg-white rounded-3xl border border-[var(--color-border-soft)] overflow-hidden hover:shadow-[var(--shadow-soft)] hover:border-[var(--color-border)] transition-all duration-300 flex flex-col"
                   >
@@ -218,30 +214,28 @@ export default function ExplorePage() {
                         {profile.name}
                       </h3>
                     </div>
-                    
+
                     <div className="p-5 flex-1 flex flex-col">
                       <div className="flex items-center gap-2 text-[var(--color-coffee)] text-xs mb-3 font-medium">
                         <User size={12} />
                         <span className="truncate">{profile.authorName}</span>
                       </div>
-                      
+
                       <p className="text-[var(--color-neutral)] text-sm line-clamp-3 mb-4 flex-1">
                         {profile.description || 'Sem descrição fornecida pelo autor.'}
                       </p>
-                      
+
                       <div className="flex flex-wrap gap-2 mb-5">
                         {profile.tags.map((tag: string) => (
-                          <span key={tag} className="px-2 py-0.5 bg-[var(--color-paper-soft)] text-[var(--color-text)] border border-[var(--color-border-soft)] rounded-md text-[10px] uppercase tracking-wide font-bold">
-                            {tag}
-                          </span>
+                          <Badge key={tag} tone="neutral">{tag}</Badge>
                         ))}
                       </div>
-                      
+
                       <div className="h-[1px] bg-[var(--color-border-soft)] mb-4 w-full" />
-                      
+
                       <div className="flex items-center justify-between text-[var(--color-neutral)] text-xs">
                         <div className="flex items-center gap-4">
-                          <div className="flex items-center gap-1.5 hover:text-rose-500 transition-colors">
+                          <div className="flex items-center gap-1.5">
                             <Heart size={14} />
                             <span>{profile.favoritesCount}</span>
                           </div>
@@ -266,9 +260,7 @@ export default function ExplorePage() {
                 <h3 className="text-xl font-serif text-[var(--color-espresso)] mb-2">Nenhum perfil encontrado</h3>
                 <p className="text-[var(--color-neutral)] mb-6 text-sm">Tente buscar por termos diferentes ou remover os filtros.</p>
                 <Link href="/create-profile">
-                  <Button variant="primary" icon={Plus}>
-                    Criar novo perfil
-                  </Button>
+                  <Button variant="primary" icon={Plus}>Criar novo perfil</Button>
                 </Link>
               </div>
             )}

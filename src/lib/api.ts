@@ -1,14 +1,17 @@
 export const API_URL = process.env.NEXT_PUBLIC_IAM_URL || 'http://localhost:8080';
 
-export async function fetchApi(endpoint: string, options: RequestInit = {}) {
+type FetchApiOptions = RequestInit & { skipAuthRedirect?: boolean };
+
+export async function fetchApi(endpoint: string, options: FetchApiOptions = {}) {
+  const { skipAuthRedirect, ...fetchOptions } = options;
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   
   const headers: Record<string, string> = {
-    ...(options.headers as Record<string, string>),
+    ...(fetchOptions.headers as Record<string, string>),
   };
 
   // Only set application/json if it's not a FormData upload
-  if (!(options.body instanceof FormData) && !headers['Content-Type']) {
+  if (!(fetchOptions.body instanceof FormData) && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
   }
 
@@ -17,7 +20,7 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
   }
 
   const response = await fetch(`${API_URL}${endpoint}`, {
-    ...options,
+    ...fetchOptions,
     headers,
   });
 
@@ -43,12 +46,10 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
     }
     
     // Clear token if unauthorized to prevent loop
-    if (response.status === 401) {
+    if (response.status === 401 && !skipAuthRedirect) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('token');
-        // Redirect to login page
         window.location.href = '/login?expired=true';
-        // Return a pending promise so the redirect happens without throwing an unhandled error to the overlay
         return new Promise(() => {}) as any;
       }
     }

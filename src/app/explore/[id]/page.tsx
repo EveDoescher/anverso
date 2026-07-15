@@ -3,22 +3,23 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Star, Heart, Share2, FileCheck, CheckCircle2, User, Clock, MessageSquare, AlertCircle, LayoutTemplate } from 'lucide-react';
+import { ArrowLeft, Star, Heart, Share2, FileCheck, CheckCircle2, User, MessageSquare, AlertCircle, LayoutTemplate } from 'lucide-react';
 import { fetchApi } from '@/lib/api';
 import Navbar from '@/components/layout/Navbar';
 import { AlertModal, AlertModalType } from '@/components/ui/AlertModal';
 import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
 import { Input } from '@/components/ui/Input';
+import { TabNavigation, TabNavigationItem } from '@/components/ui/TabNavigation';
+import { Badge } from '@/components/ui/Badge';
 
 export default function ProfileDetailsPage() {
   const { id } = useParams();
   const router = useRouter();
-  
+
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  
-  // Real data for community aspects
+
   const [isFavorite, setIsFavorite] = useState(false);
   const [rating, setRating] = useState('0.0');
   const [reviewsCount, setReviewsCount] = useState(0);
@@ -31,15 +32,12 @@ export default function ProfileDetailsPage() {
   const [newReviewRating, setNewReviewRating] = useState(5);
   const [loggedUserName, setLoggedUserName] = useState('');
   const [loggedUserId, setLoggedUserId] = useState('');
-  
-  const [activeTab, setActiveTab] = useState<'details' | 'reviews' | 'versions'>('details');
+
+  const [activeTab, setActiveTab] = useState('details');
   const [versions, setVersions] = useState<any[]>([]);
 
   const [modalConfig, setModalConfig] = useState<{show: boolean, title: string, message: string, type: AlertModalType, redirectUrl?: string, onConfirm?: () => void}>({
-    show: false,
-    title: '',
-    message: '',
-    type: 'info'
+    show: false, title: '', message: '', type: 'info'
   });
 
   const showAlert = (title: string, message: string, type: AlertModalType, redirectUrl?: string, onConfirm?: () => void) => {
@@ -51,82 +49,61 @@ export default function ProfileDetailsPage() {
     const confirmFn = modalConfig.onConfirm;
     const type = modalConfig.type;
     setModalConfig(prev => ({ ...prev, show: false }));
-    if (url) {
-      router.push(url);
-    } else if (confirmFn && type === 'success') {
-      confirmFn();
-    }
+    if (url) { router.push(url); }
+    else if (confirmFn && type === 'success') { confirmFn(); }
   };
 
   const requireAuth = (callback: () => void) => {
     const token = localStorage.getItem('token');
-    if (!token) {
-      showAlert('Acesso Negado', 'Você precisa estar logado para realizar esta ação.', 'error', '/login');
-      return;
-    }
+    if (!token) { showAlert('Acesso Negado', 'Você precisa estar logado para realizar esta ação.', 'error', '/login'); return; }
     callback();
   };
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await fetchApi(`/api/v1/profiles/${id}`);
+        const response = await fetchApi(`/api/v1/profiles/${id}`, { skipAuthRedirect: true });
         const data = await response.json();
-        
+
         if (data) {
           setProfile(data);
           setRating(data.rating ? data.rating.toFixed(1) : '0.0');
           setReviewsCount(data.reviewsCount || 0);
           setUsageCount(data.usageCount || 0);
           setIsFavorite(data.isFavoritedByUser || false);
-          
-          // Buscar nome real do autor
+
           if (data.ownerId) {
             try {
-              const userRes = await fetchApi(`/api/users/${data.ownerId}/public`);
+              const userRes = await fetchApi(`/api/users/${data.ownerId}/public`, { skipAuthRedirect: true });
               const userData = await userRes.json();
               const fullName = [userData.firstName, userData.lastName].filter(Boolean).join(' ');
               setAuthorName(fullName);
               setAuthorPhoto(userData.profilePictureUrl || null);
-            } catch { /* fallback to default */ }
+            } catch { /* fallback */ }
           }
         } else {
-          setProfile({
-            id,
-            name: 'Perfil não encontrado',
-            description: 'Este perfil pode ter sido removido.',
-          });
+          setProfile({ id, name: 'Perfil não encontrado', description: 'Este perfil pode ter sido removido.' });
         }
-        
-        // Fetch comments
+
         try {
-          const revResponse = await fetchApi(`/api/v1/profiles/${id}/reviews`);
+          const revResponse = await fetchApi(`/api/v1/profiles/${id}/reviews`, { skipAuthRedirect: true });
           const revData = await revResponse.json();
           const enriched = await Promise.all(revData.map(async (rev: any) => {
             if (!rev.userId) return rev;
             try {
-              const uRes = await fetchApi(`/api/users/${rev.userId}/public`);
+              const uRes = await fetchApi(`/api/users/${rev.userId}/public`, { skipAuthRedirect: true });
               const u = await uRes.json();
-              return {
-                ...rev,
-                userName: [u.firstName, u.lastName].filter(Boolean).join(' ') || rev.userName,
-                userPhoto: u.profilePictureUrl || null,
-              };
+              return { ...rev, userName: [u.firstName, u.lastName].filter(Boolean).join(' ') || rev.userName, userPhoto: u.profilePictureUrl || null };
             } catch { return rev; }
           }));
           setComments(enriched);
-        } catch (e) {
-          console.warn('Failed to fetch reviews:', e);
-        }
-        
-        // Fetch versions
+        } catch (e) { console.warn('Failed to fetch reviews:', e); }
+
         try {
-          const verResponse = await fetchApi(`/api/v1/profiles/${id}/versions`);
+          const verResponse = await fetchApi(`/api/v1/profiles/${id}/versions`, { skipAuthRedirect: true });
           const verData = await verResponse.json();
           setVersions(verData);
-        } catch (e) {
-          console.warn('Failed to fetch versions:', e);
-        }
+        } catch (e) { console.warn('Failed to fetch versions:', e); }
       } catch (error) {
         console.error('Failed to fetch profile:', error);
       } finally {
@@ -136,7 +113,6 @@ export default function ProfileDetailsPage() {
     if (id) fetchProfile();
   }, [id]);
 
-  // Buscar dados do usuário logado
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -154,22 +130,15 @@ export default function ProfileDetailsPage() {
     try {
       await fetchApi(`/api/v1/profiles/${id}/favorite`, { method: 'POST' });
       setIsFavorite(!isFavorite);
-    } catch (e) {
-      showAlert('Erro', 'Erro ao atualizar favorito.', 'error');
-    }
+    } catch (e) { showAlert('Erro', 'Erro ao atualizar favorito.', 'error'); }
   };
 
   const handleRestoreVersion = async (version: any) => {
     try {
-      const res = await fetchApi(`/api/v1/profiles/${id}/versions/${version.id}/restore`, {
-        method: 'POST'
-      });
-      
+      const res = await fetchApi(`/api/v1/profiles/${id}/versions/${version.id}/restore`, { method: 'POST' });
       if (!res.ok) throw new Error('Falha ao restaurar versão');
       showAlert('Sucesso', 'Versão restaurada com sucesso!', 'success', undefined, () => window.location.reload());
-    } catch (e) {
-      showAlert('Erro', 'Erro ao restaurar versão.', 'error');
-    }
+    } catch (e) { showAlert('Erro', 'Erro ao restaurar versão.', 'error'); }
   };
 
   const handleSubmitReview = async () => {
@@ -177,11 +146,7 @@ export default function ProfileDetailsPage() {
     try {
       await fetchApi(`/api/v1/profiles/${id}/reviews`, {
         method: 'POST',
-        body: JSON.stringify({
-          rating: newReviewRating,
-          comment: newReviewText,
-          userName: loggedUserName || 'Anônimo',
-        })
+        body: JSON.stringify({ rating: newReviewRating, comment: newReviewText, userName: loggedUserName || 'Anônimo' })
       });
       setShowReviewForm(false);
       setNewReviewText('');
@@ -194,25 +159,25 @@ export default function ProfileDetailsPage() {
             const uRes = await fetchApi(`/api/users/${rev.userId}/public`);
             if (!uRes.ok) return rev;
             const u = await uRes.json();
-            return {
-              ...rev,
-              userName: [u.firstName, u.lastName].filter(Boolean).join(' ') || rev.userName,
-              userPhoto: u.profilePictureUrl || null,
-            };
+            return { ...rev, userName: [u.firstName, u.lastName].filter(Boolean).join(' ') || rev.userName, userPhoto: u.profilePictureUrl || null };
           } catch { return rev; }
         }));
         setComments(enriched);
       }
-    } catch (e) {
-      showAlert('Erro', 'Erro ao enviar avaliação.', 'error');
-    }
+    } catch (e) { showAlert('Erro', 'Erro ao enviar avaliação.', 'error'); }
   };
+
+  const tabs: TabNavigationItem[] = [
+    { id: 'details', label: 'Detalhes do Perfil' },
+    { id: 'reviews', label: 'Avaliações', count: reviewsCount },
+    { id: 'versions', label: 'Versões Anteriores', count: versions.length },
+  ];
 
   if (loading) {
     return (
       <div className="min-h-screen bg-[var(--color-paper)] flex items-center justify-center">
-        <div className="animate-pulse flex flex-col items-center">
-          <div className="w-16 h-16 border-4 border-[var(--color-success-soft)] border-t-indigo-600 rounded-full animate-spin mb-4" />
+        <div className="flex flex-col items-center">
+          <div className="w-16 h-16 border-4 border-[var(--color-success-soft)] border-t-[var(--color-green)] rounded-full animate-spin mb-4" />
           <p className="text-[var(--color-neutral)] font-medium">Carregando perfil...</p>
         </div>
       </div>
@@ -223,7 +188,6 @@ export default function ProfileDetailsPage() {
     <div className="min-h-screen bg-[var(--color-paper)] pb-24 font-sans">
       <Navbar />
 
-      {/* Main Content */}
       <main className="max-w-6xl mx-auto px-4 md:px-8 pt-8">
         <Link href="/explore" className="inline-flex items-center gap-2 text-[var(--color-neutral)] hover:text-[var(--color-green)] transition-colors mb-8 font-medium">
           <ArrowLeft size={18} />
@@ -231,7 +195,7 @@ export default function ProfileDetailsPage() {
         </Link>
 
         <div className="bg-white rounded-3xl border border-[var(--color-border-soft)] overflow-hidden shadow-sm">
-          {/* Header Banner */}
+          {/* Banner */}
           <div className="h-48 md:h-64 bg-gradient-to-r from-[var(--color-forest)] via-[#2A3B31] to-[var(--color-coffee)] relative">
             <div className="absolute inset-0 bg-grid-white/[0.1] bg-[bottom_1px_center]" />
             <div className="absolute bottom-6 left-6 md:left-10 flex gap-4">
@@ -249,12 +213,10 @@ export default function ProfileDetailsPage() {
           </div>
 
           <div className="p-6 md:p-10 pt-16 md:pt-10 flex flex-col md:flex-row gap-10">
-            {/* Left Column: Info */}
+            {/* Left: Info */}
             <div className="flex-1">
               <div className="flex flex-wrap items-center gap-3 mb-4">
-                <span className="px-3 py-1 bg-[var(--color-success-bg)] text-[var(--color-green)] text-xs font-bold uppercase tracking-wider rounded-full">
-                  Template ABNT
-                </span>
+                <Badge tone="success">Template ABNT</Badge>
                 <div className="flex items-center gap-1 text-[var(--color-gold)] font-bold text-sm bg-[var(--color-cream)] px-2 py-1 rounded-lg">
                   <Star size={14} className="fill-[var(--color-gold)]" />
                   {rating}
@@ -290,23 +252,21 @@ export default function ProfileDetailsPage() {
                 <div className="w-px h-8 bg-[var(--color-border-soft)]" />
                 <div>
                   <p className="text-xs text-[var(--color-neutral)]/70">ID do Perfil</p>
-                  <p className="font-semibold text-[var(--color-espresso)] font-mono text-xs mt-0.5">
-                    {profile?.id}
-                  </p>
+                  <p className="font-semibold text-[var(--color-espresso)] font-mono text-xs mt-0.5">{profile?.id}</p>
                 </div>
               </div>
 
               <div className="prose prose-slate max-w-none">
                 <h3 className="text-lg font-bold text-[var(--color-espresso)] mb-3">Sobre este Perfil</h3>
                 <p className="text-[var(--color-neutral)] leading-relaxed mb-6">
-                  {profile?.description || 'Nenhuma descrição detalhada foi fornecida para este perfil de formatação. Este perfil contém um conjunto de regras, margens, fontes e espaçamentos pré-configurados.'}
+                  {profile?.description || 'Nenhuma descrição detalhada foi fornecida para este perfil de formatação.'}
                 </p>
 
                 <h3 className="text-lg font-bold text-[var(--color-espresso)] mb-4">O que está incluído?</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
                   {['Capa e Folha de Rosto Automáticas', 'Sumário Gerado Dinamicamente', 'Espaçamento ABNT (1.5)', 'Margens 3cm/2cm', 'Paginação no Canto Superior Direito', 'Referências Bibliográficas'].map((feature, i) => (
                     <div key={i} className="flex items-start gap-2">
-                      <CheckCircle2 size={18} className="text-emerald-500 shrink-0 mt-0.5" />
+                      <CheckCircle2 size={18} className="text-[var(--color-green)] shrink-0 mt-0.5" />
                       <span className="text-[var(--color-neutral)] text-sm">{feature}</span>
                     </div>
                   ))}
@@ -314,40 +274,52 @@ export default function ProfileDetailsPage() {
               </div>
             </div>
 
-            {/* Right Column: Actions Sidebar */}
+            {/* Right: Actions */}
             <div className="w-full md:w-80 shrink-0">
-              <div className="bg-[var(--color-paper)] rounded-2xl p-6 border border-[var(--color-border-soft)] sticky top-24">
-
-
-                <button 
+              <div className="bg-[var(--color-paper)] rounded-2xl p-6 border border-[var(--color-border-soft)] sticky top-24 space-y-3">
+                <Button
+                  variant="primary"
+                  size="lg"
+                  className="w-full justify-center"
+                  icon={LayoutTemplate}
+                  trailingIcon={false}
                   onClick={() => requireAuth(() => router.push(`/submit-work?profileId=${profile?.id}`))}
-                  className="w-full bg-[var(--color-green)] hover:bg-[#2A3B31] text-white py-4 rounded-xl font-bold shadow-lg shadow-[var(--shadow-soft)] transition-all active:scale-[0.98] mb-3 flex items-center justify-center gap-2"
                 >
-                  <LayoutTemplate size={20} />
                   Usar este Perfil
-                </button>
-                
+                </Button>
+
                 {loggedUserId && profile?.ownerId === loggedUserId && (
-                  <button 
+                  <Button
+                    variant="gold"
+                    size="lg"
+                    className="w-full justify-center"
+                    trailingIcon={false}
                     onClick={() => router.push(`/create-profile/${profile.id}`)}
-                    className="w-full bg-[var(--color-cream)]0 hover:bg-[#A16207] text-white py-4 rounded-xl font-bold shadow-lg shadow-amber-500/20 transition-all active:scale-[0.98] mb-3 flex items-center justify-center gap-2"
                   >
                     Editar Perfil
-                  </button>
+                  </Button>
                 )}
 
-                <div className="flex gap-3 mb-6">
-                  <button 
+                <div className="flex gap-3">
+                  <Button
+                    variant={isFavorite ? 'danger' : 'ghost'}
+                    size="md"
+                    className="flex-1 justify-center"
+                    icon={Heart}
+                    trailingIcon={false}
                     onClick={() => requireAuth(handleToggleFavorite)}
-                    className={`flex-1 py-3 rounded-xl font-semibold border-2 transition-colors flex items-center justify-center gap-2 ${isFavorite ? 'bg-rose-50 border-rose-200 text-rose-600' : 'bg-white border-[var(--color-border-soft)] text-[var(--color-neutral)] hover:border-[var(--color-border-soft)]'}`}
                   >
-                    <Heart size={18} className={isFavorite ? 'fill-rose-500' : ''} />
                     Favoritar
-                  </button>
-                  <button className="flex-1 bg-white border-2 border-[var(--color-border-soft)] hover:border-[var(--color-border-soft)] text-[var(--color-neutral)] py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2">
-                    <Share2 size={18} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="md"
+                    className="flex-1 justify-center"
+                    icon={Share2}
+                    trailingIcon={false}
+                  >
                     Compartilhar
-                  </button>
+                  </Button>
                 </div>
 
                 <div className="bg-white p-4 rounded-xl border border-[var(--color-border-soft)] flex items-start gap-3">
@@ -360,41 +332,17 @@ export default function ProfileDetailsPage() {
             </div>
           </div>
         </div>
-        
+
         {/* Tabs */}
-        <div className="mt-12 border-b border-[var(--color-border-soft)]">
-          <nav className="flex gap-8">
-            <button
-              onClick={() => setActiveTab('details')}
-              className={`pb-4 font-semibold text-sm transition-colors relative ${activeTab === 'details' ? 'text-[var(--color-green)]' : 'text-[var(--color-neutral)] hover:text-[var(--color-espresso)]'}`}
-            >
-              Detalhes do Perfil
-              {activeTab === 'details' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-green)] rounded-t-full" />}
-            </button>
-            <button
-              onClick={() => setActiveTab('reviews')}
-              className={`pb-4 font-semibold text-sm transition-colors relative flex items-center gap-2 ${activeTab === 'reviews' ? 'text-[var(--color-green)]' : 'text-[var(--color-neutral)] hover:text-[var(--color-espresso)]'}`}
-            >
-              Avaliações
-              <span className="bg-[var(--color-paper-soft)] text-[var(--color-neutral)] py-0.5 px-2 rounded-full text-xs">{reviewsCount}</span>
-              {activeTab === 'reviews' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-green)] rounded-t-full" />}
-            </button>
-            <button
-              onClick={() => setActiveTab('versions')}
-              className={`pb-4 font-semibold text-sm transition-colors relative flex items-center gap-2 ${activeTab === 'versions' ? 'text-[var(--color-green)]' : 'text-[var(--color-neutral)] hover:text-[var(--color-espresso)]'}`}
-            >
-              Versões Anteriores
-              <span className="bg-[var(--color-paper-soft)] text-[var(--color-neutral)] py-0.5 px-2 rounded-full text-xs">{versions.length}</span>
-              {activeTab === 'versions' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-green)] rounded-t-full" />}
-            </button>
-          </nav>
+        <div className="mt-12 mb-8">
+          <TabNavigation items={tabs} activeId={activeTab} onChange={setActiveTab} />
         </div>
 
-        <div className="mt-8 mb-24 max-w-4xl">
+        <div className="mb-24 max-w-4xl">
           {activeTab === 'details' && (
             <div className="bg-white p-8 rounded-2xl border border-[var(--color-border-soft)]">
-               <h3 className="text-xl font-bold text-[var(--color-espresso)] mb-6">Detalhes Técnicos</h3>
-               <p className="text-[var(--color-neutral)]">Este perfil utiliza JSON como base para estruturar configurações de formatação ABNT, APA ou personalizadas.</p>
+              <h3 className="text-xl font-bold text-[var(--color-espresso)] mb-6">Detalhes Técnicos</h3>
+              <p className="text-[var(--color-neutral)]">Este perfil utiliza JSON como base para estruturar configurações de formatação ABNT, APA ou personalizadas.</p>
             </div>
           )}
 
@@ -410,25 +358,30 @@ export default function ProfileDetailsPage() {
                     <div>
                       <h4 className="text-lg font-bold text-[var(--color-espresso)] flex items-center gap-2">
                         {v.versionName || `Versão ${versions.length - idx}`}
-                        {v.isTemporary && <span className="text-xs bg-amber-100 text-[var(--color-gold)] px-2 py-0.5 rounded-full font-semibold">Backup Temporário (30 dias)</span>}
+                        {v.isTemporary && <Badge tone="warning">Backup Temporário (30 dias)</Badge>}
                       </h4>
                       <p className="text-sm text-[var(--color-neutral)] mt-1">Salva em: {new Date(v.createdAt).toLocaleString('pt-BR')}</p>
                     </div>
-                    {/* Ação para usar a versão (ex: redirecionar para submissão com query string da versão, ou apenas visualização) */}
                     <div className="flex gap-2">
                       {!v.isTemporary && (
-                        <button 
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          trailingIcon={false}
                           onClick={() => requireAuth(() => router.push(`/submit-work?profileId=${profile?.id}&versionId=${v.id}`))}
-                          className="text-[var(--color-green)] font-semibold text-sm hover:text-indigo-800 transition-colors bg-[var(--color-success-bg)] px-4 py-2 rounded-lg">
+                        >
                           Usar esta versão
-                        </button>
+                        </Button>
                       )}
                       {v.isTemporary && profile?.ownerId === loggedUserId && (
-                        <button 
+                        <Button
+                          variant="gold"
+                          size="sm"
+                          trailingIcon={false}
                           onClick={() => handleRestoreVersion(v)}
-                          className="text-[var(--color-gold)] font-semibold text-sm hover:text-amber-900 transition-colors bg-[var(--color-cream)] px-4 py-2 rounded-lg">
+                        >
                           Restaurar versão
-                        </button>
+                        </Button>
                       )}
                     </div>
                   </div>
@@ -443,112 +396,102 @@ export default function ProfileDetailsPage() {
                 <h2 className="text-2xl font-bold text-[var(--color-espresso)] flex items-center gap-2">
                   <MessageSquare size={24} className="text-[var(--color-green)]" />
                   Avaliações da Comunidade
-
-            </h2>
-            {!showReviewForm && (
-              <button 
-                onClick={() => requireAuth(() => setShowReviewForm(true))}
-                className="text-[var(--color-green)] font-semibold text-sm hover:underline"
-              >
-                Escrever avaliação
-              </button>
-            )}
-          </div>
-
-          {showReviewForm && (
-            <div className="bg-white p-6 rounded-2xl border border-[var(--color-success-soft)] shadow-sm mb-6">
-              <h3 className="font-bold text-lg text-[var(--color-espresso)] mb-4">Sua Avaliação</h3>
-              <div className="flex items-center gap-1 mb-4">
-                {[1,2,3,4,5].map(star => {
-                  const halfVal = star - 0.5;
-                  const fullVal = star;
-                  const isHalfFilled = newReviewRating >= halfVal && newReviewRating < fullVal;
-                  const isFullFilled = newReviewRating >= fullVal;
-                  return (
-                    <div key={star} className="relative w-7 h-7 cursor-pointer">
-                      {/* Left half = half star */}
-                      <div 
-                        className="absolute inset-0 w-1/2 overflow-hidden z-10"
-                        onClick={() => setNewReviewRating(halfVal)}
-                      >
-                        <Star size={28} className={`${isHalfFilled || isFullFilled ? 'fill-[var(--color-gold)] text-[var(--color-gold)] text-amber-400' : 'text-slate-200'}`} />
-                      </div>
-                      {/* Right half = full star */}
-                      <div 
-                        className="absolute inset-0 z-0"
-                        onClick={() => setNewReviewRating(fullVal)}
-                      >
-                        <Star size={28} className={`${isFullFilled ? 'fill-[var(--color-gold)] text-[var(--color-gold)] text-amber-400' : 'text-slate-200'}`} />
-                      </div>
-                    </div>
-                  );
-                })}
-                <span className="ml-3 text-lg font-bold text-[var(--color-espresso)]">{newReviewRating.toFixed(1)}</span>
+                </h2>
+                {!showReviewForm && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    trailingIcon={false}
+                    onClick={() => requireAuth(() => setShowReviewForm(true))}
+                  >
+                    Escrever avaliação
+                  </Button>
+                )}
               </div>
-              <textarea
-                value={newReviewText}
-                onChange={e => setNewReviewText(e.target.value)}
-                placeholder="Como este template te ajudou?"
-                className="w-full border-2 border-[var(--color-border-soft)] rounded-xl p-3 focus:border-[var(--color-green)] focus:outline-none focus:ring-4 focus:ring-[var(--color-green)]/10 mb-4 resize-none h-24"
-              />
-              <div className="flex justify-end gap-3">
-                <button onClick={() => setShowReviewForm(false)} className="px-4 py-2 text-[var(--color-neutral)] font-semibold hover:bg-[var(--color-paper)] rounded-lg">
-                  Cancelar
-                </button>
-                <button onClick={handleSubmitReview} className="px-4 py-2 bg-[var(--color-green)] text-white font-bold rounded-lg hover:bg-[#2A3B31]">
-                  Enviar Avaliação
-                </button>
-              </div>
-            </div>
-          )}
 
-          <div className="space-y-6">
-            {comments.length === 0 ? (
-              <div className="bg-white p-8 rounded-2xl border border-[var(--color-border-soft)] text-center">
-                <p className="text-[var(--color-neutral)]">Nenhuma avaliação ainda. Seja o primeiro a avaliar!</p>
-              </div>
-            ) : (
-              comments.map((comment: any) => (
-                <div key={comment.id} className="bg-white p-6 rounded-2xl border border-[var(--color-border-soft)] shadow-sm flex gap-4">
-                  {comment.userPhoto ? (
-                    <img src={comment.userPhoto} alt={comment.userName} className="w-12 h-12 rounded-full object-cover shrink-0" />
-                  ) : (
-                    <div className="w-12 h-12 rounded-full bg-[var(--color-success-soft)] text-[var(--color-green)] flex items-center justify-center font-bold text-lg shrink-0">
-                      {comment.userName ? comment.userName.charAt(0).toUpperCase() : 'U'}
-                    </div>
-                  )}
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <h4 className="font-bold text-[var(--color-espresso)]">{comment.userName || 'Usuário Anônimo'}</h4>
-                        <p className="text-xs text-[var(--color-neutral)]/70">
-                          {comment.date ? new Date(comment.date).toLocaleDateString('pt-BR') : 'Recentemente'}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-0.5">
-                        {[1,2,3,4,5].map(star => {
-                          const r = comment.rating || 0;
-                          const isFull = r >= star;
-                          const isHalf = r >= star - 0.5 && r < star;
-                          return (
-                            <div key={star} className="relative w-4 h-4">
-                              <Star size={14} className="text-slate-200 absolute inset-0" />
-                              {isHalf && (
-                                <div className="absolute inset-0 w-1/2 overflow-hidden">
-                                  <Star size={14} className="fill-[var(--color-gold)] text-[var(--color-gold)] text-amber-400" />
+              {showReviewForm && (
+                <div className="bg-white p-6 rounded-2xl border border-[var(--color-success-soft)] shadow-sm mb-6">
+                  <h3 className="font-bold text-lg text-[var(--color-espresso)] mb-4">Sua Avaliação</h3>
+                  <div className="flex items-center gap-1 mb-4">
+                    {[1,2,3,4,5].map(star => {
+                      const halfVal = star - 0.5;
+                      const fullVal = star;
+                      const isHalfFilled = newReviewRating >= halfVal && newReviewRating < fullVal;
+                      const isFullFilled = newReviewRating >= fullVal;
+                      return (
+                        <div key={star} className="relative w-7 h-7 cursor-pointer">
+                          <div className="absolute inset-0 w-1/2 overflow-hidden z-10" onClick={() => setNewReviewRating(halfVal)}>
+                            <Star size={28} className={`${isHalfFilled || isFullFilled ? 'fill-[var(--color-gold)] text-[var(--color-gold)]' : 'text-[var(--color-border-strong)]'}`} />
+                          </div>
+                          <div className="absolute inset-0 z-0" onClick={() => setNewReviewRating(fullVal)}>
+                            <Star size={28} className={`${isFullFilled ? 'fill-[var(--color-gold)] text-[var(--color-gold)]' : 'text-[var(--color-border-strong)]'}`} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <span className="ml-3 text-lg font-bold text-[var(--color-espresso)]">{newReviewRating.toFixed(1)}</span>
+                  </div>
+                  <textarea
+                    value={newReviewText}
+                    onChange={e => setNewReviewText(e.target.value)}
+                    placeholder="Como este template te ajudou?"
+                    className="w-full border-2 border-[var(--color-border-soft)] rounded-xl p-3 focus:border-[var(--color-green)] focus:outline-none focus:ring-4 focus:ring-[var(--color-green)]/10 mb-4 resize-none h-24"
+                    aria-label="Texto da avaliação"
+                  />
+                  <div className="flex justify-end gap-3">
+                    <Button variant="quiet" size="sm" trailingIcon={false} onClick={() => setShowReviewForm(false)}>
+                      Cancelar
+                    </Button>
+                    <Button variant="primary" size="sm" trailingIcon={false} onClick={handleSubmitReview}>
+                      Enviar Avaliação
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-6">
+                {comments.length === 0 ? (
+                  <div className="bg-white p-8 rounded-2xl border border-[var(--color-border-soft)] text-center">
+                    <p className="text-[var(--color-neutral)]">Nenhuma avaliação ainda. Seja o primeiro a avaliar!</p>
+                  </div>
+                ) : (
+                  comments.map((comment: any) => (
+                    <div key={comment.id} className="bg-white p-6 rounded-2xl border border-[var(--color-border-soft)] shadow-sm flex gap-4">
+                      {comment.userPhoto ? (
+                        <img src={comment.userPhoto} alt={comment.userName} className="w-12 h-12 rounded-full object-cover shrink-0" />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-[var(--color-success-soft)] text-[var(--color-green)] flex items-center justify-center font-bold text-lg shrink-0">
+                          {comment.userName ? comment.userName.charAt(0).toUpperCase() : 'U'}
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <h4 className="font-bold text-[var(--color-espresso)]">{comment.userName || 'Usuário Anônimo'}</h4>
+                            <p className="text-xs text-[var(--color-neutral)]/70">
+                              {comment.date ? new Date(comment.date).toLocaleDateString('pt-BR') : 'Recentemente'}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-0.5">
+                            {[1,2,3,4,5].map(star => {
+                              const r = comment.rating || 0;
+                              const isFull = r >= star;
+                              const isHalf = r >= star - 0.5 && r < star;
+                              return (
+                                <div key={star} className="relative w-4 h-4">
+                                  <Star size={14} className="text-[var(--color-border-strong)] absolute inset-0" />
+                                  {isHalf && (
+                                    <div className="absolute inset-0 w-1/2 overflow-hidden">
+                                      <Star size={14} className="fill-[var(--color-gold)] text-[var(--color-gold)]" />
+                                    </div>
+                                  )}
+                                  {isFull && <Star size={14} className="fill-[var(--color-gold)] text-[var(--color-gold)] absolute inset-0" />}
                                 </div>
-                              )}
-                              {isFull && (
-                                <Star size={14} className="fill-[var(--color-gold)] text-[var(--color-gold)] text-amber-400 absolute inset-0" />
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                        <p className="text-[var(--color-espresso)] leading-relaxed text-sm">
-                          "{comment.comment}"
-                        </p>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        <p className="text-[var(--color-espresso)] leading-relaxed text-sm">"{comment.comment}"</p>
                       </div>
                     </div>
                   ))
@@ -559,11 +502,11 @@ export default function ProfileDetailsPage() {
         </div>
       </main>
 
-      <AlertModal 
-        show={modalConfig.show} 
-        title={modalConfig.title} 
-        message={modalConfig.message} 
-        type={modalConfig.type} 
+      <AlertModal
+        show={modalConfig.show}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        type={modalConfig.type}
         onClose={closeModal}
         onConfirm={modalConfig.onConfirm}
       />
