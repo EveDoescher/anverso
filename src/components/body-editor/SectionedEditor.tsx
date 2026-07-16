@@ -48,19 +48,23 @@ export default function SectionedEditor({ value, onChange }: any) {
                  </div>
                  
                  <div className="flex items-center gap-4 mb-6 mt-2">
-                   <div className="w-10 h-10 rounded-xl bg-[var(--color-success-bg)] flex items-center justify-center text-[var(--color-green)] font-bold text-lg border border-[var(--color-success-soft)]">
-                     {idx + 1}
+                   <div className="flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-[var(--color-success-bg)] text-[var(--color-green)] font-bold border border-[var(--color-success-soft)] shrink-0">
+                     <span className="text-[10px] font-semibold uppercase tracking-wider opacity-70">Item</span>
+                     <span className="text-lg leading-none">{idx + 1}</span>
                    </div>
-                   <input 
-                     className="font-bold text-xl border-b-2 border-transparent hover:border-[var(--color-border-soft)] focus:border-[var(--color-green)] outline-none px-2 pb-1 w-full max-w-md text-[var(--color-espresso)] bg-transparent transition-colors" 
-                     value={item.title} 
-                     onChange={e => {
-                        const newItems = [...items];
-                        newItems[idx].title = e.target.value;
-                        onChange(newItems);
-                     }}
-                     placeholder="Título do Item (Ex: Apêndice A)"
-                   />
+                   <div className="flex-1">
+                     <label className="block text-[10px] font-bold text-[var(--color-neutral)] uppercase tracking-wider mb-1">Título do item</label>
+                     <input
+                       className="font-bold text-xl border-b-2 border-transparent hover:border-[var(--color-border-soft)] focus:border-[var(--color-green)] outline-none px-2 pb-1 w-full text-[var(--color-espresso)] bg-transparent transition-colors"
+                       value={item.title}
+                       onChange={e => {
+                         const newItems = [...items];
+                         newItems[idx].title = e.target.value;
+                         onChange(newItems);
+                       }}
+                       placeholder="Ex: Apêndice A — Questionário aplicado"
+                     />
+                   </div>
                  </div>
                  <div className="rounded-2xl overflow-hidden border border-[var(--color-border-soft)] bg-white">
                    <BodyEditor 

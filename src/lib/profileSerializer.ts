@@ -33,6 +33,8 @@ export type SlotType = 'TEXT' | 'TEXT_LIST' | 'COMPOSED_TEXT' | 'SIGNATURE_BLOCK
 export interface SlotState {
   id: string;
   displayName?: string;
+  description?: string;
+  placeholder?: string;
   type: SlotType;
   required: boolean;
   // COMPOSED_TEXT
@@ -244,6 +246,7 @@ export interface FontRole {
 export interface ComponentState {
   id: string;
   displayName: string;
+  description?: string;
   ruleType: ComponentRuleType;
   enabled: boolean;
 
@@ -336,12 +339,6 @@ export interface PostProcessingState {
     continuationLabel: string;
     conclusionLabel: string;
     labelStyleId: string;
-  };
-  integrityCheck: {
-    enabled: boolean;
-    checkMarginOverflow: boolean;
-    checkFontSubstitution: boolean;
-    maxPages: number;
   };
   pdfOutputEnabled: boolean;
 }
@@ -445,12 +442,6 @@ export function defaultBuilderState(): BuilderState {
         continuationLabel: 'continuação',
         conclusionLabel: 'conclusão',
         labelStyleId: 'bodyContent.table.header',
-      },
-      integrityCheck: {
-        enabled: true,
-        checkMarginOverflow: true,
-        checkFontSubstitution: true,
-        maxPages: 500,
       },
       pdfOutputEnabled: false,
     },
@@ -633,6 +624,9 @@ function serializeSinglePage(comp: ComponentState, _styleRules: StyleRule[]): Re
     slots[slot.id] = {
       type: slot.type,
       required: slot.required,
+      ...(slot.displayName && { displayName: slot.displayName }),
+      ...(slot.description && { description: slot.description }),
+      ...(slot.placeholder && { placeholder: slot.placeholder }),
       ...(slot.type === 'COMPOSED_TEXT' && {
         template: slot.template ?? '',
         fieldNames: slot.fieldNames ?? [],
@@ -838,9 +832,10 @@ export function serializeState(state: BuilderState, existingId?: string): Record
   const extraStyleRules: StyleRule[] = [];
 
   for (const comp of state.components) {
+    const compDescription = comp.description ? { description: comp.description } : {};
     switch (comp.ruleType) {
       case 'SINGLE_PAGE': {
-        componentRules[comp.id] = serializeSinglePage(comp, state.styleRules);
+        componentRules[comp.id] = { ...serializeSinglePage(comp, state.styleRules), ...compDescription };
         for (const slot of comp.slots ?? []) {
           if (slot.styleRule) {
             extraStyleRules.push(slot.styleRule);
@@ -852,6 +847,7 @@ export function serializeState(state: BuilderState, existingId?: string): Record
       }
       case 'FLOW_TEXTUAL': {
         componentRules[comp.id] = {
+          ...compDescription,
           ruleType: 'FLOW_TEXTUAL',
           componentId: comp.id,
           items: (comp.flowItems ?? []).map(item => {
@@ -909,6 +905,7 @@ export function serializeState(state: BuilderState, existingId?: string): Record
         if (comp.ibidEnabled !== undefined) formattingRule.ibidEnabled = comp.ibidEnabled;
 
         componentRules[comp.id] = {
+          ...compDescription,
           ruleType: 'BIBLIOGRAPHY',
           componentId: comp.id,
           headingStyleId: comp.headingStyleId ?? `${comp.id}.heading`,
@@ -922,11 +919,12 @@ export function serializeState(state: BuilderState, existingId?: string): Record
         break;
       }
       case 'BODY_CONTENT': {
-        componentRules[comp.id] = serializeBodyContent(comp);
+        componentRules[comp.id] = { ...serializeBodyContent(comp), ...compDescription };
         break;
       }
       case 'SECTIONED': {
         componentRules[comp.id] = {
+          ...compDescription,
           ruleType: 'SECTIONED',
           componentId: comp.id,
           headingTemplate: comp.headingTemplate ?? '{letter} — {title}',
@@ -940,6 +938,7 @@ export function serializeState(state: BuilderState, existingId?: string): Record
       }
       case 'ELEMENT_INDEX': {
         componentRules[comp.id] = {
+          ...compDescription,
           ruleType: 'ELEMENT_INDEX',
           componentId: comp.id,
           elementType: comp.elementType ?? 'FIGURE',
@@ -955,6 +954,7 @@ export function serializeState(state: BuilderState, existingId?: string): Record
       }
       case 'SECTION_INDEX': {
         componentRules[comp.id] = {
+          ...compDescription,
           ruleType: 'SECTION_INDEX',
           componentId: comp.id,
           headingStyleId: comp.headingStyleId ?? `${comp.id}.heading`,
@@ -1021,7 +1021,7 @@ export function serializeState(state: BuilderState, existingId?: string): Record
         labelStyleId: state.postProcessing.tableContinuationLabels.labelStyleId,
       },
       orphanTitleCorrection: { enabled: state.postProcessing.orphanTitleEnabled },
-      integrityCheck: state.postProcessing.integrityCheck,
+      integrityCheck: { enabled: true, checkMarginOverflow: true, checkFontSubstitution: true, maxPages: 500 },
       pdfOutput: { enabled: state.postProcessing.pdfOutputEnabled },
     },
     styleRules: allStyleRules,
@@ -1158,15 +1158,6 @@ export function deserializeContract(raw: Record<string, unknown>): BuilderState 
         labelStyleId: (tc.labelStyleId as string) ?? 'bodyContent.table.header',
       };
     }
-    const ic = pp.integrityCheck as Record<string, unknown> | undefined;
-    if (ic) {
-      state.postProcessing.integrityCheck = {
-        enabled: (ic.enabled as boolean) ?? true,
-        checkMarginOverflow: (ic.checkMarginOverflow as boolean) ?? true,
-        checkFontSubstitution: (ic.checkFontSubstitution as boolean) ?? true,
-        maxPages: (ic.maxPages as number) ?? 500,
-      };
-    }
     const po = pp.pdfOutput as Record<string, unknown> | undefined;
     if (po) state.postProcessing.pdfOutputEnabled = (po.enabled as boolean) ?? false;
   }
@@ -1182,7 +1173,8 @@ export function deserializeContract(raw: Record<string, unknown>): BuilderState 
 
     const comp: ComponentState = {
       id: compId,
-      displayName: compId,
+      displayName: (rule.displayName as string) || compId,
+      description: rule.description as string | undefined,
       ruleType,
       enabled: true,
     };
@@ -1238,6 +1230,9 @@ export function deserializeContract(raw: Record<string, unknown>): BuilderState 
 
               slots.push({
                 id: slotId,
+                displayName: rawSlot.displayName as string | undefined,
+                description: rawSlot.description as string | undefined,
+                placeholder: rawSlot.placeholder as string | undefined,
                 type: (rawSlot.type as SlotType) ?? 'TEXT',
                 required: (rawSlot.required as boolean) ?? false,
                 template: rawSlot.template as string | undefined,
@@ -1262,6 +1257,9 @@ export function deserializeContract(raw: Record<string, unknown>): BuilderState 
           for (const [slotId, rawSlot] of Object.entries(rawSlots)) {
             slots.push({
               id: slotId,
+              displayName: rawSlot.displayName as string | undefined,
+              description: rawSlot.description as string | undefined,
+              placeholder: rawSlot.placeholder as string | undefined,
               type: (rawSlot.type as SlotType) ?? 'TEXT',
               required: (rawSlot.required as boolean) ?? false,
               styleId: sm?.[slotId],

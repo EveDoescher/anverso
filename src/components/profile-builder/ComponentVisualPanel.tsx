@@ -515,6 +515,103 @@ function BibliographyRichPanel({ component, onUpdateComponent }: {
   );
 }
 
+// ── Auto info panels for non-slot component types ──
+
+const AUTO_COMPONENT_INFO: Partial<Record<ComponentState['ruleType'], {
+  title: string;
+  what: string;
+  configHint: string;
+  bullets: string[];
+}>> = {
+  FLOW_TEXTUAL: {
+    title: 'Componente de Texto Livre',
+    what: 'Monta uma seção do documento a partir de uma sequência de itens: títulos fixos, parágrafos vindos de slots, tabelas, palavras-chave e grupos repetidos.',
+    configHint: 'Use o painel "Propriedades" à direita para definir a sequência de itens.',
+    bullets: [
+      'Ideal para: resumo, abstract, agradecimentos, dedicatória, epígrafe.',
+      'Cada item da sequência pode ter um estilo tipográfico próprio.',
+      'Itens do tipo "Grupo de Repetição" permitem entradas com múltiplos campos (ex: lista de autores).',
+    ],
+  },
+  SECTIONED: {
+    title: 'Componente Secionado',
+    what: 'Divide conteúdo em seções nomeadas (ex: Apêndice A, Apêndice B). Cada seção tem um título gerado automaticamente e corpo formatado como corpo do texto.',
+    configHint: 'Configure o template de título, estilo de indexação e componente de corpo no painel à direita.',
+    bullets: [
+      'Ideal para: apêndices, anexos, seções letradas.',
+      'Indexação alfabética (A, B, C...) ou numérica.',
+      'O template de título suporta variáveis: {letter} para a letra e {title} para o nome dado pelo usuário.',
+    ],
+  },
+  ELEMENT_INDEX: {
+    title: 'Índice de Elementos',
+    what: 'Gera automaticamente uma lista (índice) de figuras, tabelas, quadros, gráficos ou listagens de código presentes no trabalho, com numeração e referência de página.',
+    configHint: 'Escolha o tipo de elemento e configure o template de entrada no painel à direita.',
+    bullets: [
+      'Ideal para: Lista de Figuras, Lista de Tabelas, Lista de Quadros.',
+      'Gerado automaticamente a partir dos elementos inseridos no corpo do texto.',
+      'O template de entrada suporta {number} e {caption}.',
+    ],
+  },
+  SECTION_INDEX: {
+    title: 'Sumário',
+    what: 'Gera automaticamente o sumário do trabalho, listando títulos e suas páginas conforme a hierarquia definida no corpo do texto.',
+    configHint: 'Configure o texto do cabeçalho e os estilos de entrada por nível no painel à direita.',
+    bullets: [
+      'Gerado automaticamente pelo formatter — não requer preenchimento manual.',
+      'Os níveis de título são definidos no componente de Corpo do Texto.',
+      'Cada nível pode ter um estilo tipográfico diferente (recuo, tamanho, etc.).',
+    ],
+  },
+};
+
+function AutoComponentInfo({ component }: { component: ComponentState }) {
+  const info = AUTO_COMPONENT_INFO[component.ruleType];
+
+  if (!info) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-6">
+        <div className="text-sm text-[var(--color-neutral)] bg-[var(--color-paper)] rounded-lg border border-[var(--color-border-soft)] p-4 max-w-xs text-center">
+          <p className="font-semibold text-[var(--color-espresso)] mb-1">Configure no painel ao lado</p>
+          <p>As propriedades deste componente ficam no inspector de propriedades à direita.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 overflow-auto p-6">
+      <div className="max-w-lg space-y-5">
+        <div>
+          <h3 className="text-sm font-bold text-[var(--color-espresso)] mb-1">{info.title}</h3>
+          <p className="text-sm text-[var(--color-neutral)]">{info.what}</p>
+        </div>
+
+        <ul className="space-y-2">
+          {info.bullets.map((b, i) => (
+            <li key={i} className="flex gap-2 text-sm text-[var(--color-neutral)]">
+              <span className="mt-1 w-1.5 h-1.5 rounded-full bg-[var(--color-green)] shrink-0" />
+              <span>{b}</span>
+            </li>
+          ))}
+        </ul>
+
+        <div className="p-3 bg-[var(--color-cream)] border border-[rgba(181,137,42,0.25)] rounded-lg">
+          <p className="text-xs font-semibold text-[var(--color-gold)] mb-0.5">Como configurar</p>
+          <p className="text-xs text-[var(--color-neutral)]">{info.configHint}</p>
+        </div>
+
+        {component.description && (
+          <div className="p-3 bg-[var(--color-paper)] border border-[var(--color-border-soft)] rounded-lg">
+            <p className="text-xs font-semibold text-[var(--color-neutral)] mb-0.5">Descrição do componente</p>
+            <p className="text-xs text-[var(--color-espresso)]">{component.description}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Main component ──
 
 export function ComponentVisualPanel({ component, selectedSlotId, onSelectSlot, onUpdateComponent, styleRules, onAddStyleRule }: Props) {
@@ -563,12 +660,7 @@ export function ComponentVisualPanel({ component, selectedSlotId, onSelectSlot, 
           onUpdateComponent={onUpdateComponent}
         />
       ) : (
-        <div className="flex-1 flex items-center justify-center p-6">
-          <div className="text-sm text-[var(--color-neutral)] bg-[var(--color-paper)] rounded-lg border border-[var(--color-border-soft)] p-4 max-w-xs text-center">
-            <p className="font-semibold text-[var(--color-espresso)] mb-1">Configure no painel ao lado</p>
-            <p>As propriedades deste componente ficam no inspector de propriedades à direita.</p>
-          </div>
-        </div>
+        <AutoComponentInfo component={component} />
       )}
     </div>
   );

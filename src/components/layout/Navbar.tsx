@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
-import { fetchApi } from '@/lib/api';
+import { fetchApi, API_URL } from '@/lib/api';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
+import { UserBadge, userBadgeVariant } from '@/components/ui/UserBadge';
 
 interface UserData {
   id: string;
@@ -17,22 +18,28 @@ interface UserData {
   roles?: string[];
   active: boolean;
   profilePictureUrl?: string;
+  isTeacherVerified?: boolean;
 }
 
 export default function Navbar() {
   const [user, setUser] = useState<UserData | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) return;
+    setIsLoggedIn(true);
+
     const loadProfile = async () => {
       try {
         const res = await fetchApi('/api/users/me', { method: 'GET', skipAuthRedirect: true });
         if (res.ok) {
           setUser(await res.json());
         }
-      } catch (err) {
-        console.error('Failed to load user', err);
+      } catch {
+        // silently ignore — token may be expired, redirect handled by fetchApi
       }
     };
     loadProfile();
@@ -63,7 +70,7 @@ export default function Navbar() {
       </Link>
 
       <div className="flex gap-6 text-sm">
-        <Link href="/dashboard" className={linkClass(pathname === '/dashboard')}>Dashboard</Link>
+        <Link href="/dashboard" className={linkClass(pathname === '/dashboard')}>Minha Área</Link>
         <Link href="/explore" className={linkClass(pathname.startsWith('/explore'))}>Comunidade</Link>
         {isAdmin && (
           <Link href="/admin" className={linkClass(pathname.startsWith('/admin'))}>Administrador</Link>
@@ -71,30 +78,45 @@ export default function Navbar() {
       </div>
 
       <div className="ml-auto flex items-center gap-3">
-        <Link
-          href="/account"
-          className="flex items-center gap-2.5 group"
-          aria-label="Minha conta"
-        >
-          <div className="w-8 h-8 rounded-full bg-[var(--color-success-soft)] text-[var(--color-green)] flex items-center justify-center overflow-hidden border-2 border-transparent group-hover:border-[var(--color-green)] transition-all font-extrabold text-sm shadow-sm shrink-0">
-            {user?.profilePictureUrl ? (
-              <img
-                src={user.profilePictureUrl.startsWith('http') ? user.profilePictureUrl : `http://localhost:8080${user.profilePictureUrl}`}
-                alt="Avatar"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              (user?.firstName || user?.email || 'U').charAt(0).toUpperCase()
-            )}
-          </div>
-          <span className="text-sm font-semibold text-[var(--color-espresso)] group-hover:text-[var(--color-forest)] transition-colors hidden md:block">
-            {user?.firstName || 'Usuário'}
-          </span>
-        </Link>
+        {isLoggedIn ? (
+          <>
+            <Link
+              href="/account"
+              className="flex items-center gap-2.5 group"
+              aria-label="Minha conta"
+            >
+              <div className="w-8 h-8 rounded-full bg-[var(--color-success-soft)] text-[var(--color-green)] flex items-center justify-center overflow-hidden border-2 border-transparent group-hover:border-[var(--color-green)] transition-all font-extrabold text-sm shadow-sm shrink-0">
+                {user?.profilePictureUrl ? (
+                  <img
+                    src={user.profilePictureUrl.startsWith('http') ? user.profilePictureUrl : `${API_URL}${user.profilePictureUrl}`}
+                    alt="Avatar"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  (user?.firstName || user?.email || 'U').charAt(0).toUpperCase()
+                )}
+              </div>
+              <span className="hidden md:flex items-center gap-1.5">
+                <span className="text-sm font-semibold text-[var(--color-espresso)] group-hover:text-[var(--color-forest)] transition-colors">
+                  {user?.firstName || '...'}
+                </span>
+                {user && userBadgeVariant(user.role, user.isTeacherVerified) && (
+                  <UserBadge variant={userBadgeVariant(user.role, user.isTeacherVerified)!} compact />
+                )}
+              </span>
+            </Link>
 
-        <Button variant="quiet" size="sm" onClick={handleLogout} trailingIcon={false} className="text-xs">
-          Sair
-        </Button>
+            <Button variant="quiet" size="sm" onClick={handleLogout} trailingIcon={false} className="text-xs">
+              Sair
+            </Button>
+          </>
+        ) : (
+          <Link href="/login">
+            <Button variant="primary" size="sm" trailingIcon={false} className="text-xs">
+              Entrar
+            </Button>
+          </Link>
+        )}
       </div>
     </motion.nav>
   );

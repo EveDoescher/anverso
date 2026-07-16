@@ -49,7 +49,8 @@ export async function fetchApi(endpoint: string, options: FetchApiOptions = {}) 
     if (response.status === 401 && !skipAuthRedirect) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('token');
-        window.location.href = '/login?expired=true';
+        const redirect = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.href = `/login?expired=true&redirect=${redirect}`;
         return new Promise(() => {}) as any;
       }
     }

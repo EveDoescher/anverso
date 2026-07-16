@@ -31,7 +31,16 @@ import { TextualElementsGallery } from '@/components/profile-builder/TextualElem
 import * as Switch from '@radix-ui/react-switch';
 import * as Select from '@radix-ui/react-select';
 
-export type BuilderSection = 'profile' | 'page' | 'components' | 'textual' | 'postprocessing';
+export type BuilderSection = 'profile' | 'page' | 'components' | 'numbering' | 'textual' | 'postprocessing';
+
+const SECTION_LABELS: Record<BuilderSection, string> = {
+  profile: 'Perfil',
+  page: 'Página',
+  components: 'Seções do Documento',
+  numbering: 'Numeração de Páginas',
+  textual: 'Elementos Textuais',
+  postprocessing: 'Pós-processamento',
+};
 
 // ──────────────────────────────────────────
 // Validation
@@ -165,6 +174,7 @@ export default function CreateProfile() {
   const [showVersionModal, setShowVersionModal] = useState(false);
   const [keepOldVersion, setKeepOldVersion] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showErrorPanel, setShowErrorPanel] = useState(false);
   const [newCompName, setNewCompName] = useState('');
   const [newCompType, setNewCompType] = useState<ComponentRuleType>('SINGLE_PAGE');
 
@@ -389,8 +399,7 @@ export default function CreateProfile() {
 
   function renderPage() {
     const page = state.page;
-    const pn = page.pageNumbering;
-    const componentIds = state.components.map(c => c.id);
+    const isCustom = page.paperFormat === 'Custom';
 
     return (
       <div className="max-w-3xl mx-auto space-y-8 py-6 px-4">
@@ -437,33 +446,32 @@ export default function CreateProfile() {
                 <option value="LANDSCAPE">Paisagem</option>
               </select>
             </FormField>
-            <div>
-              <label className="block text-sm font-semibold text-[var(--color-espresso)] mb-1">Largura (cm)</label>
-              <input
-                type="number"
-                step="0.1"
-                min="1"
-                disabled={page.paperFormat !== 'Custom'}
-                className="w-full border border-[var(--color-border-soft)] rounded-lg p-2.5 text-sm text-[var(--color-espresso)] focus:ring-2 focus:ring-blue-500 disabled:bg-[var(--color-paper-soft)] disabled:text-[var(--color-neutral)]/70 disabled:cursor-not-allowed"
-                value={page.widthCm}
-                onChange={e => updatePage('widthCm', Number(e.target.value))}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-[var(--color-espresso)] mb-1">Altura (cm)</label>
-              <input
-                type="number"
-                step="0.1"
-                min="1"
-                disabled={page.paperFormat !== 'Custom'}
-                className="w-full border border-[var(--color-border-soft)] rounded-lg p-2.5 text-sm text-[var(--color-espresso)] focus:ring-2 focus:ring-blue-500 disabled:bg-[var(--color-paper-soft)] disabled:text-[var(--color-neutral)]/70 disabled:cursor-not-allowed"
-                value={page.heightCm}
-                onChange={e => updatePage('heightCm', Number(e.target.value))}
-              />
-              {page.paperFormat !== 'Custom' && (
-                <p className="text-[10px] text-[var(--color-neutral)]/70 mt-0.5">Selecione "Personalizado" para editar</p>
-              )}
-            </div>
+            {isCustom && (
+              <>
+                <div>
+                  <label className="block text-sm font-semibold text-[var(--color-espresso)] mb-1">Largura (cm)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="1"
+                    className="w-full border border-[var(--color-border-soft)] rounded-lg p-2.5 text-sm text-[var(--color-espresso)] focus:ring-2 focus:ring-blue-500"
+                    value={page.widthCm}
+                    onChange={e => updatePage('widthCm', Number(e.target.value))}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-[var(--color-espresso)] mb-1">Altura (cm)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="1"
+                    className="w-full border border-[var(--color-border-soft)] rounded-lg p-2.5 text-sm text-[var(--color-espresso)] focus:ring-2 focus:ring-blue-500"
+                    value={page.heightCm}
+                    onChange={e => updatePage('heightCm', Number(e.target.value))}
+                  />
+                </div>
+              </>
+            )}
           </div>
         </section>
 
@@ -478,82 +486,41 @@ export default function CreateProfile() {
         </section>
 
         <section>
-          <h2 className="text-base font-bold text-[var(--color-espresso)] mb-1 border-b border-[var(--color-border-soft)] pb-2">Famílias de fonte</h2>
-          <p className="text-xs text-[var(--color-neutral)] mb-3">Defina qual família tipográfica usar para o corpo do texto, títulos e código. O papel "Fonte principal" é obrigatório.</p>
+          <h2 className="text-base font-bold text-[var(--color-espresso)] mb-1 border-b border-[var(--color-border-soft)] pb-2">Fontes</h2>
+          <p className="text-xs text-[var(--color-neutral)] mb-4">A fonte padrão é usada no corpo do texto. Fontes opcionais ficam disponíveis para o usuário escolher ao criar um trabalho.</p>
           <div className="space-y-3">
             {page.fontRoles.roles.map((role, ri) => {
               const FONT_ROLE_LABELS: Record<string, string> = {
-                baseFont: 'Fonte principal (corpo do texto)',
+                baseFont: 'Fonte padrão (corpo do texto)',
                 headingFont: 'Fonte de títulos',
                 codeFont: 'Fonte de código',
               };
-              const roleLabel = FONT_ROLE_LABELS[role.key] ?? role.key;
               const isBase = role.key === 'baseFont';
               return (
-                <div key={ri} className="border border-[var(--color-border-soft)] rounded-lg p-3 space-y-3 bg-white">
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1">
-                      <label className="block text-[10px] font-semibold text-[var(--color-neutral)] mb-0.5">Papel</label>
-                      <select
-                        className="w-full border border-[var(--color-border-soft)] rounded p-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500"
-                        value={role.key}
-                        disabled={isBase}
-                        onChange={e => {
-                          const roles = page.fontRoles.roles.map((r, i) => i === ri ? { ...r, key: e.target.value } : r);
-                          updatePage('fontRoles', { roles });
-                        }}
-                      >
-                        <option value="baseFont">Fonte principal (corpo do texto)</option>
-                        <option value="headingFont">Fonte de títulos</option>
-                        <option value="codeFont">Fonte de código</option>
-                        {!['baseFont', 'headingFont', 'codeFont'].includes(role.key) && (
-                          <option value={role.key}>{role.key}</option>
-                        )}
-                      </select>
-                      {isBase && <p className="text-[10px] text-[var(--color-neutral)]/70 mt-0.5">Obrigatório — não pode ser removido</p>}
-                    </div>
-                    <div className="flex-1">
-                      <label className="block text-[10px] font-semibold text-[var(--color-neutral)] mb-0.5">Família padrão</label>
-                      <select className="w-full border border-[var(--color-border-soft)] rounded p-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500"
-                        value={role.defaultFamily}
-                        onChange={e => {
-                          const roles = page.fontRoles.roles.map((r, i) => i === ri ? { ...r, defaultFamily: e.target.value } : r);
-                          updatePage('fontRoles', { roles });
-                        }}>
-                        {['Times New Roman', 'Arial', 'Calibri', 'Georgia', 'Verdana', 'Courier New'].map(f => <option key={f} value={f}>{f}</option>)}
-                      </select>
-                    </div>
-                    {!isBase && (
-                      <button
-                        className="mt-4 text-red-400 hover:text-red-600 text-lg font-bold px-1"
-                        onClick={() => updatePage('fontRoles', { roles: page.fontRoles.roles.filter((_, i) => i !== ri) })}
-                      >×</button>
-                    )}
+                <div key={ri} className="border border-[var(--color-border-soft)] rounded-lg p-3 bg-white flex items-center gap-3">
+                  <div className="flex-1">
+                    <label className="block text-[10px] font-semibold text-[var(--color-neutral)] mb-0.5">
+                      {FONT_ROLE_LABELS[role.key] ?? role.key}
+                    </label>
+                    <select
+                      className="w-full border border-[var(--color-border-soft)] rounded p-1.5 text-xs bg-white focus:ring-2 focus:ring-blue-500"
+                      value={role.defaultFamily}
+                      onChange={e => {
+                        const roles = page.fontRoles.roles.map((r, i) => i === ri ? { ...r, defaultFamily: e.target.value } : r);
+                        updatePage('fontRoles', { roles });
+                      }}
+                    >
+                      {['Times New Roman', 'Arial', 'Calibri', 'Georgia', 'Verdana', 'Courier New'].map(f => (
+                        <option key={f} value={f}>{f}</option>
+                      ))}
+                    </select>
+                    {isBase && <p className="text-[10px] text-[var(--color-neutral)]/70 mt-0.5">Obrigatória — não pode ser removida</p>}
                   </div>
-
-                  {state.styleRules.length > 0 && (
-                    <div>
-                      <label className="block text-[10px] font-semibold text-[var(--color-neutral)] mb-1">Estilos que usam {roleLabel.split(' ')[0].toLowerCase() === 'fonte' ? 'esta' : 'este'} {roleLabel.split(' ').slice(0, 2).join(' ').toLowerCase()}</label>
-                      <div className="grid grid-cols-2 gap-1">
-                        {state.styleRules.map(r => (
-                          <label key={r.id} className="flex items-center gap-1.5 cursor-pointer text-xs text-[var(--color-espresso)] hover:text-[var(--color-espresso)]">
-                            <input
-                              type="checkbox"
-                              className="w-3.5 h-3.5 text-blue-600 rounded border-[var(--color-border-soft)]"
-                              checked={role.styleIds.includes(r.id)}
-                              onChange={e => {
-                                const styleIds = e.target.checked
-                                  ? [...role.styleIds, r.id]
-                                  : role.styleIds.filter(id => id !== r.id);
-                                const roles = page.fontRoles.roles.map((ro, i) => i === ri ? { ...ro, styleIds } : ro);
-                                updatePage('fontRoles', { roles });
-                              }}
-                            />
-                            {r.displayName || r.id}
-                          </label>
-                        ))}
-                      </div>
-                    </div>
+                  {!isBase && (
+                    <button
+                      className="text-red-400 hover:text-red-600 text-lg font-bold px-1 mt-3"
+                      onClick={() => updatePage('fontRoles', { roles: page.fontRoles.roles.filter((_, i) => i !== ri) })}
+                    >×</button>
                   )}
                 </div>
               );
@@ -563,13 +530,23 @@ export default function CreateProfile() {
               onClick={() => updatePage('fontRoles', {
                 roles: [...page.fontRoles.roles, { key: 'headingFont', defaultFamily: 'Arial', allowedFamilies: [], styleIds: [] }]
               })}
-            >+ Adicionar família de fonte</button>
+            >+ Adicionar fonte opcional</button>
           </div>
         </section>
+      </div>
+    );
+  }
 
-        <section>
-          <div className="flex items-center justify-between mb-4 border-b border-[var(--color-border-soft)] pb-2">
-            <h2 className="text-base font-bold text-[var(--color-espresso)]">Numeração de páginas</h2>
+  function renderNumbering() {
+    const pn = state.page.pageNumbering;
+    return (
+      <div className="max-w-2xl mx-auto space-y-6 py-6 px-4">
+        <div className="border border-[var(--color-border-soft)] rounded-lg p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-[var(--color-espresso)]">Numeração de páginas</p>
+              <p className="text-xs text-[var(--color-neutral)]/70">Ativar para definir onde e como o número de página aparece no documento.</p>
+            </div>
             <Switch.Root
               checked={pn.enabled}
               onCheckedChange={v => updatePageNumbering('enabled', v)}
@@ -578,13 +555,17 @@ export default function CreateProfile() {
               <Switch.Thumb className="block w-4 h-4 bg-white rounded-full shadow transition-transform translate-x-1 data-[state=checked]:translate-x-5" />
             </Switch.Root>
           </div>
-          {pn.enabled && componentIds.length === 0 && (
-            <div className="p-4 bg-[var(--color-cream)] border border-[var(--color-border-soft)] rounded-lg text-sm text-[var(--color-gold)]">
-              <p className="font-semibold mb-1">Ainda sem seções criadas</p>
-              <p>Crie as seções do documento na aba <strong>Componentes</strong> primeiro. Depois volte aqui para definir a partir de qual seção a contagem e a exibição do número de página começam.</p>
-            </div>
-          )}
-          {pn.enabled && componentIds.length > 0 && (
+        </div>
+
+        {pn.enabled && state.components.length === 0 && (
+          <div className="p-4 bg-[var(--color-cream)] border border-[var(--color-border-soft)] rounded-lg text-sm text-[var(--color-gold)]">
+            <p className="font-semibold mb-1">Ainda sem seções criadas</p>
+            <p>Crie as seções do documento na aba <strong>Seções do Documento</strong> primeiro. Depois volte aqui para configurar a numeração.</p>
+          </div>
+        )}
+
+        {pn.enabled && state.components.length > 0 && (
+          <div className="border border-[var(--color-border-soft)] rounded-lg p-4 space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <FormField label="Começar a contar a partir de" hint="A página desta seção será a número 1, mas o número pode não aparecer ainda">
                 <select className="w-full border border-[var(--color-border-soft)] rounded-lg p-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500"
@@ -613,15 +594,16 @@ export default function CreateProfile() {
                 </select>
               </FormField>
               <div className="grid grid-cols-2 gap-2">
-                <NumberInput label="Dist. da borda vertical (cm)" value={pn.verticalDistanceFromPageEdgeCm} onChange={v => updatePageNumbering('verticalDistanceFromPageEdgeCm', v)} />
-                <NumberInput label="Dist. da borda horizontal (cm)" value={pn.horizontalDistanceFromPageEdgeCm} onChange={v => updatePageNumbering('horizontalDistanceFromPageEdgeCm', v)} />
+                <NumberInput label="Dist. borda vertical (cm)" value={pn.verticalDistanceFromPageEdgeCm} onChange={v => updatePageNumbering('verticalDistanceFromPageEdgeCm', v)} />
+                <NumberInput label="Dist. borda horizontal (cm)" value={pn.horizontalDistanceFromPageEdgeCm} onChange={v => updatePageNumbering('horizontalDistanceFromPageEdgeCm', v)} />
               </div>
             </div>
-          )}
-          {!pn.enabled && (
-            <p className="text-sm text-[var(--color-neutral)]/70 italic">Numeração de páginas desabilitada.</p>
-          )}
-        </section>
+          </div>
+        )}
+
+        {!pn.enabled && (
+          <p className="text-sm text-[var(--color-neutral)]/70 italic px-1">Numeração de páginas desabilitada.</p>
+        )}
       </div>
     );
   }
@@ -652,6 +634,7 @@ export default function CreateProfile() {
           allComponents={state.components}
           onUpdateComponent={updated => { updateComponent(updated); }}
           onAddStyleRule={addStyleRule}
+          baseFont={state.page.fontRoles.roles.find(r => r.key === 'baseFont')?.defaultFamily}
         />
       </div>
     );
@@ -711,68 +694,19 @@ export default function CreateProfile() {
             </Switch.Root>
           </div>
           {pp.tableContinuationLabels.enabled && (
-            <div className="space-y-3">
-              <div className="grid grid-cols-3 gap-3">
-                {([
-                  { key: 'continuesLabel', label: 'Início (continua)' },
-                  { key: 'continuationLabel', label: 'Meio (continuação)' },
-                  { key: 'conclusionLabel', label: 'Fim (conclusão)' },
-                ] as const).map(({ key, label }) => (
-                  <div key={key}>
-                    <label className="block text-xs font-semibold text-[var(--color-neutral)] mb-1">{label}</label>
-                    <input type="text" className="w-full border border-[var(--color-border-soft)] rounded p-2 text-xs focus:ring-2 focus:ring-blue-500"
-                      value={pp.tableContinuationLabels[key]}
-                      onChange={e => updatePostProcessing('tableContinuationLabels', { ...pp.tableContinuationLabels, [key]: e.target.value })} />
-                  </div>
-                ))}
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-[var(--color-neutral)] mb-1">Estilo do rótulo</label>
-                <select className="w-full border border-[var(--color-border-soft)] rounded p-2 text-xs bg-white focus:ring-2 focus:ring-blue-500"
-                  value={pp.tableContinuationLabels.labelStyleId}
-                  onChange={e => updatePostProcessing('tableContinuationLabels', { ...pp.tableContinuationLabels, labelStyleId: e.target.value })}>
-                  <option value="">— Selecione —</option>
-                  {state.styleRules.map(r => <option key={r.id} value={r.id}>{r.displayName || r.id}</option>)}
-                </select>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="border border-[var(--color-border-soft)] rounded-lg p-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-semibold text-[var(--color-espresso)]">Verificação de integridade</p>
-              <p className="text-xs text-[var(--color-neutral)]/70">Avisos via header HTTP ao formatar.</p>
-            </div>
-            <Switch.Root
-              checked={pp.integrityCheck.enabled}
-              onCheckedChange={v => updatePostProcessing('integrityCheck', { ...pp.integrityCheck, enabled: v })}
-              className={`w-10 h-6 rounded-full transition-colors ${pp.integrityCheck.enabled ? 'bg-blue-600' : 'bg-slate-300'}`}
-            >
-              <Switch.Thumb className="block w-4 h-4 bg-white rounded-full shadow transition-transform translate-x-1 data-[state=checked]:translate-x-5" />
-            </Switch.Root>
-          </div>
-          {pp.integrityCheck.enabled && (
-            <div className="space-y-2 ml-2">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" className="w-4 h-4 text-blue-600 rounded border-[var(--color-border-soft)]"
-                  checked={pp.integrityCheck.checkMarginOverflow}
-                  onChange={e => updatePostProcessing('integrityCheck', { ...pp.integrityCheck, checkMarginOverflow: e.target.checked })} />
-                <span className="text-sm text-[var(--color-neutral)]">Verificar overflow de margens</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" className="w-4 h-4 text-blue-600 rounded border-[var(--color-border-soft)]"
-                  checked={pp.integrityCheck.checkFontSubstitution}
-                  onChange={e => updatePostProcessing('integrityCheck', { ...pp.integrityCheck, checkFontSubstitution: e.target.checked })} />
-                <span className="text-sm text-[var(--color-neutral)]">Verificar substituição de fontes</span>
-              </label>
-              <div className="flex items-center gap-3">
-                <label className="text-sm text-[var(--color-neutral)]">Máx. de páginas:</label>
-                <input type="number" min="1" className="border border-[var(--color-border-soft)] rounded p-1.5 w-20 text-sm"
-                  value={pp.integrityCheck.maxPages}
-                  onChange={e => updatePostProcessing('integrityCheck', { ...pp.integrityCheck, maxPages: parseInt(e.target.value) })} />
-              </div>
+            <div className="grid grid-cols-3 gap-3">
+              {([
+                { key: 'continuesLabel', label: 'Início (continua)' },
+                { key: 'continuationLabel', label: 'Meio (continuação)' },
+                { key: 'conclusionLabel', label: 'Fim (conclusão)' },
+              ] as const).map(({ key, label }) => (
+                <div key={key}>
+                  <label className="block text-xs font-semibold text-[var(--color-neutral)] mb-1">{label}</label>
+                  <input type="text" className="w-full border border-[var(--color-border-soft)] rounded p-2 text-xs focus:ring-2 focus:ring-blue-500"
+                    value={pp.tableContinuationLabels[key]}
+                    onChange={e => updatePostProcessing('tableContinuationLabels', { ...pp.tableContinuationLabels, [key]: e.target.value })} />
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -882,9 +816,39 @@ export default function CreateProfile() {
             placeholder="Nome do perfil..."
           />
           {hasErrors && (
-            <span className="text-xs text-orange-500 font-medium bg-orange-50 border border-orange-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-              <AlertTriangle size={12} /> {Object.values(errors).flat().length} problema(s)
-            </span>
+            <div className="relative">
+              <button
+                onClick={() => setShowErrorPanel(v => !v)}
+                className="text-xs text-orange-500 font-medium bg-orange-50 border border-orange-200 px-2 py-0.5 rounded-full flex items-center gap-1 hover:bg-orange-100 transition"
+              >
+                <AlertTriangle size={12} /> {Object.values(errors).flat().length} problema(s)
+              </button>
+              {showErrorPanel && (
+                <div className="absolute left-0 top-full mt-1.5 z-50 w-72 bg-white border border-orange-200 rounded-xl shadow-lg overflow-hidden">
+                  <div className="px-3 py-2 bg-orange-50 border-b border-orange-100 flex items-center justify-between">
+                    <p className="text-xs font-bold text-orange-600">Problemas encontrados</p>
+                    <button onClick={() => setShowErrorPanel(false)} className="text-orange-400 hover:text-orange-600 text-base leading-none font-bold">×</button>
+                  </div>
+                  <div className="divide-y divide-orange-50 max-h-64 overflow-auto">
+                    {(Object.entries(errors) as [BuilderSection, string[]][]).map(([section, msgs]) =>
+                      msgs.map((msg, i) => (
+                        <button
+                          key={`${section}-${i}`}
+                          className="w-full text-left px-3 py-2.5 hover:bg-orange-50 transition"
+                          onClick={() => {
+                            setActiveSection(section);
+                            setShowErrorPanel(false);
+                          }}
+                        >
+                          <p className="text-[10px] font-bold text-orange-400 uppercase tracking-wide mb-0.5">{SECTION_LABELS[section]}</p>
+                          <p className="text-xs text-[var(--color-espresso)]">{msg}</p>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
         <button
@@ -910,6 +874,7 @@ export default function CreateProfile() {
           {activeSection === 'profile' && renderProfile()}
           {activeSection === 'page' && renderPage()}
           {activeSection === 'components' && renderComponents()}
+          {activeSection === 'numbering' && renderNumbering()}
           {activeSection === 'textual' && renderTextualElements()}
           {activeSection === 'postprocessing' && renderPostProcessing()}
         </main>

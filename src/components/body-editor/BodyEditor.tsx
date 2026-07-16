@@ -47,37 +47,51 @@ export default function BodyEditor({ value, onChange, maxDepth = 4 }: any) {
     return path.map(p => p + 1).join('.');
   };
 
+  const DEPTH_STYLES: Record<number, { titleSize: string; accentColor: string; bgColor: string; badgeColor: string }> = {
+    0: { titleSize: 'text-xl font-extrabold', accentColor: 'bg-[var(--color-gold)]', bgColor: 'bg-white', badgeColor: 'bg-[var(--color-paper-soft)] text-[var(--color-espresso)]' },
+    1: { titleSize: 'text-lg font-bold', accentColor: 'bg-[var(--color-green)]', bgColor: 'bg-white', badgeColor: 'bg-[var(--color-success-bg)] text-[var(--color-green)]' },
+    2: { titleSize: 'text-base font-bold', accentColor: 'bg-blue-400', bgColor: 'bg-white', badgeColor: 'bg-blue-50 text-blue-700' },
+    3: { titleSize: 'text-sm font-semibold', accentColor: 'bg-purple-400', bgColor: 'bg-white', badgeColor: 'bg-purple-50 text-purple-700' },
+    4: { titleSize: 'text-sm font-semibold italic', accentColor: 'bg-pink-400', bgColor: 'bg-white', badgeColor: 'bg-pink-50 text-pink-700' },
+    5: { titleSize: 'text-sm font-medium', accentColor: 'bg-slate-400', bgColor: 'bg-white', badgeColor: 'bg-slate-100 text-slate-600' },
+  };
+
   const renderSection = (section: any, index: number, path: number[]) => {
     const depth = path.length - 1;
     const sectionNum = getNestedNumber(path);
     const isRoot = depth === 0;
+    const depthStyle = DEPTH_STYLES[Math.min(depth, 5)];
+    const indentClass = depth > 0 ? `ml-${Math.min(depth * 4, 16)}` : '';
 
     return (
-      <div key={section.id} className={`border border-[var(--color-border-soft)] p-5 my-5 rounded-2xl bg-white shadow-sm relative ml-${isRoot ? '0' : '6'}`}>
+      <div key={section.id} className={`border border-[var(--color-border-soft)] p-5 my-4 rounded-2xl ${depthStyle.bgColor} shadow-sm relative ${indentClass}`}>
         {/* Left accent border to show depth */}
-        <div className="absolute left-0 top-0 bottom-0 w-1.5 rounded-l-2xl bg-[var(--color-gold)] opacity-80" />
-        
-        <div className="flex justify-between items-center mb-6 pl-2">
-          <div className="flex items-center flex-1 gap-4">
-             <span className="font-mono text-sm font-bold px-2.5 py-1 rounded bg-[var(--color-paper-soft)] text-[var(--color-espresso)] border border-[var(--color-border-soft)]">
-               {sectionNum}
-             </span>
-             <input 
-               type="text" 
-               className={`font-bold ${isRoot ? 'text-xl' : 'text-lg'} text-[var(--color-espresso)] border-b-2 border-transparent hover:border-[var(--color-border-soft)] focus:border-[var(--color-green)] outline-none px-2 pb-1 flex-1 bg-transparent transition-colors`}
-               value={section.title}
-               onChange={e => {
-                 const newSections = [...sections];
-                 let current = newSections;
-                 for(let i=0; i<path.length-1; i++) current = current[path[i]].subsections;
-                 current[path[path.length-1]].title = e.target.value;
-                 updateSections(newSections);
-               }}
-               placeholder="Título da Seção"
-             />
+        <div className={`absolute left-0 top-0 bottom-0 w-1.5 rounded-l-2xl ${depthStyle.accentColor} opacity-80`} />
+
+        <div className="flex justify-between items-center mb-4 pl-2">
+          <div className="flex items-center flex-1 gap-3">
+            <span className={`font-mono text-xs font-bold px-2 py-0.5 rounded ${depthStyle.badgeColor} border border-[var(--color-border-soft)] shrink-0`}>
+              {sectionNum}
+            </span>
+            <span className="text-[10px] font-semibold text-[var(--color-neutral)]/60 uppercase tracking-wider shrink-0">
+              Nível {depth + 1}
+            </span>
+            <input
+              type="text"
+              className={`${depthStyle.titleSize} text-[var(--color-espresso)] border-b-2 border-transparent hover:border-[var(--color-border-soft)] focus:border-[var(--color-green)] outline-none px-2 pb-1 flex-1 bg-transparent transition-colors`}
+              value={section.title}
+              onChange={e => {
+                const newSections = [...sections];
+                let current = newSections;
+                for(let i=0; i<path.length-1; i++) current = current[path[i]].subsections;
+                current[path[path.length-1]].title = e.target.value;
+                updateSections(newSections);
+              }}
+              placeholder="Título da Seção"
+            />
           </div>
           <div className="ml-4">
-             <IconButton variant="ghost" icon={Trash2} label="Remover Seção" onClick={() => removeSection(path)} className="text-red-500 hover:text-red-600 hover:bg-red-50" />
+            <IconButton variant="ghost" icon={Trash2} label="Remover Seção" onClick={() => removeSection(path)} className="text-red-500 hover:text-red-600 hover:bg-red-50" />
           </div>
         </div>
         

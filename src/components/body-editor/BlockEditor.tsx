@@ -26,9 +26,13 @@ export default function BlockEditor({ value, onChange }: any) {
   };
 
   return (
-    <div className="border border-[var(--color-border-soft)] p-3 my-2 rounded bg-white shadow-sm">
-      <div className="mb-2">
-        <select value={value.type || 'PARAGRAPH'} onChange={handleChangeType} className="border p-1 text-xs rounded">
+    <div className="border border-[var(--color-border-soft)] p-4 my-2 rounded-xl bg-white shadow-sm">
+      <div className="mb-3">
+        <select
+          value={value.type || 'PARAGRAPH'}
+          onChange={handleChangeType}
+          className="border border-[var(--color-border-soft)] focus:border-[var(--color-green)] focus:ring-1 focus:ring-[var(--color-green)] p-2 text-sm rounded-lg text-[var(--color-espresso)] outline-none bg-white cursor-pointer"
+        >
           <option value="PARAGRAPH">Parágrafo</option>
           <option value="DIRECT_LONG_QUOTE">Citação Longa</option>
           <option value="FIGURE">Figura</option>

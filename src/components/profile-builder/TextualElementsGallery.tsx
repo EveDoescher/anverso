@@ -178,7 +178,7 @@ const CARDS: CardDef[] = [
     id: 'figure',
     label: 'Figura',
     Icon: Image,
-    description: 'Imagens, fotos, mapas e ilustrações',
+    description: 'Imagens, fotos, mapas e ilustrações — legenda abaixo, fonte abaixo da legenda',
     schema: (s) => <FigureSchema captionTemplate={s.figure.captionTemplate} label={s.figure.label} />,
     editor: (s, onChange) => {
       const fig = s.figure;
@@ -196,14 +196,14 @@ const CARDS: CardDef[] = [
             <div className="text-[9px] text-[var(--color-neutral)]">{sourcePreview}</div>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <LabeledInput label="Rótulo" value={fig.label} onChange={v => set('label', v)} />
+            <LabeledInput label="Rótulo (ex: Figura)" value={fig.label} onChange={v => set('label', v)} />
             <LabeledSelect label="Numeração" value={fig.numberingStrategy} options={NUMBERING_OPTS} onChange={v => set('numberingStrategy', v)} />
             <LabeledInput label="Template de legenda" value={fig.captionTemplate} onChange={v => set('captionTemplate', v)} />
             <LabeledInput label="Template de fonte" value={fig.sourceTemplate} onChange={v => set('sourceTemplate', v)} />
             <LabeledSelect label="Alinhamento" value={fig.alignment} options={ALIGN_OPTS} onChange={v => set('alignment', v)} />
             <LabeledNumber label="Largura máx. (cm)" value={fig.maxWidthCm ?? 16} onChange={v => set('maxWidthCm', v)} />
           </div>
-          <p className="text-[9px] text-[var(--color-neutral)]/70">Variáveis: {'{n}'} = número, {'{caption}'} = legenda, {'{source}'} = fonte</p>
+          <p className="text-[9px] text-[var(--color-neutral)]/70">Variáveis: <code className="bg-[var(--color-paper-soft)] px-0.5 rounded">{'{number}'}</code> = número, <code className="bg-[var(--color-paper-soft)] px-0.5 rounded">{'{caption}'}</code> = legenda, <code className="bg-[var(--color-paper-soft)] px-0.5 rounded">{'{source}'}</code> = fonte. "Por capítulo" numera como 1.1, 1.2, 2.1...</p>
         </div>
       );
     },
@@ -212,7 +212,7 @@ const CARDS: CardDef[] = [
     id: 'table',
     label: 'Tabela',
     Icon: Table2,
-    description: 'Tabelas com dados numéricos e textuais',
+    description: 'Dados numéricos ou textuais tabulados — legenda acima, fonte abaixo',
     schema: (s) => <TableSchema captionTemplate={s.table.captionTemplate} label={s.table.label} />,
     editor: (s, onChange) => {
       const tbl = s.table;
@@ -257,7 +257,7 @@ const CARDS: CardDef[] = [
     id: 'frame',
     label: 'Quadro',
     Icon: LayoutDashboard,
-    description: 'Quadros com bordas completas (dados qualitativos)',
+    description: 'Dados qualitativos em grade com bordas completas — legenda acima, fonte abaixo',
     schema: (s) => <TableSchema captionTemplate={s.frame.captionTemplate} label={s.frame.label} />,
     editor: (s, onChange) => {
       const frm = s.frame;
@@ -287,7 +287,7 @@ const CARDS: CardDef[] = [
     id: 'chart',
     label: 'Gráfico',
     Icon: BarChart2,
-    description: 'Gráficos de barras, linhas, pizza e outros',
+    description: 'Gráficos de barras, linhas, pizza etc. — tratado como imagem com legenda e fonte',
     schema: (s) => <FigureSchema captionTemplate={s.chart.captionTemplate} label={s.chart.label} />,
     editor: (s, onChange) => {
       const ch = s.chart;
@@ -310,7 +310,7 @@ const CARDS: CardDef[] = [
     id: 'equation',
     label: 'Equação',
     Icon: Sigma,
-    description: 'Fórmulas e expressões matemáticas',
+    description: 'Fórmulas matemáticas — numeradas à direita, equação centralizada',
     schema: (s) => <EquationSchema numberingTemplate={s.equation.numberingTemplate} label={s.equation.label} />,
     editor: (s, onChange) => {
       const eq = s.equation;
@@ -342,7 +342,7 @@ const CARDS: CardDef[] = [
     id: 'codeListing',
     label: 'Listagem de Código',
     Icon: Code2,
-    description: 'Trechos de código-fonte',
+    description: 'Trechos de código-fonte em fonte monoespaçada, com legenda e numeração',
     schema: () => <CodeSchema />,
     editor: (s, onChange) => {
       const code = s.codeListing;
@@ -365,7 +365,7 @@ const CARDS: CardDef[] = [
     id: 'directCitation',
     label: 'Citação Direta Curta',
     Icon: Quote,
-    description: 'Citações de até 3 linhas — inseridas no corpo do parágrafo entre aspas',
+    description: 'Trecho copiado literalmente com até 3 linhas — no corpo do parágrafo, entre aspas',
     schema: (s) => <DirectCitationSchema state={s.directCitation} />,
     editor: (s, onChange) => {
       const dc = s.directCitation;
@@ -391,7 +391,7 @@ const CARDS: CardDef[] = [
     id: 'longDirectCitation',
     label: 'Citação Direta Longa',
     Icon: Quote,
-    description: 'Citações com mais de 3 linhas — recuadas, fonte menor',
+    description: 'Trecho copiado com mais de 3 linhas — recuado 4 cm, sem aspas, fonte menor',
     schema: (s) => <LongDirectCitationSchema state={s.longDirectCitation} />,
     editor: (s, onChange) => {
       const ldc = s.longDirectCitation;
@@ -427,7 +427,7 @@ const CARDS: CardDef[] = [
     id: 'indirectCitation',
     label: 'Citação Indireta',
     Icon: MessageSquare,
-    description: 'Paráfrase — sem aspas, com referência parentética',
+    description: 'Paráfrase ou síntese — sem aspas, com referência parentética (AUTOR, ANO)',
     schema: () => (
       <div className="text-[10px] text-[var(--color-neutral)] leading-relaxed text-left">
         ...de acordo com as pesquisas da área (SILVA, 2024), os resultados demonstram que a hipótese inicial foi confirmada...
@@ -463,7 +463,7 @@ const CARDS: CardDef[] = [
     id: 'footnote',
     label: 'Nota de Rodapé',
     Icon: Superscript,
-    description: 'Notas numeradas na parte inferior da página',
+    description: 'Notas numeradas ao final da página, separadas por linha horizontal',
     schema: (s) => <FootnoteSchema state={s.footnote} />,
     editor: (s, onChange) => {
       const fn = s.footnote;
@@ -483,10 +483,11 @@ const CARDS: CardDef[] = [
           </div>
           <div className="grid grid-cols-2 gap-2">
             <LabeledNumber label="Tamanho da fonte (pt)" value={fn.fontSizePt} onChange={v => set('fontSizePt', v)} step={0.5} />
-            <LabeledNumber label="Espaçamento" value={fn.lineSpacing} onChange={v => set('lineSpacing', v)} step={0.25} />
-            <LabeledNumber label="Recuo primeira linha (cm)" value={fn.firstLineIndentCm} onChange={v => set('firstLineIndentCm', v)} />
-            <LabeledNumber label="Largura do separador (%)" value={fn.separatorWidthPct} onChange={v => set('separatorWidthPct', v)} step={5} min={10} />
+            <LabeledNumber label="Espaçamento de linha" value={fn.lineSpacing} onChange={v => set('lineSpacing', v)} step={0.25} />
+            <LabeledNumber label="Recuo 1ª linha (cm)" value={fn.firstLineIndentCm} onChange={v => set('firstLineIndentCm', v)} />
+            <LabeledNumber label="Separador — largura (%)" value={fn.separatorWidthPct} onChange={v => set('separatorWidthPct', v)} step={5} min={10} />
           </div>
+          <p className="text-[9px] text-[var(--color-neutral)]/70">O separador é a linha horizontal que divide o corpo do texto das notas. ABNT recomenda ~33% da largura da linha.</p>
         </div>
       );
     },
@@ -505,22 +506,20 @@ function ElementCard({ card, state, onChange }: { card: CardDef; state: BodyCont
         <card.Icon size={17} className="shrink-0 text-[var(--color-neutral)]" />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-[var(--color-espresso)]">{card.label}</p>
-          <p className="text-[10px] text-[var(--color-neutral)]/70 truncate">{card.description}</p>
+          <p className="text-[10px] text-[var(--color-neutral)]/70">{card.description}</p>
         </div>
         <span className={`text-[var(--color-neutral)]/70 text-xs transition-transform ${expanded ? 'rotate-180' : ''}`}>▾</span>
       </button>
 
       {expanded && (
-        <div className="border-t border-[var(--color-border-soft)]">
-          <div className="grid grid-cols-2 divide-x divide-slate-100">
-            {/* Miniatura */}
-            <div className="p-4 flex items-center justify-center bg-white min-h-[100px]">
-              {card.schema(state)}
-            </div>
-            {/* Configuração */}
-            <div className="p-4 bg-[var(--color-paper)]">
-              {card.editor(state, onChange)}
-            </div>
+        <div className="border-t border-[var(--color-border-soft)] divide-y divide-slate-100">
+          {/* Miniatura — full-width */}
+          <div className="p-4 flex items-center justify-center bg-white min-h-[80px]">
+            {card.schema(state)}
+          </div>
+          {/* Configuração — full-width */}
+          <div className="p-4 bg-[var(--color-paper)]">
+            {card.editor(state, onChange)}
           </div>
         </div>
       )}

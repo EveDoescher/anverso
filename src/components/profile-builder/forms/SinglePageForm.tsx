@@ -29,6 +29,26 @@ const SAFETY_POLICIES = [
   { value: 'CONTENT_AREA', label: 'Área de conteúdo útil' },
 ];
 
+const POLICY_HINTS = {
+  anchorStrategy: {
+    LAST_GROUP_AT_SAFE_AREA_END: 'O último grupo de campos é posicionado ao final da área segura da página. Use para capas com data e local na parte inferior.',
+    DISTRIBUTE_EVENLY: 'Os grupos são distribuídos igualmente ao longo da página, com espaços proporcionais entre eles.',
+    TOP_ALIGN: 'Todos os grupos são alinhados ao topo da página, sem espaço extra entre eles.',
+  },
+  lineHeightStrategy: {
+    MAX_EXACT_LINE_HEIGHT: 'Usa a maior altura de linha entre os elementos do grupo para garantir alinhamento consistente.',
+    PROPORTIONAL: 'A altura da linha é proporcional ao tamanho do conteúdo real em cada campo.',
+  },
+  spacerStylePolicy: {
+    NEXT_GROUP_STYLE: 'O espaçador usa o estilo do grupo seguinte — útil para manter a fonte correta nas linhas em branco.',
+    BLANK: 'Linhas em branco sem estilo específico.',
+  },
+  safetyPolicy: {
+    MARGIN_BASED: 'A área segura é calculada a partir das margens definidas na aba Página.',
+    CONTENT_AREA: 'A área segura corresponde à área de conteúdo efetiva após aplicar margens e cabeçalhos/rodapés.',
+  },
+} as const;
+
 function SelectField({ label: lbl, value, options, onChange, tooltip }: {
   label: string; value: string; options: { value: string; label: string }[];
   onChange: (v: string) => void; tooltip?: string;
@@ -89,26 +109,28 @@ export function SinglePageForm({ comp, onChange }: Props) {
             value={policy.anchorStrategy}
             options={ANCHOR_STRATEGIES}
             onChange={v => setPolicy('anchorStrategy', v)}
-            tooltip="Define como o último grupo se ancora verticalmente na página"
+            tooltip={POLICY_HINTS.anchorStrategy[policy.anchorStrategy as keyof typeof POLICY_HINTS.anchorStrategy] ?? 'Define como os grupos se distribuem verticalmente na página'}
           />
           <SelectField
             label="Estratégia de altura de linha"
             value={policy.lineHeightStrategy}
             options={LINE_HEIGHT_STRATEGIES}
             onChange={v => setPolicy('lineHeightStrategy', v)}
+            tooltip={POLICY_HINTS.lineHeightStrategy[policy.lineHeightStrategy as keyof typeof POLICY_HINTS.lineHeightStrategy]}
           />
           <SelectField
             label="Política de espaçador"
             value={policy.spacerStylePolicy}
             options={SPACER_POLICIES}
             onChange={v => setPolicy('spacerStylePolicy', v)}
-            tooltip="Estilo aplicado às linhas de espaço vertical flexível entre grupos"
+            tooltip={POLICY_HINTS.spacerStylePolicy[policy.spacerStylePolicy as keyof typeof POLICY_HINTS.spacerStylePolicy]}
           />
           <SelectField
             label="Política de segurança"
             value={policy.safetyPolicy}
             options={SAFETY_POLICIES}
             onChange={v => setPolicy('safetyPolicy', v)}
+            tooltip={POLICY_HINTS.safetyPolicy[policy.safetyPolicy as keyof typeof POLICY_HINTS.safetyPolicy]}
           />
         </div>
       </details>

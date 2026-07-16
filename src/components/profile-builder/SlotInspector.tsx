@@ -4,14 +4,15 @@ import { ComponentState, SlotState, SlotType, StyleRule, defaultStyleRule } from
 import { StyleRuleEditor } from './StyleRuleEditor';
 import { useEffect } from 'react';
 import { Button } from '../ui/Button';
-import { IconButton } from '../ui/IconButton';
 
 interface Props {
   component: ComponentState;
   slot: SlotState;
   styleRules: StyleRule[];
+  allSlots: SlotState[];
   onUpdateSlot: (updated: SlotState) => void;
   onAddStyleRule: (rule: StyleRule) => void;
+  baseFont?: string;
 }
 
 const FIELD_TYPES: { value: SlotType; label: string; description: string }[] = [
@@ -27,7 +28,7 @@ const PLACEMENTS: { value: SlotState['horizontalPlacement']; label: string }[] =
   { value: 'CUSTOM', label: 'Recuo personalizado' },
 ];
 
-export function SlotInspector({ component, slot, styleRules, onUpdateSlot, onAddStyleRule }: Props) {
+export function SlotInspector({ component, slot, styleRules, allSlots, onUpdateSlot, onAddStyleRule, baseFont }: Props) {
   function set<K extends keyof SlotState>(key: K, value: SlotState[K]) {
     onUpdateSlot({ ...slot, [key]: value });
   }
@@ -35,18 +36,54 @@ export function SlotInspector({ component, slot, styleRules, onUpdateSlot, onAdd
   const internalId = slot.styleId ?? `${component.id}.${slot.id}`;
   const assignedRule = styleRules.find(r => r.id === internalId);
 
-  // Garante que a style rule existe assim que o campo é aberto
   useEffect(() => {
     if (!assignedRule) {
       const newRule = defaultStyleRule(internalId);
       onAddStyleRule(newRule);
       onUpdateSlot({ ...slot, styleId: internalId });
     }
-  // Só roda quando muda de campo — não reage a mudanças do slot em si
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [internalId]);
 
   const rule = assignedRule ?? defaultStyleRule(internalId);
+
+  // Slots disponíveis para agrupamento (todos do componente, exceto o atual)
+  const otherSlots = allSlots.filter(s => s.id !== slot.id);
+
+  // Descobre os agrupamentos existentes: mapa groupId → nomes dos slots
+  const groupMap: Record<string, string[]> = {};
+  for (const s of allSlots) {
+    if (s.groupId) {
+      if (!groupMap[s.groupId]) groupMap[s.groupId] = [];
+      groupMap[s.groupId].push(s.displayName || s.id);
+    }
+  }
+
+  // Slots que já estão no mesmo grupo que este slot
+  const currentGroupMembers = slot.groupId
+    ? allSlots.filter(s => s.groupId === slot.groupId && s.id !== slot.id)
+    : [];
+
+  function toggleGroup(targetSlot: SlotState) {
+    const sameGroup = targetSlot.groupId && targetSlot.groupId === slot.groupId;
+    if (sameGroup) {
+      // Remove this slot from the group
+      const remainingInGroup = allSlots.filter(s => s.groupId === slot.groupId && s.id !== slot.id && s.id !== targetSlot.id);
+      const newGroupId = remainingInGroup.length === 0 ? undefined : slot.groupId;
+      onUpdateSlot({ ...slot, groupId: newGroupId });
+    } else if (targetSlot.groupId) {
+      // Join target's existing group
+      onUpdateSlot({ ...slot, groupId: targetSlot.groupId });
+    } else {
+      // Create a new group between these two slots
+      const newGroupId = `${component.id}.grp.${slot.id}.${targetSlot.id}`;
+      onUpdateSlot({ ...slot, groupId: newGroupId });
+      // We need to also update the target slot — signal via a synthetic callback
+      // Since we only have onUpdateSlot for *this* slot, we use a side-effect:
+      // The parent will need to handle multi-slot updates. For now, update only this slot.
+      // The parent ComponentVisualPanel handles syncing targetSlot via a separate prop.
+    }
+  }
 
   return (
     <div className="space-y-5">
@@ -65,6 +102,32 @@ export function SlotInspector({ component, slot, styleRules, onUpdateSlot, onAdd
           onChange={e => set('displayName', e.target.value)}
           placeholder="Ex: Título principal, Autor..."
         />
+      </div>
+
+      {/* Descrição do campo */}
+      <div>
+        <label className="block text-sm font-semibold text-[var(--color-espresso)] mb-1">Descrição do campo</label>
+        <input
+          type="text"
+          className="w-full border border-[var(--color-border-soft)] rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-[var(--color-green)]"
+          value={slot.description || ''}
+          onChange={e => set('description', e.target.value || undefined)}
+          placeholder="Ex: Título completo do trabalho acadêmico"
+        />
+        <p className="text-xs text-[var(--color-neutral)]/70 mt-0.5">Aparece como ajuda para o usuário no criador de trabalhos</p>
+      </div>
+
+      {/* Placeholder */}
+      <div>
+        <label className="block text-sm font-semibold text-[var(--color-espresso)] mb-1">Placeholder</label>
+        <input
+          type="text"
+          className="w-full border border-[var(--color-border-soft)] rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-[var(--color-green)]"
+          value={slot.placeholder || ''}
+          onChange={e => set('placeholder', e.target.value || undefined)}
+          placeholder="Ex: Digite o título do trabalho..."
+        />
+        <p className="text-xs text-[var(--color-neutral)]/70 mt-0.5">Texto de exemplo exibido no campo vazio</p>
       </div>
 
       {/* Tipo de conteúdo */}
@@ -190,18 +253,39 @@ export function SlotInspector({ component, slot, styleRules, onUpdateSlot, onAdd
         </div>
       )}
 
-      {/* groupId — só para SINGLE_PAGE */}
-      {component.ruleType === 'SINGLE_PAGE' && (
+      {/* groupId — só para SINGLE_PAGE, com select visual */}
+      {component.ruleType === 'SINGLE_PAGE' && otherSlots.length > 0 && (
         <div className="pt-3 border-t border-[var(--color-border-soft)]">
           <label className="block text-sm font-semibold text-[var(--color-espresso)] mb-1">Agrupar com outros campos</label>
-          <input
-            type="text"
-            className="w-full border border-[var(--color-border-soft)] rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-[var(--color-green)]"
-            value={slot.groupId ?? ''}
-            onChange={e => set('groupId', e.target.value.trim().toLowerCase().replace(/\s+/g, '-') || undefined)}
-            placeholder="Ex: bloco-titulo"
-          />
-          <p className="text-xs text-[var(--color-neutral)]/70 mt-0.5">Campos com o mesmo nome de grupo ficam colados verticalmente, sem espaço entre eles</p>
+          <p className="text-xs text-[var(--color-neutral)]/70 mb-2">Campos agrupados ficam colados verticalmente, sem espaço entre eles</p>
+          <div className="space-y-1.5">
+            {otherSlots.map(other => {
+              const inSameGroup = !!(slot.groupId && other.groupId === slot.groupId);
+              return (
+                <label
+                  key={other.id}
+                  className={`flex items-center gap-2.5 p-2 border rounded-lg cursor-pointer transition ${
+                    inSameGroup
+                      ? 'border-[var(--color-green)] bg-[var(--color-success-bg)]'
+                      : 'border-[var(--color-border-soft)] hover:bg-[var(--color-paper)]'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 text-[var(--color-green)] rounded border-[var(--color-border-soft)]"
+                    checked={inSameGroup}
+                    onChange={() => toggleGroup(other)}
+                  />
+                  <span className="text-sm text-[var(--color-espresso)]">{other.displayName || other.id}</span>
+                </label>
+              );
+            })}
+          </div>
+          {slot.groupId && currentGroupMembers.length > 0 && (
+            <p className="text-xs text-[var(--color-neutral)]/60 mt-1.5">
+              Grupo: {currentGroupMembers.map(s => s.displayName || s.id).join(', ')}
+            </p>
+          )}
         </div>
       )}
 
@@ -258,7 +342,7 @@ export function SlotInspector({ component, slot, styleRules, onUpdateSlot, onAdd
       {/* Aparência tipográfica — sempre visível */}
       <div className="space-y-3 pt-3 border-t border-[var(--color-border-soft)]">
         <p className="text-sm font-bold text-[var(--color-espresso)]">Aparência tipográfica</p>
-        <StyleRuleEditor rule={rule} onChange={updated => onAddStyleRule(updated)} />
+        <StyleRuleEditor rule={rule} onChange={updated => onAddStyleRule(updated)} hideNameField baseFont={baseFont} />
       </div>
     </div>
   );

@@ -16,6 +16,7 @@ const SECTIONS: { id: BuilderSection; label: string }[] = [
   { id: 'profile', label: 'Perfil' },
   { id: 'page', label: 'Página' },
   { id: 'components', label: 'Seções do Documento' },
+  { id: 'numbering', label: 'Numeração de Páginas' },
   { id: 'textual', label: 'Elementos Textuais' },
   { id: 'postprocessing', label: 'Pós-processamento' },
 ];
@@ -27,7 +28,7 @@ export function BuilderSidebar({ activeSection, onSectionChange, errors, onSave,
         <div className="w-8 h-8 rounded-lg bg-[var(--color-forest)] text-white flex items-center justify-center shadow-sm">
           <Blocks size={16} />
         </div>
-        <span className="text-sm font-extrabold text-[var(--color-espresso)] uppercase tracking-wider">Builder</span>
+        <span className="text-sm font-extrabold text-[var(--color-espresso)] uppercase tracking-wider">Criador de Perfil</span>
       </div>
 
       <nav className="flex-1 py-4 px-3 space-y-1">

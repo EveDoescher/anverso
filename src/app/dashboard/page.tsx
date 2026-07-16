@@ -154,7 +154,7 @@ export default function Dashboard() {
 
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-6">
           <div>
-            <h1 className="text-3xl font-serif text-[var(--color-espresso)]">Dashboard</h1>
+            <h1 className="text-3xl font-serif text-[var(--color-espresso)]">Minha Área</h1>
             <p className="text-[var(--color-neutral)] mt-1">Gerencie seus trabalhos, perfis e favoritos</p>
           </div>
           <div className="flex gap-3">

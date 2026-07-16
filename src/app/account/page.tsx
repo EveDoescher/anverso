@@ -3,9 +3,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { fetchApi } from '@/lib/api';
+import { fetchApi, API_URL } from '@/lib/api';
 import Navbar from '@/components/layout/Navbar';
-import { User, Mail, Shield, KeyRound, Save, Edit3, ArrowLeft, CheckCircle2, GraduationCap, Camera, X } from 'lucide-react';
+import { User, Mail, Shield, KeyRound, Save, Edit3, ArrowLeft, CheckCircle2, GraduationCap, Camera, X, Clock } from 'lucide-react';
+import { UserBadge, userBadgeVariant } from '@/components/ui/UserBadge';
 import { Alert } from '@/components/ui/Alert';
 import Cropper from 'react-easy-crop';
 import { AlertModal, AlertModalType } from '@/components/ui/AlertModal';
@@ -20,6 +21,7 @@ interface UserData {
   role: string;
   active: boolean;
   profilePictureUrl?: string;
+  isTeacherVerified?: boolean;
 }
 
 export default function AccountPage() {
@@ -48,6 +50,14 @@ export default function AccountPage() {
     type: 'info'
   });
 
+  // Teacher verification state
+  const [verifModal, setVerifModal] = useState(false);
+  const [verifInstitution, setVerifInstitution] = useState('');
+  const [verifDocumentUrl, setVerifDocumentUrl] = useState('');
+  const [verifNotes, setVerifNotes] = useState('');
+  const [verifSubmitting, setVerifSubmitting] = useState(false);
+  const [verifStatus, setVerifStatus] = useState<'PENDING' | 'APPROVED' | 'REJECTED' | null>(null);
+
   const showAlert = (title: string, message: string, type: AlertModalType) => {
     setModalConfig({ show: true, title, message, type });
   };
@@ -73,6 +83,13 @@ export default function AccountPage() {
       setEditFirstName(data.firstName || '');
       setEditLastName(data.lastName || '');
       setEditEmail(data.email || '');
+
+      // Load existing verification request status
+      const verifRes = await fetchApi('/api/teacher-verifications/me', { method: 'GET' });
+      if (verifRes.ok) {
+        const verifData = await verifRes.json();
+        setVerifStatus(verifData.status ?? null);
+      }
     } catch (err: any) {
       setError(err.message || 'Erro ao carregar dados');
     } finally {
@@ -184,6 +201,34 @@ export default function AccountPage() {
     }
   };
 
+  const handleSubmitVerification = async () => {
+    if (!verifInstitution.trim()) {
+      showAlert('Atenção', 'Informe o nome da instituição de ensino.', 'error');
+      return;
+    }
+    setVerifSubmitting(true);
+    try {
+      const res = await fetchApi('/api/teacher-verifications', {
+        method: 'POST',
+        body: JSON.stringify({ institution: verifInstitution.trim(), documentUrl: verifDocumentUrl.trim() || undefined, notes: verifNotes.trim() || undefined })
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Erro ao enviar solicitação.');
+      }
+      setVerifStatus('PENDING');
+      setVerifModal(false);
+      setVerifInstitution('');
+      setVerifDocumentUrl('');
+      setVerifNotes('');
+      showAlert('Solicitação Enviada', 'Sua solicitação de verificação docente foi enviada e está aguardando análise.', 'success');
+    } catch (e: any) {
+      showAlert('Erro', e.message || 'Não foi possível enviar a solicitação.', 'error');
+    } finally {
+      setVerifSubmitting(false);
+    }
+  };
+
   if (loading) return (
     <div className="min-h-screen bg-[var(--color-paper)] flex items-center justify-center">
       <div className="animate-pulse flex flex-col items-center">
@@ -219,7 +264,7 @@ export default function AccountPage() {
                 className={`w-24 h-24 bg-[var(--color-cream)] rounded-2xl shadow-lg border-4 border-white flex items-center justify-center text-3xl font-serif text-[var(--color-coffee)] overflow-hidden relative ${isEditing ? 'cursor-pointer hover:border-[var(--color-green)] transition-colors' : ''}`}
               >
                 {user?.profilePictureUrl ? (
-                  <img src={user.profilePictureUrl.startsWith('http') ? user.profilePictureUrl : `http://localhost:8080${user.profilePictureUrl}`} alt="Avatar" className="w-full h-full object-cover" />
+                  <img src={user.profilePictureUrl.startsWith('http') ? user.profilePictureUrl : `${API_URL}${user.profilePictureUrl}`} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
                   (user?.firstName || user?.email || 'U').charAt(0).toUpperCase()
                 )}
@@ -245,7 +290,12 @@ export default function AccountPage() {
           <div className="pt-16 px-8 pb-10">
             <div className="flex flex-col md:flex-row justify-between gap-6 items-start md:items-center mb-10 pb-8 border-b border-[var(--color-border-soft)]">
               <div>
-                <h2 className="text-2xl font-serif text-[var(--color-espresso)]">{user?.firstName} {user?.lastName}</h2>
+                <h2 className="text-2xl font-serif text-[var(--color-espresso)] flex items-center gap-2 flex-wrap">
+                  {user?.firstName} {user?.lastName}
+                  {user && userBadgeVariant(user.role, user.isTeacherVerified) && (
+                    <UserBadge variant={userBadgeVariant(user.role, user.isTeacherVerified)!} />
+                  )}
+                </h2>
                 <div className="text-[var(--color-neutral)] text-sm flex items-center gap-2 mt-1">
                   <Mail size={14} />
                   {user?.email}
@@ -373,15 +423,37 @@ export default function AccountPage() {
                   <div className="pt-2">
                     <label className="block text-[10px] uppercase tracking-widest font-bold text-[var(--color-neutral)] mb-2">Ações Rápidas</label>
                     <div className="space-y-2">
-                      <Button
-                        variant="ghost"
-                        align="left"
-                        icon={GraduationCap}
-                        className="w-full text-[13px]"
-                        onClick={() => showAlert('Em Breve', 'O fluxo de verificação de professor será implementado nas próximas atualizações.', 'info')}
-                      >
-                        Solicitar Verificação de Docente
-                      </Button>
+                      {user?.isTeacherVerified ? (
+                        <div className="flex items-center gap-2 px-3 py-2 bg-[var(--color-success-bg)] border border-[var(--color-success-soft)] rounded-xl text-[var(--color-green)] text-[13px] font-medium">
+                          <CheckCircle2 size={15} />
+                          Docente Verificado
+                        </div>
+                      ) : verifStatus === 'PENDING' ? (
+                        <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl text-amber-700 text-[13px] font-medium">
+                          <Clock size={15} />
+                          Verificação Aguardando Análise
+                        </div>
+                      ) : verifStatus === 'REJECTED' ? (
+                        <Button
+                          variant="ghost"
+                          align="left"
+                          icon={GraduationCap}
+                          className="w-full text-[13px] border-[var(--color-error-bg)] text-[var(--color-error)]"
+                          onClick={() => setVerifModal(true)}
+                        >
+                          Reenviar Verificação de Docente
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          align="left"
+                          icon={GraduationCap}
+                          className="w-full text-[13px]"
+                          onClick={() => setVerifModal(true)}
+                        >
+                          Solicitar Verificação de Docente
+                        </Button>
+                      )}
                       <Link href="/recover-password" tabIndex={-1}>
                         <Button
                           variant="ghost"
@@ -450,8 +522,63 @@ export default function AccountPage() {
         </div>
       )}
 
+      {/* Teacher Verification Modal */}
+      {verifModal && (
+        <div className="fixed inset-0 bg-[var(--color-espresso)]/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-[var(--shadow-elevated)] flex flex-col border border-[var(--color-border-soft)]">
+            <div className="p-5 border-b border-[var(--color-border-soft)] flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <GraduationCap size={18} className="text-[var(--color-green)]" />
+                <h3 className="font-serif text-lg text-[var(--color-espresso)]">Verificação de Docente</h3>
+              </div>
+              <button onClick={() => setVerifModal(false)} className="text-[var(--color-neutral)] hover:text-[var(--color-error)] transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-[var(--color-neutral)] leading-relaxed">
+                Informe sua instituição de ensino para solicitar o selo de docente verificado. A análise é feita pela equipe Anverso.
+              </p>
+              <Input
+                label="Instituição de Ensino"
+                type="text"
+                value={verifInstitution}
+                onChange={e => setVerifInstitution(e.target.value)}
+                placeholder="Ex: Universidade de São Paulo"
+              />
+              <Input
+                label="Link de Comprovação (opcional)"
+                type="url"
+                value={verifDocumentUrl}
+                onChange={e => setVerifDocumentUrl(e.target.value)}
+                placeholder="Ex: http://lattes.cnpq.br/..."
+                helper="Lattes, página institucional ou outro documento público."
+              />
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest font-bold text-[var(--color-neutral)] mb-1.5">Observações (opcional)</label>
+                <textarea
+                  value={verifNotes}
+                  onChange={e => setVerifNotes(e.target.value)}
+                  placeholder="Cargo, disciplinas ministradas, link para Lattes, etc."
+                  rows={3}
+                  className="w-full px-4 py-3 text-[14px] bg-[var(--color-paper-soft)] border border-[var(--color-border-soft)] rounded-xl text-[var(--color-espresso)] placeholder-[var(--color-neutral)] resize-none focus:outline-none focus:border-[var(--color-green)] transition-colors"
+                />
+              </div>
+            </div>
+            <div className="p-5 border-t border-[var(--color-border-soft)] flex gap-2">
+              <Button variant="quiet" className="flex-1 justify-center" onClick={() => setVerifModal(false)} trailingIcon={false}>
+                Cancelar
+              </Button>
+              <Button variant="primary" className="flex-1 justify-center" onClick={handleSubmitVerification} loading={verifSubmitting} trailingIcon={false}>
+                Enviar Solicitação
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Reusable Alert Modal */}
-      <AlertModal 
+      <AlertModal
         show={modalConfig.show} 
         title={modalConfig.title} 
         message={modalConfig.message} 

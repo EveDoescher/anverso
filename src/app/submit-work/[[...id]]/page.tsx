@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { fetchApi } from '@/lib/api';
 import Link from 'next/link';
 import BodyEditor from '@/components/body-editor/BodyEditor';
 import SectionedEditor from '@/components/body-editor/SectionedEditor';
+import ReferenceEditor from '@/components/body-editor/ReferenceEditor';
 import { ChevronRight, ChevronLeft, Save, CheckCircle, FileText, ArrowLeft, Loader2, FileCheck2, Share2, Bookmark, X } from 'lucide-react';
 import { AlertModal, AlertModalType } from '@/components/ui/AlertModal';
 import { Button } from '@/components/ui/Button';
@@ -91,6 +92,7 @@ export default function SubmitWork() {
   const params = useParams();
   const searchParams = useSearchParams();
   const workId = params?.id?.[0] || null;
+  const savedWorkIdRef = useRef<string | null>(workId);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [profiles, setProfiles] = useState<any[]>([]);
   const [profileId, setProfileId] = useState('');
@@ -245,28 +247,33 @@ export default function SubmitWork() {
       
       const initialData: any = {};
       const componentFields: Record<string, any[]> = {};
+      const componentMeta: Record<string, { description?: string; required?: boolean }> = {};
 
       parsedProfileData?.componentOrder?.forEach((compId: string) => {
         const comp = parsedProfileData.componentRules?.[compId] || parsedProfileData[compId];
         if (!comp) return;
-        
+
         initialData[compId] = {};
         const fields: any[] = [];
 
-        // Parsing logic here... (same as before)
+        componentMeta[compId] = {
+          description: comp.description || undefined,
+          required: comp.required ?? undefined,
+        };
+
         if (comp && comp.slots) {
           Object.keys(comp.slots).forEach(slotName => {
             const slot = comp.slots[slotName];
             if (slot.type === 'COMPOSED_TEXT') {
               initialData[compId][slotName] = {};
-              fields.push({ name: slotName, type: 'composed', required: slot.required, fields: slot.fieldNames || [] });
+              fields.push({ name: slotName, type: 'composed', required: slot.required, fields: slot.fieldNames || [], description: slot.description, placeholder: slot.placeholder });
             } else if (slot.type === 'SIGNATURE_BLOCK_LIST') {
               initialData[compId][slotName] = [];
-              fields.push({ name: slotName, type: 'signature', required: slot.required, fields: slot.knownFieldNames || [] });
+              fields.push({ name: slotName, type: 'signature', required: slot.required, fields: slot.knownFieldNames || [], description: slot.description, placeholder: slot.placeholder });
             } else {
               const isArray = slot.type === 'TEXT_LIST';
               initialData[compId][slotName] = '';
-              fields.push({ name: slotName, isArray, required: slot.required, type: isArray ? 'array' : 'text' });
+              fields.push({ name: slotName, isArray, required: slot.required, type: isArray ? 'array' : 'text', description: slot.description, placeholder: slot.placeholder });
             }
           });
         } else if (comp.items && Array.isArray(comp.items)) {
@@ -314,6 +321,9 @@ export default function SubmitWork() {
         } else if (comp.ruleType === 'SECTIONED') {
           initialData[compId] = { items: [] };
           fields.push({ name: 'items', type: 'sectioned', required: true });
+        } else if (comp.ruleType === 'BIBLIOGRAPHY' || compId === 'references' || comp.componentId === 'references') {
+          initialData[compId] = { entries: [] };
+          fields.push({ name: 'entries', type: 'reference_list', required: true, desc: 'Referências bibliográficas estruturadas por tipo' });
         } else if (['abstract', 'resumo', 'foreignAbstract'].includes(compId) || ['abstract', 'resumo', 'foreignAbstract'].includes(comp.componentId)) {
           initialData[compId] = { text: '', keywords: [] };
           fields.push(
@@ -329,9 +339,6 @@ export default function SubmitWork() {
             { name: 'text', type: 'text', required: true, desc: 'Texto da epígrafe' },
             { name: 'author', type: 'text', required: true, desc: 'Autor' }
           );
-        } else if (compId === 'references' || comp.componentId === 'references') {
-          initialData[compId] = { items: [] };
-          fields.push({ name: 'items', type: 'array', required: true, desc: 'Lista de referências bibliográficas' });
         }
         
         if (fields.length > 0) {
@@ -373,7 +380,7 @@ export default function SubmitWork() {
 
       setFormData(initialData);
       setEnabledComponents(initialEnabled);
-      setProfile({ id, name: profileName, profileData: parsedProfileData, componentFields });
+      setProfile({ id, name: profileName, profileData: parsedProfileData, componentFields, componentMeta });
       setActiveTab(autoSkipStep0 ? 1 : 0);
     } catch (err: any) {
       setError(err.message || 'Erro ao carregar perfil.');
@@ -517,7 +524,7 @@ export default function SubmitWork() {
       });
 
       const payload = {
-        id: workId,
+        id: savedWorkIdRef.current,
         profileId: profile.id,
         fileName: workName || 'meu_trabalho',
         options: { selectedComponents, fonts: { default: fontFamily } },
@@ -535,8 +542,9 @@ export default function SubmitWork() {
       setHasUnsavedChanges(false);
       showAlert('Progresso Salvo', 'O rascunho do seu trabalho foi salvo no servidor com sucesso.', 'success');
       
-      if (!workId && savedData.id) {
-         router.replace(`/submit-work/${savedData.id}`);
+      if (!savedWorkIdRef.current && savedData.id) {
+        savedWorkIdRef.current = savedData.id;
+        window.history.replaceState(null, '', `/submit-work/${savedData.id}`);
       }
     } catch (error) {
       console.error('Erro ao salvar rascunho:', error);
@@ -548,24 +556,61 @@ export default function SubmitWork() {
 
   const handleShareWork = async () => {
     try {
-      // Como não há backend de rascunhos, copia a URL atual para a área de transferência,
-      // ou aciona o compartilhamento nativo do dispositivo.
-      const shareData = {
-        title: 'Formatação de Trabalho - Anverso',
-        text: 'Estou formatando meu trabalho acadêmico utilizando o Anverso.',
-        url: window.location.href,
-      };
+      if (!savedWorkIdRef.current && profile) {
+        setLoading(true);
+        const document: any = {};
+        const selectedComponents: string[] = [];
+        profile?.profileData?.componentOrder?.forEach((compId: string) => {
+          if (!profile.componentFields[compId]) return;
+          if (!enabledComponents[compId]) return;
+          selectedComponents.push(compId);
+          document[compId] = {};
+          profile.componentFields[compId].forEach((field: any) => {
+            const val = formData[compId]?.[field.name];
+            if (field.isArray && typeof val === 'string') {
+              document[compId][field.name] = val ? val.split(',').map((s: string) => s.trim()) : [];
+            } else {
+              document[compId][field.name] = val;
+            }
+          });
+        });
+        const payload = {
+          id: null,
+          profileId: profile.id,
+          fileName: workName || 'meu_trabalho',
+          options: { selectedComponents, fonts: { default: fontFamily } },
+          document
+        };
+        const res = await fetchApi('/api/v1/works/draft', { method: 'PUT', body: JSON.stringify(payload) });
+        if (res.ok) {
+          const savedData = await res.json();
+          if (savedData.id) {
+            savedWorkIdRef.current = savedData.id;
+            window.history.replaceState(null, '', `/submit-work/${savedData.id}`);
+            setHasUnsavedChanges(false);
+          }
+        }
+        setLoading(false);
+      }
 
-      if (navigator.share) {
-        await navigator.share(shareData);
+      if (!savedWorkIdRef.current) {
+        showAlert('Erro', 'Salve o trabalho antes de compartilhar.', 'error');
+        return;
+      }
+
+      const shareRes = await fetchApi(`/api/v1/works/${savedWorkIdRef.current}/share`, { method: 'POST' });
+      if (shareRes.ok) {
+        const shareData = await shareRes.json();
+        const shareUrl = `${window.location.origin}/shared/${shareData.shareToken}`;
+        await navigator.clipboard.writeText(shareUrl);
+        showAlert('Link de Compartilhamento Copiado', 'O link foi copiado para sua área de transferência. Qualquer pessoa com este link poderá visualizar o trabalho e deixar comentários.', 'success');
       } else {
-        await navigator.clipboard.writeText(window.location.href);
-        showAlert('Link Copiado', 'O link da página foi copiado para sua área de transferência!', 'success');
+        throw new Error('Falha ao gerar link de compartilhamento.');
       }
     } catch (error: any) {
-      if (error.name !== 'AbortError') { // Ignora se o usuário cancelou a tela de compartilhamento
+      if (error.name !== 'AbortError') {
         console.error('Erro ao compartilhar:', error);
-        showAlert('Erro', 'Não foi possível compartilhar no momento.', 'error');
+        showAlert('Erro', 'Não foi possível gerar o link de compartilhamento.', 'error');
       }
     }
   };
@@ -588,6 +633,12 @@ export default function SubmitWork() {
     if (allFilled) return 'complete';
     if (anyFilled) return 'partial';
     return 'empty';
+  };
+
+  const isComponentRequired = (compId: string): boolean => {
+    const meta = profile?.componentMeta?.[compId];
+    if (meta?.required !== undefined) return meta.required;
+    return REQUIRED_COMPONENTS.has(compId);
   };
 
   const componentOrder = profile?.profileData?.componentOrder?.filter((c: string) => profile.componentFields[c]) || [];
@@ -642,11 +693,11 @@ export default function SubmitWork() {
         </div>
       </header>
 
-      <main className="flex-1 max-w-7xl mx-auto w-full p-6 flex flex-col">
+      <main className="flex-1 max-w-screen-2xl mx-auto w-full p-6 flex flex-col">
         
         {/* Step 1: Profile Selection */}
         {!profile && (
-          <div className="max-w-4xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500 pt-8">
+          <div className="max-w-5xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500 pt-8">
             <div className="text-center mb-10">
               <div className="w-16 h-16 bg-[var(--color-success-soft)] rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-[var(--color-success-soft)]">
                  <FileCheck2 className="w-8 h-8 text-[var(--color-green)]" />
@@ -834,9 +885,11 @@ export default function SubmitWork() {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-3">
                       <h2 className="text-2xl font-bold text-[var(--color-espresso)]">
-                        {formatComponentLabel(activeComponentId)}
+                        {profile?.componentMeta?.[activeComponentId]?.description
+                          ? formatComponentLabel(activeComponentId)
+                          : formatComponentLabel(activeComponentId)}
                       </h2>
-                      {REQUIRED_COMPONENTS.has(activeComponentId) ? (
+                      {isComponentRequired(activeComponentId) ? (
                         <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-100">
                           Obrigatório
                         </span>
@@ -847,7 +900,7 @@ export default function SubmitWork() {
                       )}
                     </div>
 
-                    {!REQUIRED_COMPONENTS.has(activeComponentId) && (
+                    {!isComponentRequired(activeComponentId) && (
                       <label className="flex items-center gap-2 cursor-pointer bg-[var(--color-paper)] hover:bg-[var(--color-paper-soft)] px-3 py-1.5 rounded-lg border border-[var(--color-border-soft)] transition-colors">
                         <input
                           type="checkbox"
@@ -861,9 +914,11 @@ export default function SubmitWork() {
                   </div>
 
                   <p className="text-[var(--color-neutral)] text-sm">
-                    {REQUIRED_COMPONENTS.has(activeComponentId)
-                      ? 'Esta seção é parte obrigatória da estrutura do documento.'
-                      : 'Esta seção é opcional. Desative o toggle acima se não quiser incluí-la.'}
+                    {profile?.componentMeta?.[activeComponentId]?.description
+                      ? profile.componentMeta[activeComponentId].description
+                      : isComponentRequired(activeComponentId)
+                        ? 'Esta seção é parte obrigatória da estrutura do documento.'
+                        : 'Esta seção é opcional. Desative o toggle acima se não quiser incluí-la.'}
                   </p>
                 </div>
                 
@@ -951,6 +1006,18 @@ export default function SubmitWork() {
                               ))}
                               {items.length === 0 && <div className="text-sm text-[var(--color-neutral)]/70 italic text-center py-4 border border-dashed border-[var(--color-border-soft)] rounded-lg">Nenhum membro adicionado.</div>}
                             </div>
+                          </div>
+                        );
+                      }
+
+                      // REFERENCE LIST TYPE
+                      if (el.type === 'reference_list') {
+                        return (
+                          <div key={elIdx} className="space-y-3">
+                            <ReferenceEditor
+                              value={formData[activeComponentId]?.entries || []}
+                              onChange={(entries: any) => handleInputChange(activeComponentId, 'entries', entries)}
+                            />
                           </div>
                         );
                       }
@@ -1088,14 +1155,16 @@ export default function SubmitWork() {
                       // DEFAULT TEXT/ARRAY TYPE
                       const isTextarea = el.name.toLowerCase().includes('text') || el.name.toLowerCase().includes('resumo') || el.name.toLowerCase().includes('abstract');
                       const hint = slotHints[el.name];
+                      const fieldDesc = el.description || hint || el.desc;
+                      const fieldPlaceholder = el.placeholder || (hint ? '' : `Ex: ${el.isArray ? 'Item 1, Item 2' : 'Preencha aqui...'}`);
                       return (
                         <div key={elIdx} className="bg-white p-5 rounded-xl border border-[var(--color-border-soft)] shadow-sm">
                           <label className="block text-sm font-bold mb-1.5 text-[var(--color-espresso)]">
                             {formatLabel(el.name)} {el.required && <span className="text-red-500">*</span>}
                           </label>
-                          {(el.isArray || el.desc || hint) && (
+                          {(el.isArray || fieldDesc) && (
                             <p className="text-xs text-[var(--color-neutral)]/70 mb-3">
-                              {hint || el.desc || ''}{el.isArray && !hint ? (el.desc ? ' · ' : '') + 'Separe múltiplos itens por vírgula' : ''}
+                              {fieldDesc || ''}{el.isArray && !fieldDesc ? 'Separe múltiplos itens por vírgula' : el.isArray ? ' · Separe múltiplos itens por vírgula' : ''}
                             </p>
                           )}
 
@@ -1104,7 +1173,7 @@ export default function SubmitWork() {
                               required={el.required}
                               className="w-full border border-[var(--color-border-soft)] focus:border-[var(--color-green)] focus:ring-1 focus:ring-[var(--color-green)] p-3 rounded-lg text-sm text-[var(--color-espresso)] transition-shadow outline-none resize-y min-h-[120px]"
                               value={formData[activeComponentId]?.[el.name] || ''}
-                              placeholder={`Digite o ${formatLabel(el.name).toLowerCase()}...`}
+                              placeholder={el.placeholder || `Digite o ${formatLabel(el.name).toLowerCase()}...`}
                               onChange={(e) => handleInputChange(activeComponentId, el.name, e.target.value)}
                             />
                           ) : (
@@ -1113,7 +1182,7 @@ export default function SubmitWork() {
                               required={el.required}
                               className="w-full border border-[var(--color-border-soft)] focus:border-[var(--color-green)] focus:ring-1 focus:ring-[var(--color-green)] p-2.5 rounded-lg text-sm text-[var(--color-espresso)] transition-shadow outline-none"
                               value={formData[activeComponentId]?.[el.name] || ''}
-                              placeholder={hint ? '' : `Ex: ${el.isArray ? 'Item 1, Item 2' : 'Preencha aqui...'}`}
+                              placeholder={fieldPlaceholder}
                               onChange={(e) => handleInputChange(activeComponentId, el.name, e.target.value)}
                             />
                           )}

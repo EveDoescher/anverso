@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { fetchApi } from '@/lib/api';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -20,6 +20,8 @@ export default function Login() {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirect') || '/dashboard';
 
   const handleGoogleSuccess = async (credentialResponse: any) => {
     try {
@@ -31,7 +33,7 @@ export default function Login() {
         const data = await res.json();
         if (data.accessToken) {
           localStorage.setItem('token', data.accessToken);
-          router.push('/dashboard');
+          router.push(redirectTo);
         }
       } else {
         throw new Error('Falha na autenticação com o Google.');
@@ -63,7 +65,7 @@ export default function Login() {
         const loginData = await loginRes.json();
         if (loginData.accessToken) {
           localStorage.setItem('token', loginData.accessToken);
-          router.push('/dashboard');
+          router.push(redirectTo);
         }
       }
     } catch (err: any) {
@@ -87,7 +89,7 @@ export default function Login() {
       const data = await res.json();
       if (data.accessToken) {
         localStorage.setItem('token', data.accessToken);
-        router.push('/dashboard');
+        router.push(redirectTo);
       }
     } catch (err: any) {
       const msg = err.message || '';

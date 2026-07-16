@@ -1,13 +1,16 @@
 'use client';
 
-import { StyleRule, displayNameToStyleId, styleIdToDisplayName } from '@/lib/profileSerializer';
+import { StyleRule } from '@/lib/profileSerializer';
 
 interface StyleRuleEditorProps {
   rule: StyleRule;
   onChange: (updated: StyleRule) => void;
+  hideNameField?: boolean;
+  baseFont?: string;
 }
 
 const FONT_FAMILIES = ['Times New Roman', 'Arial', 'Calibri', 'Courier New', 'Georgia', 'Verdana'];
+const DEFAULT_FONT_VALUE = '__default__';
 
 const ALIGNMENTS: { value: StyleRule['alignment']; label: string }[] = [
   { value: 'JUSTIFIED', label: 'Justificado' },
@@ -37,22 +40,32 @@ function field(label: string, children: React.ReactNode, hint?: string) {
   );
 }
 
-export function StyleRuleEditor({ rule, onChange }: StyleRuleEditorProps) {
+export function StyleRuleEditor({ rule, onChange, hideNameField, baseFont }: StyleRuleEditorProps) {
   function set<K extends keyof StyleRule>(key: K, value: StyleRule[K]) {
     onChange({ ...rule, [key]: value });
   }
 
+  const isDefaultFont = !rule.fontFamily || rule.fontFamily === DEFAULT_FONT_VALUE;
+  const fontSelectValue = isDefaultFont ? DEFAULT_FONT_VALUE : rule.fontFamily;
+
+  function handleFontChange(value: string) {
+    if (value === DEFAULT_FONT_VALUE) {
+      onChange({ ...rule, fontFamily: DEFAULT_FONT_VALUE });
+    } else {
+      set('fontFamily', value);
+    }
+  }
+
   return (
     <div className="space-y-4 p-4 bg-[var(--color-paper)] border border-[var(--color-border-soft)] rounded-lg">
-      <div className="grid grid-cols-2 gap-3">
-        {field('Nome do estilo',
+      <div className={hideNameField ? '' : 'grid grid-cols-2 gap-3'}>
+        {!hideNameField && field('Nome do estilo',
           <input
             type="text"
             className="w-full border border-[var(--color-border-soft)] rounded p-2 text-xs text-[var(--color-espresso)] focus:ring-2 focus:ring-blue-500"
-            value={rule.displayName ?? styleIdToDisplayName(rule.id)}
+            value={rule.displayName ?? rule.id}
             onChange={e => {
-              const name = e.target.value;
-              onChange({ ...rule, displayName: name, id: displayNameToStyleId(name) || rule.id });
+              onChange({ ...rule, displayName: e.target.value });
             }}
           />,
           'Ex: Título da Capa, Parágrafo Normal'
@@ -69,12 +82,15 @@ export function StyleRuleEditor({ rule, onChange }: StyleRuleEditorProps) {
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        {field('Família de fonte',
+        {field('Fonte',
           <select
             className="w-full border border-[var(--color-border-soft)] rounded p-2 text-xs text-[var(--color-espresso)] bg-white focus:ring-2 focus:ring-blue-500"
-            value={rule.fontFamily}
-            onChange={e => set('fontFamily', e.target.value)}
+            value={fontSelectValue}
+            onChange={e => handleFontChange(e.target.value)}
           >
+            <option value={DEFAULT_FONT_VALUE}>
+              {baseFont ? `Padrão (${baseFont})` : 'Padrão (definida na página)'}
+            </option>
             {FONT_FAMILIES.map(f => <option key={f} value={f}>{f}</option>)}
           </select>
         )}

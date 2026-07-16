@@ -2,14 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Search, Filter, Star, Heart, User, FileCheck, Plus } from 'lucide-react';
-import { fetchApi } from '@/lib/api';
+import { Search, Filter, Star, Heart, FileCheck, Plus } from 'lucide-react';
+import { fetchApi, API_URL } from '@/lib/api';
 import Navbar from '@/components/layout/Navbar';
 import { Button } from '@/components/ui/Button';
-import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Badge } from '@/components/ui/Badge';
 import { SearchInput } from '@/components/ui/SearchInput';
+import { UserBadge, userBadgeVariant } from '@/components/ui/UserBadge';
 
 type FilterMode = 'popular' | 'recents' | 'top-rated';
 
@@ -35,13 +35,14 @@ export default function ExplorePage() {
         const data = await response.json();
 
         const ownerIds = [...new Set(data.map((p: any) => p.ownerId).filter(Boolean))] as string[];
-        const authorCache: Record<string, string> = {};
+        const authorCache: Record<string, { name: string; photo: string | null; isTeacherVerified: boolean; role: string }> = {};
 
         await Promise.all(ownerIds.map(async (ownerId: string) => {
           try {
             const userRes = await fetchApi(`/api/users/${ownerId}/public`, { skipAuthRedirect: true });
             const userData = await userRes.json();
-            authorCache[ownerId] = userData.name || 'Usuário';
+            const fullName = [userData.firstName, userData.lastName].filter(Boolean).join(' ') || userData.name || 'Usuário';
+            authorCache[ownerId] = { name: fullName, photo: userData.profilePictureUrl || null, isTeacherVerified: !!userData.isTeacherVerified, role: userData.role || '' };
           } catch { /* silently ignore */ }
         }));
 
@@ -55,13 +56,17 @@ export default function ExplorePage() {
           if (name.includes('revista') || name.includes('artigo')) tags.push('Revistas');
           if (tags.length === 0) tags.push('Universidade');
 
+          const author = p.ownerId ? authorCache[p.ownerId] : null;
           return {
             ...p,
             rating: p.rating ? p.rating.toFixed(1) : '0.0',
             reviewsCount: p.reviewsCount || 0,
             favoritesCount: p.favoritesCount || 0,
             usageCount: p.usageCount || 0,
-            authorName: p.ownerId ? (authorCache[p.ownerId] || 'Anverso Official') : 'Anverso Official',
+            authorName: author?.name || 'Anverso Official',
+            authorPhoto: author?.photo || null,
+            authorIsTeacherVerified: author?.isTeacherVerified || false,
+            authorRole: author?.role || '',
             tags,
             coverClass: [
               'bg-[var(--color-forest)]',
@@ -102,7 +107,7 @@ export default function ExplorePage() {
   }).sort((a, b) => {
     if (filterMode === 'popular') return b.usageCount - a.usageCount;
     if (filterMode === 'top-rated') return parseFloat(b.rating) - parseFloat(a.rating);
-    return b.favoritesCount - a.favoritesCount;
+    return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
   });
 
   return (
@@ -150,11 +155,23 @@ export default function ExplorePage() {
 
               <div>
                 <h4 className="text-[10px] font-bold text-[var(--color-neutral)] uppercase tracking-[0.2em] mb-3">Ordenar por</h4>
-                <SegmentedControl
-                  value={filterMode}
-                  options={SORT_OPTIONS}
-                  onChange={setFilterMode}
-                />
+                <div className="flex flex-col gap-1">
+                  {SORT_OPTIONS.map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setFilterMode(opt.value)}
+                      className={[
+                        'w-full text-left px-3 py-2 rounded-lg text-xs font-bold transition-all',
+                        filterMode === opt.value
+                          ? 'bg-[var(--color-green)] text-white'
+                          : 'text-[var(--color-neutral)] hover:bg-[var(--color-paper)]',
+                      ].join(' ')}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="h-[1px] bg-[var(--color-border-soft)]" />
@@ -217,8 +234,21 @@ export default function ExplorePage() {
 
                     <div className="p-5 flex-1 flex flex-col">
                       <div className="flex items-center gap-2 text-[var(--color-coffee)] text-xs mb-3 font-medium">
-                        <User size={12} />
+                        {profile.authorPhoto ? (
+                          <img
+                            src={profile.authorPhoto.startsWith('http') ? profile.authorPhoto : `${API_URL}${profile.authorPhoto}`}
+                            alt={profile.authorName}
+                            className="w-5 h-5 rounded-full object-cover shrink-0"
+                          />
+                        ) : (
+                          <div className="w-5 h-5 rounded-full bg-[var(--color-border-soft)] flex items-center justify-center text-[9px] font-bold text-[var(--color-neutral)] shrink-0">
+                            {profile.authorName.charAt(0).toUpperCase()}
+                          </div>
+                        )}
                         <span className="truncate">{profile.authorName}</span>
+                        {userBadgeVariant(profile.authorRole, profile.authorIsTeacherVerified) && (
+                          <UserBadge variant={userBadgeVariant(profile.authorRole, profile.authorIsTeacherVerified)!} compact />
+                        )}
                       </div>
 
                       <p className="text-[var(--color-neutral)] text-sm line-clamp-3 mb-4 flex-1">

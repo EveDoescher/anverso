@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Star, Heart, Share2, FileCheck, CheckCircle2, User, MessageSquare, AlertCircle, LayoutTemplate } from 'lucide-react';
-import { fetchApi } from '@/lib/api';
+import { ArrowLeft, Star, Heart, Share2, FileCheck, MessageSquare, AlertCircle, LayoutTemplate, Check, LayoutList, FileText } from 'lucide-react';
+import { UserBadge, userBadgeVariant } from '@/components/ui/UserBadge';
+import { fetchApi, API_URL } from '@/lib/api';
 import Navbar from '@/components/layout/Navbar';
 import { AlertModal, AlertModalType } from '@/components/ui/AlertModal';
 import { Button } from '@/components/ui/Button';
@@ -12,6 +13,135 @@ import { IconButton } from '@/components/ui/IconButton';
 import { Input } from '@/components/ui/Input';
 import { TabNavigation, TabNavigationItem } from '@/components/ui/TabNavigation';
 import { Badge } from '@/components/ui/Badge';
+
+const PAPER_FORMAT_LABELS: Record<string, string> = {
+  A4: 'A4 (21 × 29,7 cm)',
+  A3: 'A3 (29,7 × 42 cm)',
+  A5: 'A5 (14,8 × 21 cm)',
+  Letter: 'Carta (21,6 × 27,9 cm)',
+  Legal: 'Ofício (21,6 × 35,6 cm)',
+  Tabloid: 'Tabloid (27,9 × 43,2 cm)',
+  Custom: 'Personalizado',
+};
+
+const COMPONENT_TYPE_LABELS: Record<string, string> = {
+  SINGLE_PAGE: 'Página única',
+  FLOW_TEXTUAL: 'Texto contínuo',
+  ELEMENT_INDEX: 'Índice de elementos',
+  SECTION_INDEX: 'Sumário',
+  BODY_CONTENT: 'Corpo do trabalho',
+  REFERENCE_LIST: 'Lista de referências',
+};
+
+function inferPaperFormat(w: number, h: number): string {
+  if (Math.abs(w - 21) < 0.2 && Math.abs(h - 29.7) < 0.2) return 'A4';
+  if (Math.abs(w - 29.7) < 0.2 && Math.abs(h - 42) < 0.2) return 'A3';
+  if (Math.abs(w - 14.8) < 0.2 && Math.abs(h - 21) < 0.2) return 'A5';
+  if (Math.abs(w - 21.59) < 0.2 && Math.abs(h - 27.94) < 0.2) return 'Letter';
+  if (Math.abs(w - 21.59) < 0.2 && Math.abs(h - 35.56) < 0.2) return 'Legal';
+  return 'Custom';
+}
+
+function ProfileDetails({ profile }: { profile: any }) {
+  if (!profile) return null;
+
+  let parsed: any = null;
+  try {
+    const raw = profile.profileData;
+    parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+  } catch { /* ignore */ }
+
+  if (!parsed) {
+    return (
+      <div className="bg-white p-8 rounded-2xl border border-[var(--color-border-soft)]">
+        <p className="text-[var(--color-neutral)]">Dados técnicos não disponíveis para este perfil.</p>
+      </div>
+    );
+  }
+
+  const page = parsed.page || {};
+  const widthCm: number = page.widthCm ?? 0;
+  const heightCm: number = page.heightCm ?? 0;
+  const format = PAPER_FORMAT_LABELS[inferPaperFormat(widthCm, heightCm)] || `${widthCm} × ${heightCm} cm`;
+  const margins = page.marginTopCm != null
+    ? `${page.marginTopCm}cm (topo) · ${page.marginBottomCm}cm (base) · ${page.marginLeftCm}cm (esq.) · ${page.marginRightCm}cm (dir.)`
+    : null;
+
+  const baseFont = parsed.fontRoles?.roles?.find((r: any) => r.key === 'base')?.fontFamily
+    || parsed.baseFont
+    || null;
+
+  const componentOrder: string[] = parsed.componentOrder || [];
+  const componentRules: Record<string, any> = parsed.componentRules || {};
+  const components = componentOrder
+    .map((id: string) => ({ id, rule: componentRules[id] }))
+    .filter(({ rule }) => rule);
+
+  return (
+    <div className="space-y-6">
+      {/* Configurações de Página */}
+      <div className="bg-white p-8 rounded-2xl border border-[var(--color-border-soft)]">
+        <h3 className="text-lg font-bold text-[var(--color-espresso)] mb-5 flex items-center gap-2">
+          <FileText size={18} className="text-[var(--color-green)]" />
+          Configurações de Página
+        </h3>
+        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
+          <div>
+            <dt className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-neutral)] mb-1">Formato</dt>
+            <dd className="text-[var(--color-espresso)] font-medium">{format}</dd>
+          </div>
+          {margins && (
+            <div>
+              <dt className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-neutral)] mb-1">Margens</dt>
+              <dd className="text-[var(--color-espresso)] font-medium">{margins}</dd>
+            </div>
+          )}
+          {baseFont && (
+            <div>
+              <dt className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-neutral)] mb-1">Fonte padrão</dt>
+              <dd className="text-[var(--color-espresso)] font-medium">{baseFont}</dd>
+            </div>
+          )}
+          {page.orientation && (
+            <div>
+              <dt className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-neutral)] mb-1">Orientação</dt>
+              <dd className="text-[var(--color-espresso)] font-medium">{page.orientation === 'PORTRAIT' ? 'Retrato' : 'Paisagem'}</dd>
+            </div>
+          )}
+        </dl>
+      </div>
+
+      {/* Seções do documento */}
+      {components.length > 0 && (
+        <div className="bg-white p-8 rounded-2xl border border-[var(--color-border-soft)]">
+          <h3 className="text-lg font-bold text-[var(--color-espresso)] mb-5 flex items-center gap-2">
+            <LayoutList size={18} className="text-[var(--color-green)]" />
+            Seções do Documento ({components.length})
+          </h3>
+          <ol className="space-y-2">
+            {components.map(({ id, rule }, idx) => {
+              const typeLabel = COMPONENT_TYPE_LABELS[rule.type] || rule.type || '';
+              const displayName = rule.displayName || rule.name || id;
+              return (
+                <li key={id} className="flex items-center gap-3 text-sm">
+                  <span className="w-6 h-6 rounded-full bg-[var(--color-paper-soft)] border border-[var(--color-border-soft)] flex items-center justify-center text-[10px] font-bold text-[var(--color-neutral)] shrink-0">
+                    {idx + 1}
+                  </span>
+                  <span className="text-[var(--color-espresso)] font-medium flex-1">{displayName}</span>
+                  {typeLabel && (
+                    <span className="text-[10px] font-bold text-[var(--color-neutral)] bg-[var(--color-paper-soft)] px-2 py-0.5 rounded-full border border-[var(--color-border-soft)]">
+                      {typeLabel}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function ProfileDetailsPage() {
   const { id } = useParams();
@@ -26,6 +156,8 @@ export default function ProfileDetailsPage() {
   const [usageCount, setUsageCount] = useState(0);
   const [authorName, setAuthorName] = useState('');
   const [authorPhoto, setAuthorPhoto] = useState<string | null>(null);
+  const [authorRole, setAuthorRole] = useState('');
+  const [authorIsTeacherVerified, setAuthorIsTeacherVerified] = useState(false);
   const [comments, setComments] = useState<any[]>([]);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [newReviewText, setNewReviewText] = useState('');
@@ -35,6 +167,7 @@ export default function ProfileDetailsPage() {
 
   const [activeTab, setActiveTab] = useState('details');
   const [versions, setVersions] = useState<any[]>([]);
+  const [copied, setCopied] = useState(false);
 
   const [modalConfig, setModalConfig] = useState<{show: boolean, title: string, message: string, type: AlertModalType, redirectUrl?: string, onConfirm?: () => void}>({
     show: false, title: '', message: '', type: 'info'
@@ -79,6 +212,8 @@ export default function ProfileDetailsPage() {
               const fullName = [userData.firstName, userData.lastName].filter(Boolean).join(' ');
               setAuthorName(fullName);
               setAuthorPhoto(userData.profilePictureUrl || null);
+              setAuthorRole(userData.role || '');
+              setAuthorIsTeacherVerified(!!userData.isTeacherVerified);
             } catch { /* fallback */ }
           }
         } else {
@@ -93,7 +228,7 @@ export default function ProfileDetailsPage() {
             try {
               const uRes = await fetchApi(`/api/users/${rev.userId}/public`, { skipAuthRedirect: true });
               const u = await uRes.json();
-              return { ...rev, userName: [u.firstName, u.lastName].filter(Boolean).join(' ') || rev.userName, userPhoto: u.profilePictureUrl || null };
+              return { ...rev, userName: [u.firstName, u.lastName].filter(Boolean).join(' ') || rev.userName, userPhoto: u.profilePictureUrl || null, userRole: u.role || '', userIsTeacherVerified: !!u.isTeacherVerified };
             } catch { return rev; }
           }));
           setComments(enriched);
@@ -159,12 +294,22 @@ export default function ProfileDetailsPage() {
             const uRes = await fetchApi(`/api/users/${rev.userId}/public`);
             if (!uRes.ok) return rev;
             const u = await uRes.json();
-            return { ...rev, userName: [u.firstName, u.lastName].filter(Boolean).join(' ') || rev.userName, userPhoto: u.profilePictureUrl || null };
+            return { ...rev, userName: [u.firstName, u.lastName].filter(Boolean).join(' ') || rev.userName, userPhoto: u.profilePictureUrl || null, userRole: u.role || '', userIsTeacherVerified: !!u.isTeacherVerified };
           } catch { return rev; }
         }));
         setComments(enriched);
       }
     } catch (e) { showAlert('Erro', 'Erro ao enviar avaliação.', 'error'); }
+  };
+
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      showAlert('Erro', 'Não foi possível copiar o link.', 'error');
+    }
   };
 
   const tabs: TabNavigationItem[] = [
@@ -231,7 +376,7 @@ export default function ProfileDetailsPage() {
               <div className="flex items-center gap-4 text-sm text-[var(--color-neutral)] mb-8 pb-8 border-b border-[var(--color-border-soft)]">
                 <div className="flex items-center gap-2">
                   {authorPhoto ? (
-                    <img src={authorPhoto} alt={authorName} className="w-8 h-8 rounded-full object-cover" />
+                    <img src={authorPhoto.startsWith('http') ? authorPhoto : `${API_URL}${authorPhoto}`} alt={authorName} className="w-8 h-8 rounded-full object-cover" />
                   ) : (
                     <div className="w-8 h-8 rounded-full bg-[var(--color-border-soft)] flex items-center justify-center font-bold text-[var(--color-neutral)]">
                       {authorName.charAt(0)}
@@ -239,7 +384,12 @@ export default function ProfileDetailsPage() {
                   )}
                   <div>
                     <p className="text-xs text-[var(--color-neutral)]/70">Criado por</p>
-                    <p className="font-semibold text-[var(--color-espresso)]">{authorName}</p>
+                    <p className="font-semibold text-[var(--color-espresso)] flex items-center gap-1.5 flex-wrap">
+                      {authorName}
+                      {userBadgeVariant(authorRole, authorIsTeacherVerified) && (
+                        <UserBadge variant={userBadgeVariant(authorRole, authorIsTeacherVerified)!} />
+                      )}
+                    </p>
                   </div>
                 </div>
                 <div className="w-px h-8 bg-[var(--color-border-soft)]" />
@@ -262,15 +412,6 @@ export default function ProfileDetailsPage() {
                   {profile?.description || 'Nenhuma descrição detalhada foi fornecida para este perfil de formatação.'}
                 </p>
 
-                <h3 className="text-lg font-bold text-[var(--color-espresso)] mb-4">O que está incluído?</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
-                  {['Capa e Folha de Rosto Automáticas', 'Sumário Gerado Dinamicamente', 'Espaçamento ABNT (1.5)', 'Margens 3cm/2cm', 'Paginação no Canto Superior Direito', 'Referências Bibliográficas'].map((feature, i) => (
-                    <div key={i} className="flex items-start gap-2">
-                      <CheckCircle2 size={18} className="text-[var(--color-green)] shrink-0 mt-0.5" />
-                      <span className="text-[var(--color-neutral)] text-sm">{feature}</span>
-                    </div>
-                  ))}
-                </div>
               </div>
             </div>
 
@@ -312,13 +453,14 @@ export default function ProfileDetailsPage() {
                     Favoritar
                   </Button>
                   <Button
-                    variant="ghost"
+                    variant={copied ? 'secondary' : 'ghost'}
                     size="md"
                     className="flex-1 justify-center"
-                    icon={Share2}
+                    icon={copied ? Check : Share2}
                     trailingIcon={false}
+                    onClick={handleShare}
                   >
-                    Compartilhar
+                    {copied ? 'Copiado!' : 'Compartilhar'}
                   </Button>
                 </div>
 
@@ -340,10 +482,7 @@ export default function ProfileDetailsPage() {
 
         <div className="mb-24 max-w-4xl">
           {activeTab === 'details' && (
-            <div className="bg-white p-8 rounded-2xl border border-[var(--color-border-soft)]">
-              <h3 className="text-xl font-bold text-[var(--color-espresso)] mb-6">Detalhes Técnicos</h3>
-              <p className="text-[var(--color-neutral)]">Este perfil utiliza JSON como base para estruturar configurações de formatação ABNT, APA ou personalizadas.</p>
-            </div>
+            <ProfileDetails profile={profile} />
           )}
 
           {activeTab === 'versions' && (
@@ -458,7 +597,7 @@ export default function ProfileDetailsPage() {
                   comments.map((comment: any) => (
                     <div key={comment.id} className="bg-white p-6 rounded-2xl border border-[var(--color-border-soft)] shadow-sm flex gap-4">
                       {comment.userPhoto ? (
-                        <img src={comment.userPhoto} alt={comment.userName} className="w-12 h-12 rounded-full object-cover shrink-0" />
+                        <img src={comment.userPhoto?.startsWith('http') ? comment.userPhoto : `${API_URL}${comment.userPhoto}`} alt={comment.userName} className="w-12 h-12 rounded-full object-cover shrink-0" />
                       ) : (
                         <div className="w-12 h-12 rounded-full bg-[var(--color-success-soft)] text-[var(--color-green)] flex items-center justify-center font-bold text-lg shrink-0">
                           {comment.userName ? comment.userName.charAt(0).toUpperCase() : 'U'}
@@ -467,7 +606,12 @@ export default function ProfileDetailsPage() {
                       <div className="flex-1">
                         <div className="flex items-start justify-between mb-2">
                           <div>
-                            <h4 className="font-bold text-[var(--color-espresso)]">{comment.userName || 'Usuário Anônimo'}</h4>
+                            <h4 className="font-bold text-[var(--color-espresso)] flex items-center gap-1.5 flex-wrap">
+                              {comment.userName || 'Usuário Anônimo'}
+                              {userBadgeVariant(comment.userRole, comment.userIsTeacherVerified) && (
+                                <UserBadge variant={userBadgeVariant(comment.userRole, comment.userIsTeacherVerified)!} compact />
+                              )}
+                            </h4>
                             <p className="text-xs text-[var(--color-neutral)]/70">
                               {comment.date ? new Date(comment.date).toLocaleDateString('pt-BR') : 'Recentemente'}
                             </p>

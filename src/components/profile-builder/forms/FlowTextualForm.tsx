@@ -7,14 +7,42 @@ interface Props {
   onChange: (updated: ComponentState) => void;
 }
 
-const ITEM_TYPES: { value: FlowItemType; label: string }[] = [
-  { value: 'HEADING', label: 'Título Fixo' },
-  { value: 'BLANK_LINES', label: 'Linhas em Branco' },
-  { value: 'PLAIN_TEXT', label: 'Parágrafo Simples' },
-  { value: 'TABLE_BLOCK', label: 'Tabela' },
-  { value: 'BOLD_LABELED_KEYWORDS', label: 'Palavras-chave' },
-  { value: 'PAIR_LIST', label: 'Lista de Pares' },
-  { value: 'REPEAT_GROUP', label: 'Grupo de Repetição' },
+const ITEM_TYPES: { value: FlowItemType; label: string; hint: string }[] = [
+  {
+    value: 'HEADING',
+    label: 'Título Fixo',
+    hint: 'Um título com texto predefinido — não editável pelo usuário no criador de trabalhos. Use para cabeçalhos de seção que são sempre iguais (ex: "RESUMO", "ABSTRACT").',
+  },
+  {
+    value: 'BLANK_LINES',
+    label: 'Linhas em Branco',
+    hint: 'Insere um número fixo de linhas em branco para espaçamento vertical entre elementos.',
+  },
+  {
+    value: 'PLAIN_TEXT',
+    label: 'Parágrafo Simples',
+    hint: 'Um bloco de texto livre preenchido pelo usuário no criador de trabalhos (ex: texto do resumo, declaração do autor). Referencia um slot pelo nome.',
+  },
+  {
+    value: 'TABLE_BLOCK',
+    label: 'Tabela',
+    hint: 'Uma tabela com colunas definidas aqui e linhas preenchidas pelo usuário. Ideal para ficha catalográfica ou tabelas estruturadas.',
+  },
+  {
+    value: 'BOLD_LABELED_KEYWORDS',
+    label: 'Palavras-chave',
+    hint: 'Exibe um rótulo em negrito seguido de uma lista de termos separados. Ideal para "Palavras-chave: termo1; termo2".',
+  },
+  {
+    value: 'PAIR_LIST',
+    label: 'Lista de Pares',
+    hint: 'Cada entrada é um par termo-definição separado por um conector. Ideal para glossários ou listas de abreviaturas.',
+  },
+  {
+    value: 'REPEAT_GROUP',
+    label: 'Grupo de Repetição',
+    hint: 'Um grupo de itens repetido para cada entrada do slot. Ideal para listas de autores ou qualquer estrutura com múltiplas ocorrências iguais.',
+  },
 ];
 
 function defaultItem(type: FlowItemType): FlowItem {
@@ -39,6 +67,8 @@ function ItemEditor({ item, idx, onUpdate, onRemove }: {
     onUpdate({ ...item, [key]: value });
   }
 
+  const typeInfo = ITEM_TYPES.find(t => t.value === item.type);
+
   return (
     <div className="border border-[var(--color-border-soft)] rounded-lg p-3 space-y-2 bg-white">
       <div className="flex items-center gap-2">
@@ -52,6 +82,10 @@ function ItemEditor({ item, idx, onUpdate, onRemove }: {
         <button onClick={onRemove} className="text-red-400 hover:text-red-600 text-sm font-bold px-1">×</button>
       </div>
 
+      {typeInfo && (
+        <p className="text-[10px] text-[var(--color-neutral)]/70 leading-snug">{typeInfo.hint}</p>
+      )}
+
       {item.type === 'HEADING' && (
         <input type="text" className="w-full border border-[var(--color-border-soft)] rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500"
           placeholder="Texto fixo do título"
@@ -59,57 +93,97 @@ function ItemEditor({ item, idx, onUpdate, onRemove }: {
       )}
 
       {item.type === 'BLANK_LINES' && (
-        <input type="number" min="1" className="w-full border border-[var(--color-border-soft)] rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500"
-          value={item.count ?? 1} onChange={e => set('count', parseInt(e.target.value))} />
+        <div>
+          <label className="block text-[10px] text-[var(--color-neutral)] mb-0.5">Quantidade de linhas</label>
+          <input type="number" min="1" className="w-full border border-[var(--color-border-soft)] rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500"
+            value={item.count ?? 1} onChange={e => set('count', parseInt(e.target.value))} />
+        </div>
       )}
 
       {item.type === 'PLAIN_TEXT' && (
-        <input type="text" className="w-full border border-[var(--color-border-soft)] rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500"
-          placeholder="Nome do slot (ex: texto)"
-          value={item.slotName ?? ''} onChange={e => set('slotName', e.target.value)} />
+        <div>
+          <label className="block text-[10px] text-[var(--color-neutral)] mb-0.5">Nome do slot</label>
+          <input type="text" className="w-full border border-[var(--color-border-soft)] rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500"
+            placeholder="Ex: texto, conteudo, resumo"
+            value={item.slotName ?? ''} onChange={e => set('slotName', e.target.value)} />
+          <p className="text-[10px] text-[var(--color-neutral)]/60 mt-0.5">Nome interno que identifica o slot de texto do usuário</p>
+        </div>
       )}
 
       {item.type === 'TABLE_BLOCK' && (
-        <div className="space-y-1">
-          <input type="text" className="w-full border border-[var(--color-border-soft)] rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500"
-            placeholder="Cabeçalhos (separados por vírgula)"
-            value={(item.headers ?? []).join(', ')}
-            onChange={e => set('headers', e.target.value.split(',').map(s => s.trim()))} />
-          <input type="text" className="w-full border border-[var(--color-border-soft)] rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500"
-            placeholder="Nome do slot de linhas (ex: linhas)"
-            value={item.rowsSlotName ?? ''} onChange={e => set('rowsSlotName', e.target.value)} />
+        <div className="space-y-1.5">
+          <div>
+            <label className="block text-[10px] text-[var(--color-neutral)] mb-0.5">Cabeçalhos das colunas (separados por vírgula)</label>
+            <input type="text" className="w-full border border-[var(--color-border-soft)] rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500"
+              placeholder="Ex: Autor, Ano, Título"
+              value={(item.headers ?? []).join(', ')}
+              onChange={e => set('headers', e.target.value.split(',').map(s => s.trim()))} />
+          </div>
+          <div>
+            <label className="block text-[10px] text-[var(--color-neutral)] mb-0.5">Nome do slot de linhas</label>
+            <input type="text" className="w-full border border-[var(--color-border-soft)] rounded p-1.5 text-xs focus:ring-2 focus:ring-blue-500"
+              placeholder="Ex: linhas, itens"
+              value={item.rowsSlotName ?? ''} onChange={e => set('rowsSlotName', e.target.value)} />
+          </div>
         </div>
       )}
 
       {item.type === 'BOLD_LABELED_KEYWORDS' && (
-        <div className="grid grid-cols-2 gap-1">
-          <input type="text" className="border border-[var(--color-border-soft)] rounded p-1.5 text-xs"
-            placeholder="Slot do rótulo" value={item.labelSlotName ?? ''} onChange={e => set('labelSlotName', e.target.value)} />
-          <input type="text" className="border border-[var(--color-border-soft)] rounded p-1.5 text-xs"
-            placeholder="Slot das palavras" value={item.keywordsSlotName ?? ''} onChange={e => set('keywordsSlotName', e.target.value)} />
-          <input type="text" className="border border-[var(--color-border-soft)] rounded p-1.5 text-xs"
-            placeholder="Separador (ex: ; )" value={item.separator ?? '; '} onChange={e => set('separator', e.target.value)} />
-          <input type="text" className="border border-[var(--color-border-soft)] rounded p-1.5 text-xs"
-            placeholder="Terminador (ex: .)" value={item.terminator ?? '.'} onChange={e => set('terminator', e.target.value)} />
+        <div className="grid grid-cols-2 gap-1.5">
+          <div>
+            <label className="block text-[10px] text-[var(--color-neutral)] mb-0.5">Slot do rótulo</label>
+            <input type="text" className="border border-[var(--color-border-soft)] rounded p-1.5 text-xs w-full"
+              placeholder="Ex: rotulo" value={item.labelSlotName ?? ''} onChange={e => set('labelSlotName', e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-[10px] text-[var(--color-neutral)] mb-0.5">Slot das palavras</label>
+            <input type="text" className="border border-[var(--color-border-soft)] rounded p-1.5 text-xs w-full"
+              placeholder="Ex: palavras" value={item.keywordsSlotName ?? ''} onChange={e => set('keywordsSlotName', e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-[10px] text-[var(--color-neutral)] mb-0.5">Separador entre termos</label>
+            <input type="text" className="border border-[var(--color-border-soft)] rounded p-1.5 text-xs w-full"
+              placeholder="Ex: ; " value={item.separator ?? '; '} onChange={e => set('separator', e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-[10px] text-[var(--color-neutral)] mb-0.5">Terminador final</label>
+            <input type="text" className="border border-[var(--color-border-soft)] rounded p-1.5 text-xs w-full"
+              placeholder="Ex: ." value={item.terminator ?? '.'} onChange={e => set('terminator', e.target.value)} />
+          </div>
         </div>
       )}
 
       {item.type === 'PAIR_LIST' && (
-        <div className="grid grid-cols-2 gap-1">
-          <input type="text" className="border border-[var(--color-border-soft)] rounded p-1.5 text-xs"
-            placeholder="Slot dos termos" value={item.termsSlotName ?? ''} onChange={e => set('termsSlotName', e.target.value)} />
-          <input type="text" className="border border-[var(--color-border-soft)] rounded p-1.5 text-xs"
-            placeholder="Slot das definições" value={item.definitionsSlotName ?? ''} onChange={e => set('definitionsSlotName', e.target.value)} />
-          <input type="text" className="col-span-2 border border-[var(--color-border-soft)] rounded p-1.5 text-xs"
-            placeholder="Separador (ex: — )" value={item.separator ?? ' — '} onChange={e => set('separator', e.target.value)} />
+        <div className="space-y-1.5">
+          <div className="grid grid-cols-2 gap-1.5">
+            <div>
+              <label className="block text-[10px] text-[var(--color-neutral)] mb-0.5">Slot dos termos</label>
+              <input type="text" className="border border-[var(--color-border-soft)] rounded p-1.5 text-xs w-full"
+                placeholder="Ex: termos" value={item.termsSlotName ?? ''} onChange={e => set('termsSlotName', e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-[10px] text-[var(--color-neutral)] mb-0.5">Slot das definições</label>
+              <input type="text" className="border border-[var(--color-border-soft)] rounded p-1.5 text-xs w-full"
+                placeholder="Ex: definicoes" value={item.definitionsSlotName ?? ''} onChange={e => set('definitionsSlotName', e.target.value)} />
+            </div>
+          </div>
+          <div>
+            <label className="block text-[10px] text-[var(--color-neutral)] mb-0.5">Separador entre termo e definição</label>
+            <input type="text" className="w-full border border-[var(--color-border-soft)] rounded p-1.5 text-xs"
+              placeholder="Ex: — " value={item.separator ?? ' — '} onChange={e => set('separator', e.target.value)} />
+          </div>
         </div>
       )}
 
       {item.type === 'REPEAT_GROUP' && (
-        <div className="space-y-1">
-          <input type="text" className="w-full border border-[var(--color-border-soft)] rounded p-1.5 text-xs"
-            placeholder="Slot de entradas (ex: referencias)"
-            value={item.entriesSlotName ?? ''} onChange={e => set('entriesSlotName', e.target.value)} />
+        <div className="space-y-1.5">
+          <div>
+            <label className="block text-[10px] text-[var(--color-neutral)] mb-0.5">Slot de entradas</label>
+            <input type="text" className="w-full border border-[var(--color-border-soft)] rounded p-1.5 text-xs"
+              placeholder="Ex: entradas, autores"
+              value={item.entriesSlotName ?? ''} onChange={e => set('entriesSlotName', e.target.value)} />
+            <p className="text-[10px] text-[var(--color-neutral)]/60 mt-0.5">O slot deve conter uma lista — cada entrada dispara um grupo</p>
+          </div>
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" className="w-3 h-3 text-[var(--color-green)] rounded"
               checked={item.pageBreakBetweenEntries ?? false}
@@ -138,6 +212,9 @@ export function FlowTextualForm({ comp, onChange }: Props) {
 
   return (
     <div className="space-y-3">
+      <p className="text-[11px] text-[var(--color-neutral)]/70 leading-relaxed">
+        Monte a sequência de elementos que compõem este componente. A ordem aqui determina a ordem no documento gerado.
+      </p>
       <div className="space-y-2">
         {items.map((item, i) => (
           <ItemEditor key={i} item={item} idx={i}
